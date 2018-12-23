@@ -4,7 +4,7 @@
 - Based on Dateranoth's ConanExilesServerUtility-3.2.3 and 7dServerUtility | https://gamercide.org/
 
 -----------------
- GETTING STARTED (Two sets of instructions: one for existing servers and the other to use the 7dtdServerUtility tool to download and install the dedicated server)
+ GETTING STARTED (Two sets of instructions: one for existing servers and the other to use the 7dtdServerUtility tool to download and install a new dedicated server)
 -----------------
 
 EXISTING SERVER:
