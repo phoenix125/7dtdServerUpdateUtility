@@ -1,5 +1,5 @@
-7dtdServerUtility - A Utility To Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUtility_v1.4.1 (2018-12-22)
+7dtdServerUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
+- Latest version: 7dtdServerUtility_v1.5 (2018-12-23)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.2.3 and 7dServerUtility | https://gamercide.org/
 
@@ -43,7 +43,7 @@ FRESH SERVER: Use 7dtdServerUtility to download install a fresh dedicated server
 Notes:	- It is suggested that you RENAME or COPY the default serverconfig.xml file as it will be overwritten with any updates
 	- Telnet password can only contain letters and numbers.  
 
-To Shutdown your server:
+To shut down your server:
 - Right-click on the 7dtdServerUtility icon and select EXIT.
 To restart your server:
 - Run 7dtdServerUtility.exe
@@ -55,13 +55,18 @@ To restart your server:
 - Automatically keeps server updated.
 - Announce server updates and restarts on Discord, Twitch, and MCRCON.
 - Works with both STABLE and EXPERIMENTAL versions
-- Optionally automatically add version (ex: Alpha 17 (b239)) to server name with each update, so that users can quickly identify that you are running the latest server.
+- Optionally automatically add version (ex: Alpha 17 (b239)) to server name with each update, so that users can quickly identify that you are running the latest server.
 - Optionally automatically rename GameName to current version (ex: Alpha 17 b239) with each update, therefore saving old world while creating new world (aka: SERVER WIPE).
 - KeepServerAlive: Detects server crashes and will restart the server.
 - User-defined scheduled reboots
 - Remote restart (via web browser)
 - Clean shutdown of your server.
 - Retain detailed logs of 7DTD dedicated server and 7dtdServerUtility.
+
+---------------------------
+ UPCOMING PLANNED FEATURES
+---------------------------
+- Create a GUI interface for modifying the .ini file
 
 ---------
  CREDITS
@@ -83,15 +88,20 @@ Discord: http://discord.gg/EU7pzPs
 -----------------
  VERSION HISTORY
 -----------------
+(2018-12-23) v1.5
+- Fixed an error in getting the Experimental Version buildid. The Fun Pimps changed the source file after the latest_experimental went stable. After a major rework, this utility SHOULD be forward compatible for now on.
+- Sped up the reboot time significantly.
+- Modified the notification windows to be smaller and movable.
+- Added notification windows during startup and errors.
 
-(2018-12-220 v1.4.1
+(2018-12-22) v1.4.1
 - Fixed error with undefined variable in GameName when WipeServer=no
 
 (2018-12-21) v1.4
 - Added option to automatically rename GameName to current version (ex: Alpha 17 b239) with each update, therefore saving old world while creating new world (aka: SERVER WIPE).
 
 (2018-12-20) v1.3
-- Added option to automatically add version (ex: Alpha 17 (b233)) to server name after updates (so that users can quickly identify that you are running the latest server)
+- Added option to automatically add version (ex: Alpha 17 (b233)) to server name after updates (so that users can quickly identify that you are running the latest server)
 
 (2018-12-20) v1.2.3
 - Added option to announce only server updates and/or scheduled reboots on Discord/Twitch/MCRCON
