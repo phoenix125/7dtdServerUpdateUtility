@@ -1,5 +1,5 @@
 7dtdServerUtility - A Utility To Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUtility_v1.4 (2018-12-21)
+- Latest version: 7dtdServerUtility_v1.4.1 (2018-12-22)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.2.3 and 7dServerUtility | https://gamercide.org/
 
@@ -63,16 +63,10 @@ To restart your server:
 - Clean shutdown of your server.
 - Retain detailed logs of 7DTD dedicated server and 7dtdServerUtility.
 
-------------------
- PLANNED FEATURES
-------------------
-To be implemented by end of 2018
-- Post source files to Github
-
 ---------
  CREDITS
 ---------
-- Based on Dateranoth's ConanExilesServerUtility-3.2.3 and ServerUtility (He wrote MOST of the code used in this program.. THANK YOU!)
+- Based on Dateranoth's ConanExilesServerUtility-3.2.3 and 7dServerUtility (THANK YOU!)
 https://gamercide.org/forum/topic/9296-7-days-to-die-server-utility/
 https://gamercide.org/forum/topic/10558-conan-exiles-server-utility/
 
@@ -81,6 +75,7 @@ https://gamercide.org/forum/topic/10558-conan-exiles-server-utility/
 ----------------
 Latest Version: 	http://www.phoenix125.com/share/7dtdServerUtility.zip
 Source Code (AutoIT): 	http://www.phoenix125.com/share/7dtdServerUtility.au3
+GitHub:			https://github.com/phoenix125/7dtdServerUtility
 
 Website: http://www.Phoenix125.com
 Discord: http://discord.gg/EU7pzPs
@@ -88,6 +83,9 @@ Discord: http://discord.gg/EU7pzPs
 -----------------
  VERSION HISTORY
 -----------------
+
+(2018-12-220 v1.4.1
+- Fixed error with undefined variable in GameName when WipeServer=no
 
 (2018-12-21) v1.4
 - Added option to automatically rename GameName to current version (ex: Alpha 17 b239) with each update, therefore saving old world while creating new world (aka: SERVER WIPE).
