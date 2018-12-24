@@ -1,5 +1,5 @@
 7dtdServerUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUtility_v1.5 (2018-12-23)
+- Latest version: 7dtdServerUtility_v1.6 (2018-12-24)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.2.3 and 7dServerUtility | https://gamercide.org/
 
@@ -54,26 +54,21 @@ To restart your server:
 - Automatically download and install a new 7 Days To Die Dedicated Server: No need to do it manually.
 - Automatically keeps server updated.
 - Announce server updates and restarts on Discord, Twitch, and MCRCON.
-- Works with both STABLE and EXPERIMENTAL versions
-- Optionally automatically add version (ex: Alpha 17 (b239)) to server name with each update, so that users can quickly identify that you are running the latest server.
-- Optionally automatically rename GameName to current version (ex: Alpha 17 b239) with each update, therefore saving old world while creating new world (aka: SERVER WIPE).
+- Works with both STABLE and EXPERIMENTAL versions.
+- Optionally automatically add version (ex: Alpha 17 (b240)) to server name with each update, so that users can quickly identify that you are running the latest version.
+- Optionally automatically rename GameName to current version (ex: Alpha 17 b240) with each update, therefore saving old world while creating new world (aka: SERVER WIPE).
 - KeepServerAlive: Detects server crashes and will restart the server.
-- User-defined scheduled reboots
-- Remote restart (via web browser)
+- User-defined scheduled reboots.
+- Remote restart (via web browser).
+- Run multiple instances of 7dtdServerUtil to manage multiple servers.
 - Clean shutdown of your server.
 - Retain detailed logs of 7DTD dedicated server and 7dtdServerUtility.
+- Optionally restart server on excessive memory use.
 
 ---------------------------
  UPCOMING PLANNED FEATURES
 ---------------------------
 - Create a GUI interface for modifying the .ini file
-
----------
- CREDITS
----------
-- Based on Dateranoth's ConanExilesServerUtility-3.2.3 and 7dServerUtility (THANK YOU!)
-https://gamercide.org/forum/topic/9296-7-days-to-die-server-utility/
-https://gamercide.org/forum/topic/10558-conan-exiles-server-utility/
 
 ----------------
  DOWNLOAD LINKS
@@ -85,9 +80,21 @@ GitHub:			https://github.com/phoenix125/7dtdServerUtility
 Website: http://www.Phoenix125.com
 Discord: http://discord.gg/EU7pzPs
 
+---------
+ CREDITS
+---------
+- Based on Dateranoth's ConanExilesServerUtility-3.2.3 and 7dServerUtility (THANK YOU!)
+https://gamercide.org/forum/topic/9296-7-days-to-die-server-utility/
+https://gamercide.org/forum/topic/10558-conan-exiles-server-utility/
+
 -----------------
  VERSION HISTORY
 -----------------
+(2018-12-24) v1.6
+- Added ability to run multiple instances of 7dtdServerUtil to manage multiple servers.
+- Fixed the instance when the "no .ini file found" error popup gets hidden behind the server is starting splash screen.
+- Tweaked notification window sizes a little more.
+
 (2018-12-23) v1.5
 - Fixed an error in getting the Experimental Version buildid. The Fun Pimps changed the source file after the latest_experimental went stable. After a major rework, this utility SHOULD be forward compatible for now on.
 - Sped up the reboot time significantly.
