@@ -1,5 +1,5 @@
 7dtdServerUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUtility_v1.6 (2018-12-24)
+- Latest version: 7dtdServerUtility_v1.7 (2018-12-29)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.2.3 and 7dServerUtility | https://gamercide.org/
 
@@ -51,9 +51,10 @@ To restart your server:
 ----------
  FEATURES
 ----------
+- OK to use with most other server managers: Use this tool to install and maintain the server and use your other tools to manage game play features.
 - Automatically download and install a new 7 Days To Die Dedicated Server: No need to do it manually.
 - Automatically keeps server updated.
-- Announce server updates and restarts on Discord, Twitch, and MCRCON.
+- Announce server updates and restarts in game, on Discord, Twitch, and MCRCON.
 - Works with both STABLE and EXPERIMENTAL versions.
 - Optionally automatically add version (ex: Alpha 17 (b240)) to server name with each update, so that users can quickly identify that you are running the latest version.
 - Optionally automatically rename GameName to current version (ex: Alpha 17 b240) with each update, therefore saving old world while creating new world (aka: SERVER WIPE).
@@ -90,6 +91,14 @@ https://gamercide.org/forum/topic/10558-conan-exiles-server-utility/
 -----------------
  VERSION HISTORY
 -----------------
+(2018-12-29) v1.7
+- Added option to announce server updates & reboots as in game message.
+
+(2018-12-24) v1.6.1
+- Added option: When appending current version to server name, added option to use SHORT version (b240) or LONG version (Alpha A17 (b240)).
+- Minor tweaks to notification windows and log file.
+- Fixed: Truncated server name if the '|' character was used in server name.
+
 (2018-12-24) v1.6
 - Added ability to run multiple instances of 7dtdServerUtil to manage multiple servers.
 - Fixed the instance when the "no .ini file found" error popup gets hidden behind the server is starting splash screen.
