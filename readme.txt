@@ -1,5 +1,5 @@
 7dtdServerUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUtility_v1.7 (2018-12-29)
+- Latest version: 7dtdServerUtility_v1.7.1 (2019-01-01)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.2.3 and 7dServerUtility | https://gamercide.org/
 
@@ -91,6 +91,11 @@ https://gamercide.org/forum/topic/10558-conan-exiles-server-utility/
 -----------------
  VERSION HISTORY
 -----------------
+(2019-01-01) v1.7.1
+- Fixed Error when NOT validating files (Thanks to CrasheR for notifying me).
+- Added the option to execute a file before and/or after server update check (Thanks again to CrasheR for recommending these options).
+- Tweaked notification windows again.
+
 (2018-12-29) v1.7
 - Added option to announce server updates & reboots as in game message.
 
