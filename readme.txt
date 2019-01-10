@@ -1,5 +1,5 @@
 7dtdServerUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUtility_v1.7.1 (2019-01-01)
+- Latest version: 7dtdServerUtility_v1.7.2 (2019-01-09)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.2.3 and 7dServerUtility | https://gamercide.org/
 
@@ -54,7 +54,7 @@ To restart your server:
 - OK to use with most other server managers: Use this tool to install and maintain the server and use your other tools to manage game play features.
 - Automatically download and install a new 7 Days To Die Dedicated Server: No need to do it manually.
 - Automatically keeps server updated.
-- Announce server updates and restarts in game, on Discord, Twitch, and MCRCON.
+- Announce server updates and restarts in game, on Discord and Twitch.
 - Works with both STABLE and EXPERIMENTAL versions.
 - Optionally automatically add version (ex: Alpha 17 (b240)) to server name with each update, so that users can quickly identify that you are running the latest version.
 - Optionally automatically rename GameName to current version (ex: Alpha 17 b240) with each update, therefore saving old world while creating new world (aka: SERVER WIPE).
@@ -91,6 +91,10 @@ https://gamercide.org/forum/topic/10558-conan-exiles-server-utility/
 -----------------
  VERSION HISTORY
 -----------------
+(2019-01-09) v1.7.2
+- Removed the redundant MCRCON options in the 7dtdServerUtility.ini. Use in-game message annuncements instead.
+- Changed default install folder values for SteamCMD and 7DTD from Steam's default values to 'D:\Game Servers\7 Days to Die Dedicated Server\SteamCMD' and 'D:\Game Servers\7 Days to Die Dedicated Server'.
+
 (2019-01-01) v1.7.1
 - Fixed Error when NOT validating files (Thanks to CrasheR for notifying me).
 - Added the option to execute a file before and/or after server update check (Thanks again to CrasheR for recommending these options).
