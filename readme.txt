@@ -1,5 +1,5 @@
 7dtdServerUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUtility_v1.7.2 (2019-01-09)
+- Latest version: 7dtdServerUtility_v1.8 (2019-01-10)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.2.3 and 7dServerUtility | https://gamercide.org/
 
@@ -91,6 +91,9 @@ https://gamercide.org/forum/topic/10558-conan-exiles-server-utility/
 -----------------
  VERSION HISTORY
 -----------------
+(2019-01-10) v1.8
+- Fixed: a condition in which an experimental update may not be detected
+
 (2019-01-09) v1.7.2
 - Removed the redundant MCRCON options in the 7dtdServerUtility.ini. Use in-game message annuncements instead.
 - Changed default install folder values for SteamCMD and 7DTD from Steam's default values to 'D:\Game Servers\7 Days to Die Dedicated Server\SteamCMD' and 'D:\Game Servers\7 Days to Die Dedicated Server'.
