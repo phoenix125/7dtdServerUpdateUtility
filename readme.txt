@@ -1,7 +1,25 @@
 7dtdServerUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUtility_v1.8 (2019-01-10)
+- Latest version: 7dtdServerUtility_v1.8.1 (2019-01-20)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.2.3 and 7dServerUtility | https://gamercide.org/
+
+----------
+ FEATURES
+----------
+- OK to use with most other server managers: Use this tool to install and maintain the server and use your other tools to manage game play features.
+- Automatically download and install a new 7 Days To Die Dedicated Server: No need to do it manually.
+- Automatically keeps server updated.
+- Announce server updates and restarts in game, on Discord and Twitch.
+- Works with both STABLE and EXPERIMENTAL versions.
+- Optionally automatically add version (ex: Alpha 17 (b240)) to server name with each update, so that users can quickly identify that you are running the latest version.
+- Optionally automatically rename GameName to current version (ex: Alpha 17 b240) with each update, therefore saving old world while creating new world (aka: SERVER WIPE).
+- KeepServerAlive: Detects server crashes (checks for 7DaysToDieServer.EXE and telnet reponse checks) and will restart the server.
+- User-defined scheduled reboots.
+- Remote restart (via web browser).
+- Run multiple instances of 7dtdServerUtil to manage multiple servers.
+- Clean shutdown of your server.
+- Retain detailed logs of 7DTD dedicated server and 7dtdServerUtility.
+- Optionally restart server on excessive memory use.
 
 -----------------
  GETTING STARTED (Two sets of instructions: one for existing servers and the other to use the 7dtdServerUtility tool to download and install a new dedicated server)
@@ -48,23 +66,19 @@ To shut down your server:
 To restart your server:
 - Run 7dtdServerUtility.exe
 
-----------
- FEATURES
-----------
-- OK to use with most other server managers: Use this tool to install and maintain the server and use your other tools to manage game play features.
-- Automatically download and install a new 7 Days To Die Dedicated Server: No need to do it manually.
-- Automatically keeps server updated.
-- Announce server updates and restarts in game, on Discord and Twitch.
-- Works with both STABLE and EXPERIMENTAL versions.
-- Optionally automatically add version (ex: Alpha 17 (b240)) to server name with each update, so that users can quickly identify that you are running the latest version.
-- Optionally automatically rename GameName to current version (ex: Alpha 17 b240) with each update, therefore saving old world while creating new world (aka: SERVER WIPE).
-- KeepServerAlive: Detects server crashes and will restart the server.
-- User-defined scheduled reboots.
-- Remote restart (via web browser).
-- Run multiple instances of 7dtdServerUtil to manage multiple servers.
-- Clean shutdown of your server.
-- Retain detailed logs of 7DTD dedicated server and 7dtdServerUtility.
-- Optionally restart server on excessive memory use.
+-----------------
+ TIPS & COMMENTS
+-----------------
+Comments:
+- It is suggested that you RENAME or COPY the default serverconfig.xml file as it will be overwritten with any updates
+- Telnet password can only contain letters and numbers.
+- There are a lot of parameters that can be set in the 7dtdServerUtility.ini. All parameters can be left at the default value, except...
+  I recommend changing the default serverconfig.xml filename so that it does not get overwritten with each server update or file validation.
+- If running multiple instances of this utility, each copy must be in a separate folder.
+Tips:
+- Use the "Run external script during server updates" feature to run a batch file that disables certain mods during a server update to prevent incompatibilities.
+- If running multiple instances of this utility, rename 7dtdServerUtility.exe to a unique name for each server. The phoenix icon in the lower right will display the filename.
+  For example: I run 5 servers, so I renamed the ServerUtility.exe files to 7DTD-STABLE.EXE, 7DTD-EXPERIMENTAL.EXE, CONAN-2X_HARVEST.EXE, CONAN-Pippi.EXE, CONAN-CALAMITOUS.EXE.
 
 ---------------------------
  UPCOMING PLANNED FEATURES
@@ -88,11 +102,46 @@ Discord: http://discord.gg/EU7pzPs
 https://gamercide.org/forum/topic/9296-7-days-to-die-server-utility/
 https://gamercide.org/forum/topic/10558-conan-exiles-server-utility/
 
+
+-----------------------
+ DETAILED INSTRUCTIONS
+-----------------------
+====> Request Restart From Browser <====
+- If enabled on the server, use to remotely restart the server.
+- Set Password in INI file to save, or type each time.
+- Restart using IP or Domain Name
+- Restart commands are now expecting HTTP headers, and can be sent to the server from a web browser using the format http://IP:PORT?restart=user_pass. The utility will respond if the password is accepted or not. There is also a limit for max password attempts. After 15 tries in 10 minutes the requesting IP will be locked out for 10 minutes.
+- 404 Responses will be sent if the RestartKey does not match or the header is incorrect. You can enable Debugging for a full output to the log what is being received by the server if you have any trouble.
+- These Are the Allowed Characters in the RestartCode (Password) 1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@$%^&*()+=-{}[]\|:;./?
+
+Usage Example:
+INI SETTINGS
+[Game Server IP]
+ListenIP=192.168.0.1
+[Use Remote Restart ?yes/no]
+UseRemoteRestart=yes
+[Remote Restart Port]
+ListenPort=57520
+[Remote Restart Request Key http://IP:Port?KEY=user_pass]
+RestartKey=restart
+[Remote Restart Password]
+RestartCode=Admin1_Pass1,Admin2_Pass2
+
+In a standard web browser, type in the URL http://192.168.0.1:57520?restart=Admin1_Pass1 The Server would compare the pass and find that it is correct. It would respond with 200 OK And HTML Code stating the server is restarting.
+
 -----------------
  VERSION HISTORY
 -----------------
+
+(2019-01-18) v1.8.1
+- Faster and more reliable shutdown process and in game announcements.
+- Added the option to run an external script during server updates.. good for writing a batch file to disable certain mods during a server update to ensure server reliability.
+- Added a feature to check that the server is running and responsive by logging into the server and ensuring a valid response. Requires telnet to be active.
+- Added a feature to keep only the latest 20 logfiles of the dedicated server.
+- Fixed: another condition in which an update may not be detected.
+
 (2019-01-10) v1.8
-- Fixed: a condition in which an experimental update may not be detected
+- Fixed: a condition in which an experimental update may not be detected.
 
 (2019-01-09) v1.7.2
 - Removed the redundant MCRCON options in the 7dtdServerUtility.ini. Use in-game message annuncements instead.
