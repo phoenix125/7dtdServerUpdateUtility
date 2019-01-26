@@ -1,7 +1,7 @@
-7dtdServerUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUtility_v1.8.1 (2019-01-20)
+7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
+- Latest version: 7dtdServerUpdateUtility_v1.8.2 (2019-01-26)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
-- Based on Dateranoth's ConanExilesServerUtility-3.2.3 and 7dServerUtility | https://gamercide.org/
+- Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
 ----------
  FEATURES
@@ -9,45 +9,51 @@
 - OK to use with most other server managers: Use this tool to install and maintain the server and use your other tools to manage game play features.
 - Automatically download and install a new 7 Days To Die Dedicated Server: No need to do it manually.
 - Automatically keeps server updated.
-- Announce server updates and restarts in game, on Discord and Twitch.
+- Announce server updates and/or restarts in game, on Discord and Twitch.
 - Works with both STABLE and EXPERIMENTAL versions.
 - Optionally automatically add version (ex: Alpha 17 (b240)) to server name with each update, so that users can quickly identify that you are running the latest version.
 - Optionally automatically rename GameName to current version (ex: Alpha 17 b240) with each update, therefore saving old world while creating new world (aka: SERVER WIPE).
 - KeepServerAlive: Detects server crashes (checks for 7DaysToDieServer.EXE and telnet reponse checks) and will restart the server.
 - User-defined scheduled reboots.
 - Remote restart (via web browser).
-- Run multiple instances of 7dtdServerUtil to manage multiple servers.
+- Run multiple instances of 7dtdServerUpdateUtility to manage multiple servers.
 - Clean shutdown of your server.
-- Retain detailed logs of 7DTD dedicated server and 7dtdServerUtility.
+- Retain detailed logs of 7DTD dedicated server and 7dtdServerUpdateUtility.
 - Optionally restart server on excessive memory use.
+More detailed features:
+- Optionally execute an external file before and/or after server update check and during server update reboots... good for writing a batch file to disable certain mods during a server update to ensure server reliability.
+- Checks that the server is running and responsive by logging into the server and ensuring a valid response. Requires telnet to be active.
+- Keeps only the latest 20 logfiles of the dedicated server.
+- Validates files on first run, then optionally only when buildid (server version) changes. Backs up & erases appmanifest_294420.acf to force update when client-only update is released by The Fun Pimps.
+- Automatically imports server settings from serverconfig.xml (or comparable file).
 
 -----------------
- GETTING STARTED (Two sets of instructions: one for existing servers and the other to use the 7dtdServerUtility tool to download and install a new dedicated server)
+ GETTING STARTED (Two sets of instructions: one for existing servers and the other to use the 7dtdServerUpdateUtility tool to download and install a new dedicated server)
 -----------------
 
 EXISTING SERVER:
-1) Run 7dtdServerUtility.exe
-- The file "7dtdServerUtility.ini" will be created and the program will exit.
-2) Modify the default values in "7dtdServerUtility.ini" to point to your "serverconfig.xml" (or comparable file), install folder, and any other desired values.
-3) Run 7dtdServerUtility.exe again.
+1) Run 7dtdServerUpdateUtility.exe
+- The file "7dtdServerUpdateUtility.ini" will be created and the program will exit.
+2) Modify the default values in "7dtdServerUpdateUtility.ini" to point to your "serverconfig.xml" (or comparable file), install folder, and any other desired values.
+3) Run 7dtdServerUpdateUtility.exe again.
 - It will validate your files, install any updates, and start the server.
 4) Your server should be up-to-date and running! 
 
-FRESH SERVER: Use 7dtdServerUtility to download install a fresh dedicated server
-1) Run 7dtdServerUtility.exe
-- The file "7dtdServerUtility.ini" will be created and the program will exit.
-2) Open the "7dtdServerUtility.ini" with Notepad and modify the follow values:
+FRESH SERVER: Use 7dtdServerUpdateUtility to download install a fresh dedicated server
+1) Run 7dtdServerUpdateUtility.exe
+- The file "7dtdServerUpdateUtility.ini" will be created and the program will exit.
+2) Open the "7dtdServerUpdateUtility.ini" with Notepad and modify the follow values:
 	"Serverdir=" 	[Enter your desired server folder]
 	"steamcmddir="	[Enter desired SteamCMD folder] (SteamCMD is Steam's utility to download and install the Steam programs)
 	"[Version: 0-Stable/1-Latest Experimental] ServerVer=0" [Select Stable or Experimental version]
 - No need to make any other changes at this time.
-3) Run 7dtdServerUtility.exe again.
+3) Run 7dtdServerUpdateUtility.exe again.
 - All the required files will be downloaded and installed.
 - Once completed, your server will be running... Now it's time to config the server and utility.
-4) Shut down the server by rt-clicking on the 7dtdServerUtility icon on the lower right.
-5) Modify the remaining default values in "7dtdServerUtility.ini".
+4) Shut down the server by rt-clicking on the 7dtdServerUpdateUtility icon on the lower right.
+5) Modify the remaining default values in "7dtdServerUpdateUtility.ini".
 6) Modify default values in "serverconfig.xml" (or comparable file) within the 7DTD server folder.
-7) Run 7dtdServerUtility.exe again.
+7) Run 7dtdServerUpdateUtility.exe again.
 8) Congrats! Your new server is running.
 
 ------------
@@ -62,9 +68,9 @@ Notes:	- It is suggested that you RENAME or COPY the default serverconfig.xml fi
 	- Telnet password can only contain letters and numbers.  
 
 To shut down your server:
-- Right-click on the 7dtdServerUtility icon and select EXIT.
+- Right-click on the 7dtdServerUpdateUtility icon and select EXIT.
 To restart your server:
-- Run 7dtdServerUtility.exe
+- Run 7dtdServerUpdateUtility.exe
 
 -----------------
  TIPS & COMMENTS
@@ -72,13 +78,13 @@ To restart your server:
 Comments:
 - It is suggested that you RENAME or COPY the default serverconfig.xml file as it will be overwritten with any updates
 - Telnet password can only contain letters and numbers.
-- There are a lot of parameters that can be set in the 7dtdServerUtility.ini. All parameters can be left at the default value, except...
+- There are a lot of parameters that can be set in the 7dtdServerUpdateUtility.ini. All parameters can be left at the default value, except...
   I recommend changing the default serverconfig.xml filename so that it does not get overwritten with each server update or file validation.
 - If running multiple instances of this utility, each copy must be in a separate folder.
 Tips:
 - Use the "Run external script during server updates" feature to run a batch file that disables certain mods during a server update to prevent incompatibilities.
-- If running multiple instances of this utility, rename 7dtdServerUtility.exe to a unique name for each server. The phoenix icon in the lower right will display the filename.
-  For example: I run 5 servers, so I renamed the ServerUtility.exe files to 7DTD-STABLE.EXE, 7DTD-EXPERIMENTAL.EXE, CONAN-2X_HARVEST.EXE, CONAN-Pippi.EXE, CONAN-CALAMITOUS.EXE.
+- If running multiple instances of this utility, rename 7dtdServerUpdateUtility.exe to a unique name for each server. The phoenix icon in the lower right will display the filename.
+  For example: I run 5 servers, so I renamed the 7dtdServerUpdateUtility.exe files to 7DTD-STABLE.EXE, 7DTD-EXPERIMENTAL.EXE, CONAN-2X_HARVEST.EXE, CONAN-Pippi.EXE, CONAN-CALAMITOUS.EXE.
 
 ---------------------------
  UPCOMING PLANNED FEATURES
@@ -88,9 +94,9 @@ Tips:
 ----------------
  DOWNLOAD LINKS
 ----------------
-Latest Version: 	http://www.phoenix125.com/share/7dtdServerUtility.zip
-Source Code (AutoIT): 	http://www.phoenix125.com/share/7dtdServerUtility.au3
-GitHub:			https://github.com/phoenix125/7dtdServerUtility
+Latest Version: 	http://www.phoenix125.com/share/7dtdServerUpdateUtility.zip
+Source Code (AutoIT): 	http://www.phoenix125.com/share/7dtdServerUpdateUtility.au3
+GitHub:			https://github.com/phoenix125/7dtdServerUpdateUtility
 
 Website: http://www.Phoenix125.com
 Discord: http://discord.gg/EU7pzPs
@@ -98,7 +104,7 @@ Discord: http://discord.gg/EU7pzPs
 ---------
  CREDITS
 ---------
-- Based on Dateranoth's ConanExilesServerUtility-3.2.3 and 7dServerUtility (THANK YOU!)
+- Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility (THANK YOU!)
 https://gamercide.org/forum/topic/9296-7-days-to-die-server-utility/
 https://gamercide.org/forum/topic/10558-conan-exiles-server-utility/
 
@@ -108,6 +114,7 @@ https://gamercide.org/forum/topic/10558-conan-exiles-server-utility/
 -----------------------
 ====> Request Restart From Browser <====
 - If enabled on the server, use to remotely restart the server.
+- When restarting, an announcement will be made in-game, on Discord, and in Twitch if enabled, with the set duration of delay (warning).
 - Set Password in INI file to save, or type each time.
 - Restart using IP or Domain Name
 - Restart commands are now expecting HTTP headers, and can be sent to the server from a web browser using the format http://IP:PORT?restart=user_pass. The utility will respond if the password is accepted or not. There is also a limit for max password attempts. After 15 tries in 10 minutes the requesting IP will be locked out for 10 minutes.
@@ -120,18 +127,27 @@ INI SETTINGS
 ListenIP=192.168.0.1
 [Use Remote Restart ?yes/no]
 UseRemoteRestart=yes
-[Remote Restart Port]
+[Remote Restart Request Key http://IP:Port?RestartKey=RestartCode (Ex: 127.0.0.1:57520?restart=password)]
 ListenPort=57520
-[Remote Restart Request Key http://IP:Port?KEY=user_pass]
 RestartKey=restart
-[Remote Restart Password]
-RestartCode=Admin1_Pass1,Admin2_Pass2
+RestartCode=password
 
-In a standard web browser, type in the URL http://192.168.0.1:57520?restart=Admin1_Pass1 The Server would compare the pass and find that it is correct. It would respond with 200 OK And HTML Code stating the server is restarting.
+- You can have multiple passwords. For example: RestartCode=password1,pass2,pwd3
+In a standard web browser, type in the URL http://127.0.0.1:57520?restart=password. The Server would compare the pass and find that it is correct. It would respond with 200 OK And HTML Code stating the server is restarting.
 
 -----------------
  VERSION HISTORY
 -----------------
+
+(2019-01-26) v1.8.2
+- PROGRAM RENAMED from 7dtdServerUtility to 7dtdServerUpdateUtility to better reflect the function of this utility.
+- Due to the unreliability of AutoIT's built-in telnet utility, I added the option to use puttytel instead:
+  - Puttytel is more reliable but also intrusive: it will pop up a window with each update and telnet check.
+  - AutoIT's built-in telnet utility will perform update and telnet checks discretely, but it can often cause the 7DaysToDieServer.exe to no longer respond to telnet commands, thus forcing a server restart.
+- "Request Restart From Browser" tool updates:
+  - Added in-game announcements (in addition to the Discord and Twitch restart announcements).
+  - Added "Server Maintenance restart..." to the announcements.
+- Minor changes to the wording in the .ini file for clarification.
 
 (2019-01-18) v1.8.1
 - Faster and more reliable shutdown process and in game announcements.
@@ -144,7 +160,7 @@ In a standard web browser, type in the URL http://192.168.0.1:57520?restart=Admi
 - Fixed: a condition in which an experimental update may not be detected.
 
 (2019-01-09) v1.7.2
-- Removed the redundant MCRCON options in the 7dtdServerUtility.ini. Use in-game message annuncements instead.
+- Removed the redundant MCRCON options in the 7dtdServerUpdateUtility.ini. Use in-game message annuncements instead.
 - Changed default install folder values for SteamCMD and 7DTD from Steam's default values to 'D:\Game Servers\7 Days to Die Dedicated Server\SteamCMD' and 'D:\Game Servers\7 Days to Die Dedicated Server'.
 
 (2019-01-01) v1.7.1
@@ -191,7 +207,7 @@ In a standard web browser, type in the URL http://192.168.0.1:57520?restart=Admi
 
 (2018-12-18) v1.2
 Fixed "Does not work with a telnet password at this time."
-Fixed "If The Fun Pimps release a client-only update, 7dtdServerUtility will go into an endless update loop because the server files don't change (therefore SteamCMD's verify command says no update is needed) but Steam still assigns a new version ID to the update. SteamCMD's update reports no update needed, but the version IDs still mismatch."
+Fixed "If The Fun Pimps release a client-only update, 7dtdServerUpdateUtility will go into an endless update loop because the server files don't change (therefore SteamCMD's verify command says no update is needed) but Steam still assigns a new version ID to the update. SteamCMD's update reports no update needed, but the version IDs still mismatch."
 
 (2018-12-17) v1.1
 - Added "Automatically import server settings from serverconfig.xml (or comparable file)"
@@ -205,4 +221,4 @@ Fixed "If The Fun Pimps release a client-only update, 7dtdServerUtility will go 
 - User-defined scheduled reboots
 - Remote restart (via web browser)
 - Clean shutdown of your server.
-- Retain detailed logs of 7DTD dedicated server and 7dtdServerUtility.
+- Retain detailed logs of 7DTD dedicated server and 7dtdServerUpdateUtility.
