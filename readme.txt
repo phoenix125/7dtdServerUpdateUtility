@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v1.8.2 (2019-01-26)
+- Latest version: 7dtdServerUpdateUtility_v2.0.0 (2019-02-04) FIXED! SteamCMD will now retrieve latest version properly. Config file completeley redesigned. No more popups!
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -13,7 +13,7 @@
 - Works with both STABLE and EXPERIMENTAL versions.
 - Optionally automatically add version (ex: Alpha 17 (b240)) to server name with each update, so that users can quickly identify that you are running the latest version.
 - Optionally automatically rename GameName to current version (ex: Alpha 17 b240) with each update, therefore saving old world while creating new world (aka: SERVER WIPE).
-- KeepServerAlive: Detects server crashes (checks for 7DaysToDieServer.EXE and telnet reponse checks) and will restart the server.
+- KeepServerAlive: Detects server crashes (checks for 7DaysToDieServer.EXE and telnet reponse) and will restart the server.
 - User-defined scheduled reboots.
 - Remote restart (via web browser).
 - Run multiple instances of 7dtdServerUpdateUtility to manage multiple servers.
@@ -21,11 +21,11 @@
 - Retain detailed logs of 7DTD dedicated server and 7dtdServerUpdateUtility.
 - Optionally restart server on excessive memory use.
 More detailed features:
-- Optionally execute an external file before and/or after server update check and during server update reboots... good for writing a batch file to disable certain mods during a server update to ensure server reliability.
-- Checks that the server is running and responsive by logging into the server and ensuring a valid response. Requires telnet to be active.
-- Keeps only the latest 20 logfiles of the dedicated server.
-- Validates files on first run, then optionally only when buildid (server version) changes. Backs up & erases appmanifest_294420.acf to force update when client-only update is released by The Fun Pimps.
-- Automatically imports server settings from serverconfig.xml (or comparable file).
+- Optionally execute external files for six unique conditions, including at updates, scheduled restarts, remote restart, when first restart notice is announced
+  *These options are great executing a batch file to disable certain mods during a server update, to run custom announcement scripts, make config changes (enable PVP at scheduled times), etc.
+- Keeps only the latest 20 logfiles of the 7dtd dedicated server (the default value set by The Fun Pimps).
+- Can validate files on first run, then optionally only when buildid (server version) changes. Backs up & erases appmanifest_294420.acf to force update when client-only update is released by The Fun Pimps.
+- Automatically imports server settings from serverconfig.xml (or comparable file) and creates a temporary file... leaving the original file untouched.
 
 -----------------
  GETTING STARTED (Two sets of instructions: one for existing servers and the other to use the 7dtdServerUpdateUtility tool to download and install a new dedicated server)
@@ -76,20 +76,23 @@ To restart your server:
  TIPS & COMMENTS
 -----------------
 Comments:
-- It is suggested that you RENAME or COPY the default serverconfig.xml file as it will be overwritten with any updates
+- It is suggested that you RENAME or COPY the default serverconfig.xml file as it may be overwritten with server updates.
 - Telnet password can only contain letters and numbers.
 - There are a lot of parameters that can be set in the 7dtdServerUpdateUtility.ini. All parameters can be left at the default value, except...
-  I recommend changing the default serverconfig.xml filename so that it does not get overwritten with each server update or file validation.
+    I recommend changing the default serverconfig.xml filename so that it does not get overwritten with each server update or file validation.
 - If running multiple instances of this utility, each copy must be in a separate folder.
+- If running multiple instances of this utility, rename 7dtdServerUpdateUtility.exe to a unique name for each server. The phoenix icon in the lower right will display the filename.
+  For example: I run 6 servers, so I renamed the 7dtdServerUpdateUtility.exe files to 7DTD-STABLE.EXE, 7DTD-EXPERIMENTAL.EXE, CONAN-2X.EXE, CONAN-PIPPI.EXE, CONAN-LITMAN.EXE, & ATLAS.EXE.
+- If using the "Request Restart From Browser" option, you have to use your local PC's IP address as the server's IP. ex: "Server Local IP=192.168.1.10" (127.0.0.1 and external IP do not work).
 Tips:
 - Use the "Run external script during server updates" feature to run a batch file that disables certain mods during a server update to prevent incompatibilities.
-- If running multiple instances of this utility, rename 7dtdServerUpdateUtility.exe to a unique name for each server. The phoenix icon in the lower right will display the filename.
-  For example: I run 5 servers, so I renamed the 7dtdServerUpdateUtility.exe files to 7DTD-STABLE.EXE, 7DTD-EXPERIMENTAL.EXE, CONAN-2X_HARVEST.EXE, CONAN-Pippi.EXE, CONAN-CALAMITOUS.EXE.
 
 ---------------------------
  UPCOMING PLANNED FEATURES
 ---------------------------
-- Create a GUI interface for modifying the .ini file
+- Detailed instructions.
+- Possibly add two more restart announcement times.  The workaround for now is to execute external scripts... often using Powershell.
+- Scrapped: Create a GUI interface for modifying the .ini file. I have no intention of doing this unless there is demand for it. Let me know if you want this! email: kim@kim125.com
 
 ----------------
  DOWNLOAD LINKS
@@ -100,6 +103,9 @@ GitHub:			https://github.com/phoenix125/7dtdServerUpdateUtility
 
 Website: http://www.Phoenix125.com
 Discord: http://discord.gg/EU7pzPs
+Forum:   https://phoenix125.createaforum.com/index.php
+
+More ServerUpdateUtilities available: Conan Exiles and Atlas.  Rust and Empyrion coming soon!
 
 ---------
  CREDITS
@@ -127,17 +133,40 @@ INI SETTINGS
 ListenIP=192.168.0.1
 [Use Remote Restart ?yes/no]
 UseRemoteRestart=yes
-[Remote Restart Request Key http://IP:Port?RestartKey=RestartCode (Ex: 127.0.0.1:57520?restart=password)]
+[Remote Restart Request Key http://IP:Port?RestartKey=RestartCode (Ex: 192.168.1.30:57520?restart=password)]
 ListenPort=57520
 RestartKey=restart
 RestartCode=password
 
 - You can have multiple passwords. For example: RestartCode=password1,pass2,pwd3
-In a standard web browser, type in the URL http://127.0.0.1:57520?restart=password. The Server would compare the pass and find that it is correct. It would respond with 200 OK And HTML Code stating the server is restarting.
+In a standard web browser, type in the URL http://192.168.1.30:57520?restart=password. The Server would compare the pass and find that it is correct. It would respond with 200 OK And HTML Code stating the server is restarting.
 
 -----------------
  VERSION HISTORY
 -----------------
+(2019-02-04) v2.0.0
+- The .ini file was completely redesigned to be easier to read and understand.
+- Added three more "call external script" options for increased versitility.
+- All puttytel instances are now hidden; no more annoying popups, except SteamCMD updates... those are intentionally visible.
+- Restarts now occur at the scheduled time without delay due to announcements.
+- The "Use SteamCMD" option was removed. SteamCMD is vital to the functionalilty of this utility. It is automatically downloaded and installed.
+- Added several failsafes for invalid parameter entries and characters in the .ini.
+    Most invalid entries/characters are replaced automatically with valid entries and an entry in placed in the log detailing the changes.
+- If Remote Restart is enabled, the restart link is now added to the log file (unless "hide password" option is enabled).
+- The "hide password" option works as intended. The feature was incomplete in prior releases.
+- The "use telnet to check if server is alive" function is now hidden and properly closes the telnet connection.
+- Minor log file improvements were made to provide more relevant information with better clarification.
+- Minor notification window improvements were made, including notification of any changes made from the serverconfig.xml file to the temp file.
+
+(2019-02-02) v1.8.5
+- Fixed: undefined variable error when NOT appending server version to name.
+- Added 'reason for server restart' displayed on screen and placed into log file.
+
+(2019-02-02) v1.8.4
+- Fixed: SteamCMD will now retrieve latest version properly. (It now deletes two steamcmd cache folders prior to update check)
+
+(2019-01-27) v1.8.3
+- Fixed: Variable not found error.
 
 (2019-01-26) v1.8.2
 - PROGRAM RENAMED from 7dtdServerUtility to 7dtdServerUpdateUtility to better reflect the function of this utility.
