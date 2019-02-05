@@ -149,6 +149,8 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 - Added three more "call external script" options for increased versitility.
 - All puttytel instances are now hidden; no more annoying popups, except SteamCMD updates... those are intentionally visible.
 - Restarts now occur at the scheduled time without delay due to announcements.
+- Added the option to add extra command lines to SteamCMD and/or 7DaysToDieServer.exe.
+- Added another announcement option for Discord for Remote Restart requests.
 - The "Use SteamCMD" option was removed. SteamCMD is vital to the functionalilty of this utility. It is automatically downloaded and installed.
 - Added several failsafes for invalid parameter entries and characters in the .ini.
     Most invalid entries/characters are replaced automatically with valid entries and an entry in placed in the log detailing the changes.
