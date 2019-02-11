@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.1.0 (2019-02-09)
+- Latest version: 7dtdServerUpdateUtility_v2.1.1 (2019-02-10)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -14,7 +14,7 @@
 - Works with both STABLE and EXPERIMENTAL versions.
 - Optionally automatically add version (ex: Alpha 17 (b240)) to server name with each update, so that users can quickly identify that you are running the latest version.
 - Optionally automatically rename GameName to current version (ex: Alpha 17 b240) with each update, therefore saving old world while creating new world (aka: SERVER WIPE).
-- KeepServerAlive: Detects server crashes (checks for 7DaysToDieServer.EXE and telnet reponse) and will restart the server.
+- KeepServerAlive: Detects server crashes (checks for 7DaysToDieServer.EXE and telnet response) and will restart the server.
 - User-defined scheduled reboots.
 - Remote restart (via web browser).
 - Run multiple instances of 7dtdServerUpdateUtility to manage multiple servers.
