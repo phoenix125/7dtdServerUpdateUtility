@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.0.2 (2019-02-06) FIXED! SteamCMD will now retrieve latest version properly. Config file completeley redesigned. No more popups!
+- Latest version: 7dtdServerUpdateUtility_v2.1.0 (2019-02-09)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -9,6 +9,7 @@
 - OK to use with most other server managers: Use this tool to install and maintain the server and use your other tools to manage game play features.
 - Automatically download and install a new 7 Days To Die Dedicated Server: No need to do it manually.
 - Automatically keeps server updated.
+- After updates, "(Almost) Future Proof" option adds 19 existing parameters to the new serverconfig.xml file to accommodate config changes during updates.
 - Announce server updates and/or restarts in game, on Discord and Twitch.
 - Works with both STABLE and EXPERIMENTAL versions.
 - Optionally automatically add version (ex: Alpha 17 (b240)) to server name with each update, so that users can quickly identify that you are running the latest version.
@@ -144,7 +145,28 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
-(2019-20-06) v2.0.2
+(2019-02-10) v2.1.1
+- Added a feature to remove trailing slash on directory entries in the config.ini file
+- Added "ServerLoginConfirmationText" to "Future Proof" imported settings.
+- Fixed: undefined variable error.
+
+(2019-02-09) v2.1.0
+- Added "Future Proof" feature: After an update, if the 7dtdDedicatedServer.exe fails to run 3 times in-a-row (usually due to serverconfig.xml changes), the utility will:
+    a. Read 18 common settings from your defined serverconfig file
+	b. Read the new default serverconfig.xml file
+	c. Combine the two into a temporary config file
+	d. Rerun the 7dtdDedicatedServer.exe using the temporary config file... combining any new config file parameters to your most important existing parameters.
+- Improved the retrieval of the current server version (eliminated potential duplicates).
+
+(2019-02-08) v2.0.4
+- Fixed: Undefined variable error with experimental update.
+
+(2019-02-08) v2.0.3
+- Added user-defined unique announcements for Daily, Update, and Remote Restart messages for each: In-Game, Discord, or Twitch.
+- Added option to send only first announcement to Discord or Twitch (to reduce bot spam)
+- Added "FINAL WARNING! Rebooting server in 10 seconds..." in-game reboot message.
+
+(2019-02-06) v2.0.2
 - Fixed: Some announcements were not disabling.
 
 (2019-02-05) V2.0.1
@@ -155,12 +177,12 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 
 (2019-02-04) v2.0.0
 - The .ini file was completely redesigned to be easier to read and understand.
-- Added three more "call external script" options for increased versitility.
-- All puttytel instances are now hidden; no more annoying popups, except SteamCMD updates... those are intentionally visible.
+- Added three more "call external script" options for increased versatility.
+- All puttytel instances are now hidden; no more annoying pop-ups, except SteamCMD updates... those are intentionally visible.
 - Restarts now occur at the scheduled time without delay due to announcements.
 - Added the option to add extra command lines to SteamCMD and/or 7DaysToDieServer.exe.
 - Added another announcement option for Discord for Remote Restart requests.
-- The "Use SteamCMD" option was removed. SteamCMD is vital to the functionalilty of this utility. It is automatically downloaded and installed.
+- The "Use SteamCMD" option was removed. SteamCMD is vital to the functionality of this utility. It is automatically downloaded and installed.
 - Added several failsafes for invalid parameter entries and characters in the .ini.
     Most invalid entries/characters are replaced automatically with valid entries and an entry in placed in the log detailing the changes.
 - If Remote Restart is enabled, the restart link is now added to the log file (unless "hide password" option is enabled).
@@ -200,7 +222,7 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 - Fixed: a condition in which an experimental update may not be detected.
 
 (2019-01-09) v1.7.2
-- Removed the redundant MCRCON options in the 7dtdServerUpdateUtility.ini. Use in-game message annuncements instead.
+- Removed the redundant MCRCON options in the 7dtdServerUpdateUtility.ini. Use in-game message announcements instead.
 - Changed default install folder values for SteamCMD and 7DTD from Steam's default values to 'D:\Game Servers\7 Days to Die Dedicated Server\SteamCMD' and 'D:\Game Servers\7 Days to Die Dedicated Server'.
 
 (2019-01-01) v1.7.1
@@ -218,7 +240,7 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 
 (2018-12-24) v1.6
 - Added ability to run multiple instances of 7dtdServerUtil to manage multiple servers.
-- Fixed the instance when the "no .ini file found" error popup gets hidden behind the server is starting splash screen.
+- Fixed the instance when the "no .ini file found" error pop-up gets hidden behind the server is starting splash screen.
 - Tweaked notification window sizes a little more.
 
 (2018-12-23) v1.5
