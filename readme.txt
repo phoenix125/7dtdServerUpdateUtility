@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.1.1 (2019-02-10)
+- Latest version: 7dtdServerUpdateUtility_v2.1.2 (2019-02-12)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -98,9 +98,10 @@ Tips:
 ----------------
  DOWNLOAD LINKS
 ----------------
-Latest Version: 	http://www.phoenix125.com/share/7dtdServerUpdateUtility.zip
-Source Code (AutoIT): 	http://www.phoenix125.com/share/7dtdServerUpdateUtility.au3
-GitHub:			https://github.com/phoenix125/7dtdServerUpdateUtility
+Latest Version:       http://www.phoenix125.com/share/7dtdServerUpdateUtility.zip
+Previous Versions:    http://www.phoenix125.com/share/7dtdhistory/
+Source Code (AutoIT): http://www.phoenix125.com/share/7dtdServerUpdateUtility.au3
+GitHub:	              https://github.com/phoenix125/7dtdServerUpdateUtility
 
 Website: http://www.Phoenix125.com
 Discord: http://discord.gg/EU7pzPs
@@ -145,6 +146,9 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2019-02-12) v2.1.2
+- Fixed: A condition that can cause reboot loops.
+
 (2019-02-10) v2.1.1
 - Added a feature to remove trailing slash on directory entries in the config.ini file
 - Added "ServerLoginConfirmationText" to "Future Proof" imported settings.
