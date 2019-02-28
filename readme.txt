@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.1.2 (2019-02-12)
+- Latest version: 7dtdServerUpdateUtility_v2.1.6 (2019-02-28)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -146,6 +146,22 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2019-02-20) v2.1.6
+- Fixed: "Line 9283" error(when Steamcmd fails to provide latest server version during update check)
+         I reworked this section to only detect valid responses from steam, instead of looking for the various failed responses.
+- Added: 7dtdServerUpdateUtility update check and downloader.
+
+(2019-02-20) v2.1.5
+- Fixed: Error if wrong password is used for Remote Restart
+- Fixed: "Line 9282" error (when Steamcmd fails to provide latest server version during update check)
+
+(2019-02-13) v2.1.4
+- Fixed: Another undefined variable error! Ugh!
+- Cleaned up the log file a little more (will only show PID when executing server)
+
+(2019-02-12) v2.1.3
+- Fixed: "Future Proof" could engage after 3 normal reboots. Added a counter reset to "Future Proof" option so that the counter resets with each intentional reboot. 
+
 (2019-02-12) v2.1.2
 - Fixed: A condition that can cause reboot loops.
 
