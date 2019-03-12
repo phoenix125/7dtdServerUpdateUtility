@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.1.6 (2019-02-28)
+- Latest version: 7dtdServerUpdateUtility_v2.2.0 (2019-03-11)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -9,6 +9,7 @@
 - OK to use with most other server managers: Use this tool to install and maintain the server and use your other tools to manage game play features.
 - Automatically download and install a new 7 Days To Die Dedicated Server: No need to do it manually.
 - Automatically keeps server updated.
+- Now send telnet & global chat in-game messages with a click.
 - After updates, "(Almost) Future Proof" option adds 19 existing parameters to the new serverconfig.xml file to accommodate config changes during updates.
 - Announce server updates and/or restarts in game, on Discord and Twitch.
 - Works with both STABLE and EXPERIMENTAL versions.
@@ -146,9 +147,23 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
-(2019-02-20) v2.1.6
+(2019-03-11) v2.2.0
+- Added: Tray Icon menu and commands with option to send telnet and global chat messages, Check for utility updates, and initiate a Remote Restart.
+- Fixed: When update check fails to get latest version, a warning message is displayed but the utility continues to function and check for updates. Previously it would run close servers and perform SteamCMD update loops.
+- Added: You can now reboot the utility without shutting down your Atlas servers.  The util now checks for existing servers and redis using last PID.
+- Added: Util updater can now automatically download, install, and run updated version without affecting running Atlas servers or redis.
+- Added: Util update checks every 8 hours. Update checks can be disabled in the .ini file or by selecting (no) in the update check popup screen.
+- Added: Util will remove "<-NO TRAILING SLASH AND USE FULL URL FROM WEBHOOK URL ON DISCORD" in the Discord webhook if left in there.
+- Added: If util update is available, "__UTIL_UPDATE_AVAILABLE__.txt" file will be created in script folder. Once up-to-date, the file will be deleted automatically.
+- Changed: debug = yes by default.
+
+(2019-03-01) v2.1.7
+- Fixed: "Line 10725" error.
+
+(2019-02-28) v2.1.6
 - Fixed: "Line 9283" error(when Steamcmd fails to provide latest server version during update check)
          I reworked this section to only detect valid responses from steam, instead of looking for the various failed responses.
+- Fixed: Server password set to -1 when FutureProof config updater used.
 - Added: 7dtdServerUpdateUtility update check and downloader.
 
 (2019-02-20) v2.1.5
