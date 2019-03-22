@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.2.0 (2019-03-11)
+- Latest version: 7dtdServerUpdateUtility_v2.2.1 (2019-03-13)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -147,6 +147,9 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2019-03-13) v2.2.1
+- Fixed: Line 10626 and line 9451 error.  (I was missing a 1 in an expression which caused both errors). Thanks to MystaMagoo (Steam) fro reporting.
+
 (2019-03-11) v2.2.0
 - Added: Tray Icon menu and commands with option to send telnet and global chat messages, Check for utility updates, and initiate a Remote Restart.
 - Fixed: When update check fails to get latest version, a warning message is displayed but the utility continues to function and check for updates. Previously it would run close servers and perform SteamCMD update loops.
