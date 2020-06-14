@@ -1505,12 +1505,14 @@ Func GetLatestVersion($sCmdDir)
 			Local $hString1 = _StringBetween($hFileRead, $aServerVer, "timeupdated")
 			If @error Then
 				FileWriteLine($aLogFile, _NowCalc() & " [Update] ERROR!!! " & $aServerVer & " branch not found by SteamCMD")
+				SplashOff()
 				For $x1 = 0 To 5
-					Local $tSplash = SplashTextOn($aUtilName, "ERROR! " & $aServerVer & " branch not found by SteamCMD.", 250, 50, -1, -1, $DLG_MOVEABLE, "")
-					Sleep 750
-					ControlSetText($tSplash, "", "Static1", "ERROR!")
-					Sleep 250
+					Local $tSplash = SplashTextOn($aUtilName, "ERROR! " & $aServerVer & " branch not found by SteamCMD.", 300, 75, -1, -1, $DLG_MOVEABLE, "")
+					Sleep (850)
+					ControlSetText($tSplash, "", "Static1", "")
+					Sleep (150)
 				Next
+				SplashOff()
 			Else
 				Local $hString2 = StringSplit($hString1[0], '"', 2)
 				$hString3 = _ArrayToString($hString2)
@@ -2447,8 +2449,8 @@ Func ReadUini($sIniFile, $sLogFile)
 		$iIniFail += 1
 		$iIniError = $iIniError & "ServerVer, "
 	EndIf
-	If $aServerVer = 0 Then $aServerVer = "public"
-	If $aServerVer = 1 Then $aServerVer = "latest_experimental"
+	If $aServerVer = "0" Then $aServerVer = "public"
+	If $aServerVer = "1" Then $aServerVer = "latest_experimental"
 	Global $aSteamDBURL = "https://steamdb.info/app/" & $aSteamAppID & "/depots/?branch=" & $aServerVer
 	If $iniCheck = $aServerExtraCMD Then
 		$aServerExtraCMD = ""

@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.2.1 (2019-03-13)
+- Latest version: 7dtdServerUpdateUtility_v2.3.0 (2019-06-14) (Beta and Stable are the same version)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -147,6 +147,17 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2020-06-14) v2.3.0
+- Added: Online users and current day/time window.
+- Added: Daily Online Users logfile. Adds an entry when any changes in online users occurs. Also logs changes in main log file.
+- Added: Response to telnet commands now displayed.
+- Added: Pause Utility tray option.
+- Added: At shutdown, util makes up to 5 attempts to shutdown properly, waits up to 10 seconds for server to complete shutdown, then will kill process if server still running.
+- Added: Restart Server tray option.
+- Added: Optionally send Discord message when server is back online after a restart.
+- Added: New "\BatchFiles\" folder with five (5) new batch files are created for manual updating and starting 7DTD.
+- Added: Select branch by name. ex. public/latest_experimental/alpha18.4 (Added due to The Fun Pimps removing the "latest_experimental" branch causing Line 12296 Error.
+
 (2019-03-13) v2.2.1
 - Fixed: Line 10626 and line 9451 error.  (I was missing a 1 in an expression which caused both errors). Thanks to MystaMagoo (Steam) fro reporting.
 
