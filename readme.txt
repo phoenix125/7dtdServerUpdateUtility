@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.3.0 (2019-06-14) (Beta and Stable are the same version)
+- Latest version: 7dtdServerUpdateUtility_v2.3.3 (2020-07-03) (Beta and Stable are the same version)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -147,6 +147,35 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2020-07-02) v2.3.3 Many Bug Fixes and improvements
+- Added: Two Discord WH: One for Server Status and one for Online Players / Server Time
+- Added: Game Day / Time as announcement option with Online Player announcements to Discord/Twitch
+- Added: Displays Online Player Count, Game Time, and Next Horde after "Server is Online and Ready for Connection" Discord announcement.
+- Added: Query Port check: Much faster than Telnet. Used for online player count and Query KeepAlive. Suggest running this every 30 seconds and telnet check less often.
+- Improved reliability of the server update process.
+- Changed: Faster utility startup. Less waiting for servers to start or to get first online player check.
+- Added: Scans for all existing 7DTD servers, compares the folders they were executed in, and assigns the proper PID if running. It does this at startup and at all server starts to prevent duplicates.
+- Fixed: Icon tray clicks process immediately.
+- Fixed: Online player count fixed when >9 players
+- Fixed: Watchdog pause timers were not functioning properly after restarts and updates.
+- Fixed: If Append Version Name and/or Wipe Server options are selected, util will no longer restart the server twice if no changes from last time server was started.
+- Changed: Performs update check at program start and asks if you wish to update or not.
+- Changed: Moved TT folder to temp folder.
+- Changed: Moved PID file into a universal CFG file used for several persistant memory parameters.
+- Changed: Log File: Creates two log files: one with basic log and other with detailed logs into a separate log folder.
+- Changed: Made the status window smoother.
+- Changed: If server is already running, Online player count will be performed within a few seconds.
+- Changed: Online Player Window title is now the file name. Useful when running multiple servers: Change the file name to server name to label te tray icon and the online player window.
+
+(2020-06-29) v2.3.2 Fix "latest_experimental" bug, added Discord online player count, more improvements. NOTICE! Not thoroughly tested.
+- Fixed: It would not update properly if using build "latest_experimental".
+- Added: Send customizable Discord Online Players message when players join or leave to second webhook
+- Added: Added Query Port watchdog. Uses much less resources and no annoying popup Telnet windows. It will still get player COUNT but not player names. For player names, you must still use Telnet.
+- Added: Watchdog delays for updates and server starts, to prevent watchdog from restarting server while it is generating teh map or still comig online.
+
+(2020-06-18) v2.3.1
+- Fixed: Line 11061 Error.  (Thanks to @McK1llen for reporting)
+
 (2020-06-14) v2.3.0
 - Added: Online users and current day/time window.
 - Added: Daily Online Users logfile. Adds an entry when any changes in online users occurs. Also logs changes in main log file.
