@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.3.3 (2020-07-03) (Beta and Stable are the same version)
+- Latest version: 7dtdServerUpdateUtility_v2.3.4 (2020-07-09) (Beta and Stable are the same version)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -147,6 +147,13 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2020-07-09) v2.3.4 Several bug fixes. Added Watchdog Failed response count before restarting servers.
+- Fixed: GameTime sometimes grabbed extra data
+- Fixed: Query Watchdog could fail after several hours due to an AutoIT limitation.
+- Changed: Improved wording of the SteamCMD extra command line config parameter.
+- Changed: Default Query and Telnet IP to 127.0.0.1
+- Added: Config: Number of failed responses (after server has responded at least once) before restarting server. USed to avoid unecessary restarts if server was unreponsive only momentarily.
+
 (2020-07-02) v2.3.3 Many Bug Fixes and improvements
 - Added: Two Discord WH: One for Server Status and one for Online Players / Server Time
 - Added: Game Day / Time as announcement option with Online Player announcements to Discord/Twitch

@@ -1,11 +1,11 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.3.3.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.3.4.exe
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.3.3.0
+#AutoIt3Wrapper_Res_Fileversion=2.3.4.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.3.3
+#AutoIt3Wrapper_Res_ProductVersion=2.3.4
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -19,11 +19,12 @@
 #include <AutoItConstants.au3>
 ; *** End added by AutoIt3Wrapper ***
 
-$aUtilVerStable = "v2.3.3" ; (2020-06-29)
-$aUtilVerBeta = "v2.3.3" ; (2020-06-29)
+$aUtilVerStable = "v2.3.4" ; (2020-07-08)
+$aUtilVerBeta = "v2.3.4" ; (2020-07-08)
 $aUtilVersion = $aUtilVerStable
-Global $aUtilVerNumber = 1
+Global $aUtilVerNumber = 2
 ; 1 = v2.3.3
+; 2 = v2.3.4
 
 ;**** Directives created by AutoIt3Wrapper_GUI ****
 ;Originally written by Dateranoth for use and modified for 7DTD by Phoenix125.com
@@ -97,11 +98,13 @@ Global $aPlayersMax = 0
 Global $gWatchdogServerStartTimeCheck = _NowCalc()
 Global $aIniExist = False
 Global $aRemoteRestartUse = "no"
-Global $aGameTime = "Day 0, 0:00"
+Global $aGameTime = "Day 1, 00:00"
 Global $aNextHorde = 7
 Global $tQueryLogReadDoneTF = False
 Global $aServerNamFromLog = "[Not Read Yet]"
 ;~ Global $aServerNameToDisplay = ""
+Global $tFailedCountQuery = 0
+Global $tFailedCountTelnet = 0
 
 $aServerRebootReason = ""
 $aRebootReason = ""
@@ -136,6 +139,12 @@ If $aCFGLastVerNumber < 1 Then
 	FileDelete(@ScriptDir & "\tt.zip")
 	$sDiscordPlayersMsg = "Players Online: **\o / \m**  Game Time: **\t**  Next Horde: **\n days**"
 	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Online Player Message (\o - Online Player Count, \m - Max Players, \t - Game Time, \n - Days to Next Horde) ###", $sDiscordPlayersMsg)
+	$tUpdateINI = True
+EndIf
+If $aCFGLastVerNumber < 2 Then
+	Global $aSteamExtraCMD = IniRead($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "SteamCMD extra commandline parameters (ex. -latest_experimental) ###", "public")
+	IniWrite($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "SteamCMD extra commandline parameters (See note below) ###", $aSteamExtraCMD)
+	IniWrite($aIniFile, " --------------- KEEP ALIVE WATCHDOG --------------- ", "Number of failed responses (after server has responded at least once) before restarting server (1-10) (Default is 3) ###", "3")
 	$tUpdateINI = True
 EndIf
 If $tUpdateINI Then
@@ -346,7 +355,7 @@ Global $aSteamUpdateCMDValY = $aBatchDIR & "\Update_7DTD_Validate_YES.bat"
 Global $aSteamUpdateCMDValN = $aBatchDIR & "\Update_7DTD_Validate_NO.bat"
 Local $tCmd = 'SET steampath=' & $aSteamCMDDir & @CRLF & _
 		'SET gamepath=' & $aServerDirLocal & @CRLF & _
-		'%steampath%\steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir "%gamepath%" +app_update ' & $aSteamAppID & ' ' & $ServExp & ' ' & $aSteamExtraCMD
+		'"%steampath%\steamcmd.exe" +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir "%gamepath%" +app_update ' & $aSteamAppID & ' ' & $ServExp & ' ' & $aSteamExtraCMD
 FileDelete($aSteamUpdateCMDValY)
 FileWrite($aSteamUpdateCMDValY, $tCmd & " validate +quit")
 FileDelete($aSteamUpdateCMDValN)
@@ -770,7 +779,7 @@ While True ;**** Loop Until Closed ****
 					$aPropertyName = "GameName"
 					$aGameName = StringRegExpReplace($aGameVer, "[\(\)]", "")
 					FileWriteLine($aConfigFileTempFull, "<property name=""" & $aPropertyName & """ value=""" & $aGameName & """/>")
-					LogWrite("", " [Server] Changing GameName to """ & $aGameName & """ in " & $aConfigFileTempFull & ".")     ;kim125er
+					LogWrite("", " [Server] Changing GameName to """ & $aGameName & """ in " & $aConfigFileTempFull & ".")
 					IniWrite($aUtilCFGFile, "CFG", "Last Game Name", $aGameName)
 					If $tGameName = $aGameName Then
 						LogWrite(" [Server] Running server Game Name = Appended server Game Name. No restart necessary.", " [Server] Running server Game Name = Appended server Game Name. No restart necessary. [" & $aGameName & "]")
@@ -839,6 +848,17 @@ While True ;**** Loop Until Closed ****
 		If $aServerOnlinePlayerYN = "yes" Then
 			If ((_DateDiff('s', $aTimeCheck8, _NowCalc())) >= $aServerOnlinePlayerSec) Then
 				$aOnlinePlayers = GetPlayerCount(False)
+				If $aGameTime = "Day 1, 00:00" Then
+					LogWrite("", " [Players] Failed to get player count. Retry attempt 1 of 2")
+					Sleep(1000)
+					$aOnlinePlayers = GetPlayerCount(False)
+					If $aGameTime = "Day 1, 00:00" Then
+						LogWrite("", " [Players] Failed to get player count. Retry attempt 2 of 2")
+						Sleep(1000)
+						$aOnlinePlayers = GetPlayerCount(False)
+						If $aGameTime = "Day 1, 00:00" Then LogWrite("", " [Players] Failed to get player count.")
+					EndIf
+				EndIf
 				ShowPlayerCount()
 				If $aQueryYN = "yes" Then
 					$tQueryResponseOK = _QueryCheck(False)
@@ -934,14 +954,20 @@ While True ;**** Loop Until Closed ****
 				For $i = 1 To 6
 					$aReply = SendTelnetTT($aTelnetIP, $aTelnetPort, $aTelnetPass, "version", False)
 					If $i = 6 Then
-						LogWrite(" [Telnet] KeepAlive check FAILED ALL 5 COUNTS. Restarting server.")
-						CloseServer($ip, $port, $pass)
-						ExitLoop
+						$tFailedCountTelnet += 1
+						If $tFailedCountTelnet > $aWatchdogAttemptsBeforeRestart Then
+							LogWrite(" [Telnet] KeepAlive check FAILED " & $aWatchdogAttemptsBeforeRestart & " attempts. Restarting server.")
+							CloseServer($ip, $port, $pass)
+							ExitLoop
+						Else
+							LogWrite(" [Telnet] KeepAlive check FAILED. Attempt " & $tFailedCountTelnet & " of " & $aWatchdogAttemptsBeforeRestart & ".")
+						EndIf
 					EndIf
 					If StringInStr($aReply, "Game version") = 0 Then
 						Sleep(1000)
-						LogWrite(" [Telnet] KeepAlive check failed. Count:" & $i)
+						LogWrite("", " [Telnet] KeepAlive check failed. Count:" & $i & " of 5")
 					Else
+						$tFailedCountTelnet = 0
 						ExitLoop
 					EndIf
 				Next
@@ -957,9 +983,12 @@ While True ;**** Loop Until Closed ****
 			$gQueryTimeCheck0 = _NowCalc()
 		EndIf
 		#EndRegion ;**** KeepServerAlive Query Port Check ****
-		If $aPlayersCount <> IniRead($aUtilCFGFile, "CFG", "Last Online Player Count", 0) Then
-			_SendDiscordPlayer()
-			IniWrite($aUtilCFGFile, "CFG", "Last Online Player Count", $aPlayersCount)
+		If $aGameTime = "Day 1, 00:00" Then
+		Else
+			If $aPlayersCount <> IniRead($aUtilCFGFile, "CFG", "Last Online Player Count", 0) Then
+				_SendDiscordPlayer()
+				IniWrite($aUtilCFGFile, "CFG", "Last Online Player Count", $aPlayersCount)
+			EndIf
 		EndIf
 
 		#Region ;**** Check for Update every X Minutes ****
@@ -1217,8 +1246,14 @@ Func _QueryCheck($tRestart1 = True)
 			If $i = 6 Then
 				If $tSkipUpdateCheckTF = False And $tSkipStartCheckTF = False Then
 					If $tRestart1 Then
-						LogWrite(" [Query] KeepAlive check FAILED ALL 5 COUNTS. Restarting server.")
-						CloseServer($aTelnetIP, $aTelnetPort, $aTelnetPass)
+						$tFailedCountQuery += 1
+						If $tFailedCountQuery > $aWatchdogAttemptsBeforeRestart Then
+							LogWrite(" [Query] KeepAlive check FAILED " & $aWatchdogAttemptsBeforeRestart & " attempts. Restarting server.")
+							CloseServer($aTelnetIP, $aTelnetPort, $aTelnetPass)
+							ExitLoop
+						Else
+							LogWrite(" [Query] KeepAlive check FAILED. Attempt " & $tFailedCountQuery & " of " & $aWatchdogAttemptsBeforeRestart & ".")
+						EndIf
 					Else
 						$tReturn3 = False
 					EndIf
@@ -1226,11 +1261,12 @@ Func _QueryCheck($tRestart1 = True)
 				EndIf
 			EndIf
 		Else
+			$tFailedCountQuery = 0
 			$tReturn3 = True
 			$aServerQueryName = StringReplace($tQueryCheckResult[1], "$~!", "|")
 			Local $tPlayers = IniRead($aUtilCFGFile, "CFG", "Last Online Player Count", 0)
 			If $tQueryCheckResult[6] <> $tPlayers Then
-				If $aGameTime = "Day 0, 0:00" Then
+				If $aGameTime = "Day 1, 00:00" Then
 					If $aServerOnlinePlayerYN = "yes" Or $aTelnetCheckYN = "yes" Then GetPlayerCount(False)
 				EndIf
 				$aPlayersCount = $tQueryCheckResult[6]
@@ -1238,18 +1274,22 @@ Func _QueryCheck($tRestart1 = True)
 			EndIf
 			ExitLoop
 		EndIf
-		Sleep(250)
+		Sleep(500)
 	Next
 	Return $tReturn3
 EndFunc   ;==>_QueryCheck
 
 Func _SendDiscordPlayer()
-	Local $tDiscordPlayersMsg = StringReplace($sDiscordPlayersMsg, "\o", $aPlayersCount)
-	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\m", $aMaxPlayers)
-	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\t", $aGameTime)
-	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\n", $aNextHorde)
-	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, @CRLF, "")
-	SendDiscordMsg($sDiscordWHPlayers, $tDiscordPlayersMsg, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
+	If $aGameTime = "Day 1, 00:00" Then
+		LogWrite("", " [Discord] Online player count error or not ready. Discord message not sent.")
+	Else
+		Local $tDiscordPlayersMsg = StringReplace($sDiscordPlayersMsg, "\o", $aPlayersCount)
+		$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\m", $aMaxPlayers)
+		$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\t", $aGameTime)
+		$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\n", $aNextHorde)
+		$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, @CRLF, "")
+		SendDiscordMsg($sDiscordWHPlayers, $tDiscordPlayersMsg, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
+	EndIf
 EndFunc   ;==>_SendDiscordPlayer
 Func _UpdateTray()
 ;~ 	If ($aAppendVerBegin = "no") And ($aAppendVerEnd = "no") Then
@@ -2335,9 +2375,7 @@ EndFunc   ;==>CheckHTTPReq
 #Region ;**** Remove Trailing Slash ****
 Func RemoveTrailingSlash($aString)
 	Local $bString = StringRight($aString, 1)
-	If $bString = "\" Then
-		$aString = StringTrimRight($sString, 1)
-	EndIf
+	If $bString = "\" Then $aString = StringTrimRight($aString, 1)
 	Return $aString
 EndFunc   ;==>RemoveTrailingSlash
 #EndRegion ;**** Remove Trailing Slash ****
@@ -2460,7 +2498,7 @@ Func ReadUini($sIniFile, $sLogFile)
 	Global $aServerExtraCMD = IniRead($sIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", $aServerShort & " extra commandline parameters (ex. -serverpassword) ###", $iniCheck)
 	Global $aServerIP = IniRead($sIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "Server Local IP (ex. 192.168.1.10) ###", $iniCheck)
 	Global $aSteamCMDDir = IniRead($sIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "SteamCMD DIR ###", $iniCheck)
-	Global $aSteamExtraCMD = IniRead($sIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "SteamCMD extra commandline parameters (ex. -latest_experimental) ###", $iniCheck)
+	Global $aSteamExtraCMD = IniRead($sIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "SteamCMD extra commandline parameters (See note below) ###", $iniCheck)
 	Global $aServerOnlinePlayerYN = IniRead($sIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "Check for, and log, online players? (yes/no) ###", $iniCheck)
 	Global $aServerOnlinePlayerSec = IniRead($sIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "Check for online players every _ seconds (30-600) ###", $iniCheck)
 	Global $aWipeServer = IniRead($sIniFile, " --------------- APPEND SERVER VERSION TO NAME --------------- ", "Rename GameSave with updates causing a SERVER WIPE (while retaining old save files) ###", $iniCheck)
@@ -2475,6 +2513,7 @@ Func ReadUini($sIniFile, $sLogFile)
 	Global $aTelnetCheckSec = IniRead($sIniFile, " --------------- KEEP ALIVE WATCHDOG ---------------", "Telnet check interval in seconds (30-900) ###", $iniCheck)
 	Global $aWatchdogWaitServerUpdate = IniRead($sIniFile, " --------------- KEEP ALIVE WATCHDOG ---------------", "Pause watchdog for _ minutes after server updated to allow map generation (1-360) ###", $iniCheck)
 	Global $aWatchdogWaitServerStart = IniRead($sIniFile, " --------------- KEEP ALIVE WATCHDOG ---------------", "Pause watchdog for _ minutes after server started to allow server to come online (1-60) ###", $iniCheck)
+	Global $aWatchdogAttemptsBeforeRestart = IniRead($sIniFile, " --------------- KEEP ALIVE WATCHDOG ---------------", "Number of failed responses (after server has responded at least once) before restarting server (1-10) (Default is 3) ###", $iniCheck)
 
 	Global $aExMemRestart = IniRead($sIniFile, " --------------- RESTART ON EXCESSIVE MEMORY USE --------------- ", "Restart on excessive memory use? (yes/no) ###", $iniCheck)
 	Global $aExMemAmt = IniRead($sIniFile, " --------------- RESTART ON EXCESSIVE MEMORY USE --------------- ", "Excessive memory amount? ###", $iniCheck)
@@ -2693,12 +2732,12 @@ Func ReadUini($sIniFile, $sLogFile)
 		LogWrite(" [Notice] Query Port server-is-alive check interval was out of range. Interval set to: " & $aQueryCheckSec & " seconds.")
 	EndIf
 	If $iniCheck = $aQueryIP Then
-		$aQueryIP = ""
+		$aQueryIP = "127.0.0.1"
 		$iIniFail += 1
 		$iIniError = $iIniError & "QueryIP, "
 	EndIf
 	If $iniCheck = $aTelnetIP Then
-		$aTelnetIP = ""
+		$aTelnetIP = "127.0.0.1"
 		$iIniFail += 1
 		$iIniError = $iIniError & "TelnetIP, "
 	EndIf
@@ -2739,6 +2778,17 @@ Func ReadUini($sIniFile, $sLogFile)
 	ElseIf $aWatchdogWaitServerStart > 60 Then
 		$aWatchdogWaitServerStart = 60
 		LogWrite(" [Watchdog] Watchdog wait for server to start was out of range. Interval set to: " & $aWatchdogWaitServerStart & " minutes.")
+	EndIf
+	If $iniCheck = $aWatchdogAttemptsBeforeRestart Then
+		$aWatchdogWaitServerStart = "3"
+		$iIniFail += 1
+		$iIniError = $iIniError & "WatchdogAttemptsBeforeRestart, "
+	ElseIf $aWatchdogAttemptsBeforeRestart < 1 Then
+		$aWatchdogAttemptsBeforeRestart = 1
+		LogWrite(" [Watchdog] Watchdog Attempts Before Restart was out of range. Attempts set to: " & $aWatchdogAttemptsBeforeRestart & ".")
+	ElseIf $aWatchdogAttemptsBeforeRestart > 10 Then
+		$aWatchdogAttemptsBeforeRestart = 10
+		LogWrite(" [Watchdog] Watchdog Attempts Before Restart was out of range. Attempts set to: " & $aWatchdogAttemptsBeforeRestart & ".")
 	EndIf
 	If $iniCheck = $sObfuscatePass Then
 		$sObfuscatePass = "no"
@@ -3246,7 +3296,8 @@ Func UpdateIni($sIniFile)
 	IniWrite($sIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", $aServerShort & " extra commandline parameters (ex. -serverpassword) ###", $aServerExtraCMD)
 	IniWrite($sIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "Server Local IP (ex. 192.168.1.10) ###", $aServerIP)
 	IniWrite($sIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "SteamCMD DIR ###", $aSteamCMDDir)
-	IniWrite($sIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "SteamCMD extra commandline parameters (ex. -latest_experimental) ###", $aSteamExtraCMD)
+	IniWrite($sIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "SteamCMD extra commandline parameters (See note below) ###", $aSteamExtraCMD)
+	FileWriteLine($sIniFile, ' NOTE: hardcoded steamcmd commandline includes: steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir "%gamepath%" +app_update ' & $aSteamAppID)
 	FileWriteLine($sIniFile, @CRLF)
 	IniWrite($sIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "Check for, and log, online players? (yes/no) ###", $aServerOnlinePlayerYN)
 	IniWrite($sIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "Check for online players every _ seconds (30-600) ###", $aServerOnlinePlayerSec)
@@ -3258,6 +3309,7 @@ Func UpdateIni($sIniFile)
 	FileWriteLine($sIniFile, @CRLF)
 	IniWrite($sIniFile, " --------------- KEEP ALIVE WATCHDOG ---------------", "Pause watchdog for _ minutes after server updated to allow map generation (1-360) ###", $aWatchdogWaitServerUpdate)
 	IniWrite($sIniFile, " --------------- KEEP ALIVE WATCHDOG ---------------", "Pause watchdog for _ minutes after server started to allow server to come online (1-60) ###", $aWatchdogWaitServerStart)
+	IniWrite($sIniFile, " --------------- KEEP ALIVE WATCHDOG --------------- ", "Number of failed responses (after server has responded at least once) before restarting server (1-10) (Default is 3) ###", $aWatchdogAttemptsBeforeRestart)
 	IniWrite($sIniFile, " --------------- KEEP ALIVE WATCHDOG --------------- ", "Use Query Port to check if server is alive? (yes/no) ###", $aQueryYN)
 	IniWrite($sIniFile, " --------------- KEEP ALIVE WATCHDOG --------------- ", "Query IP (ex. 127.0.0.1 - Leave BLANK for server IP) ###", $aQueryIP)
 	IniWrite($sIniFile, " --------------- KEEP ALIVE WATCHDOG --------------- ", "Query Port check interval in seconds (30-900) ###", $aQueryCheckSec)
@@ -3641,24 +3693,38 @@ Func GetPlayerCount($tSplash)
 	If $tSplash Then
 		SplashTextOn($aUtilName, " Checking online players. . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
 	EndIf
+	Local $tTime9 = "00:00"
 	$sMsg = TelnetOnlinePlayers($aTelnetIP, $aTelnetPort, $aTelnetPass)
 	If $sMsg[0] = "Error: Timed Out" Then
 		$tOnlinePlayers[0] = False
 		$tOnlinePlayers[1] = "Error: Online Players Check Timed Out " ; Screen version with @CRLF
 		$tOnlinePlayers[2] = "Error: Online Players Check Timed Out " ; Log version without @CRLF
 	Else
-		$tOnlinePlayers[0] = False
-		$aGameTime = $sMsg[0]
-		Local $tTxt1 = _StringBetween($aGameTime, "Day ", ",")
-		If @error Then
-			Local $tDay = "1"
+		If StringLen($sMsg[0]) < 12 Then
+			$aGameTime = "Day 1, 00:00"
+			$tDay = 1
 		Else
-			Local $tDay = Int($tTxt1[0])
+			$tOnlinePlayers[0] = False
+			For $t = 1 To 20
+				$tStr = StringMid($sMsg[0], $t, 1)
+				If $tStr = "," Then
+					$tTime9 = StringMid($sMsg[0], $t + 2, 5)
+					ExitLoop
+				EndIf
+			Next
+			If StringInStr($tTime9, ":") <> 3 Then $tTime9 = "00:00"
+			Local $tTxt1 = _StringBetween($sMsg[0], "Day ", ",")
+			If @error Then
+				Local $tDay = "1"
+			Else
+				Local $tDay = Int($tTxt1[0])
+			EndIf
+			$aGameTime = "Day " & $tDay & ", " & $tTime9
 		EndIf
 		Local $t2 = (Int($tDay / 7) * 7)
 		$aNextHorde = 7 - ($tDay - $t2)
-		$tOnlinePlayers[1] = "Game Time: " & $sMsg[0] & @CRLF & "Total Players " ; Screen version with @CRLF
-		$tOnlinePlayers[2] = "Game Time(" & $sMsg[0] & ") Total Players " ; Log version without @CRLF
+		$tOnlinePlayers[1] = "Game Time: " & $aGameTime & @CRLF & "Total Players " ; Screen version with @CRLF
+		$tOnlinePlayers[2] = "Game Time(" & $aGameTime & ") Total Players " ; Log version without @CRLF
 		If StringInStr($sMsg[1], "Total of 0 in the game") <> 0 Then
 			$aServerPlayers = "0"
 			$tOnlinePlayers[1] = $tOnlinePlayers[1] & "(0)"
@@ -3688,7 +3754,7 @@ Func GetPlayerCount($tSplash)
 		SplashOff()
 		TraySetToolTip(@ScriptName)
 		TraySetIcon(@ScriptName, 99)
-		If ($aOnlinePlayerLast <> $tOnlinePlayers[1]) Then
+		If ($aOnlinePlayerLast <> $tOnlinePlayers[1]) And $aGameTime <> "Day 1, 00:00" Then
 			$tOnlinePlayers[0] = True
 			LogWrite(" [Online Players] " & $tOnlinePlayers[2])
 			WriteOnlineLog($tOnlinePlayers[2])
@@ -3701,7 +3767,7 @@ Func GetPlayerCount($tSplash)
 				WriteOnlineLog("[Usr Ck] " & $tOnlinePlayers[2])
 			EndIf
 		EndIf
-		$aOnlinePlayerLast = $tOnlinePlayers[1]
+		If $aGameTime <> "Day 1, 00:00" Then $aOnlinePlayerLast = $tOnlinePlayers[1]
 		If $aErr = 0 Then
 			$aServerReadyTF = True
 		EndIf
@@ -3956,211 +4022,93 @@ Func TrayUpdateUtilPause()
 	MsgBox($MB_OK, $aUtilityVer, $aUtilityVer & " Paused.  Press OK to resume.")
 EndFunc   ;==>TrayUpdateUtilPause
 Func _GetQuery($tIP, $tPort)
-	Local $tHeader = "T"
-	Local $tCmd = "Source Engine Query"
-	Local $tLead = Chr(255) & Chr(255) & Chr(255) & Chr(255)
-	Local $tSend = $tLead & $tHeader & $tCmd & Chr(0)
-	If UDPStartup() <> 1 Then
-		Local $tReturn[2]
-		$tReturn[0] = "Error"
-		$tReturn[1] = "Could not start the network stack"
-		Return $tReturn
+	Local $tFileBase = "SteamServerQuery"
+	Local $tFileDL = $tFileBase & ".zip"
+	Local $tFileRun = $aFolderTemp & $tFileBase & ".exe"
+	If FileExists($tFileRun) = 0 Then
+		Local $tFileExist = _DownloadAndExtractFile($tFileBase, "http://www.phoenix125.com/share/steamserverquery/" & $tFileDL, _
+				"https://github.com/phoenix125/SteamServerQuery/releases/download/Latest_Version/SteamServerQuery.zip", 0, $aFolderTemp)
+		If $tFileExist = False Then
+			LogWrite(" [Query] ERROR!! Failed to download and extract " & $tFileBase & ". Query watchdog disabled until tool restarted.")
+			$aQueryYN = "no"
+		EndIf
+	EndIf
+	If $aQueryYN = "yes" Then
 	EndIf
 
-	$socket = UDPOpen($tIP, $tPort)
-	If @error Then
-		Local $iError = @error
-		Local $tReturn[2]
-		$tReturn[0] = "Error"
-		$tReturn[1] = "UDP Open: " & $iError
-		UDPShutdown()
-		Return $tReturn
-	EndIf
-
-	UDPSend($socket, $tSend)
-	If @error Then
-		Local $iError = @error
-		Local $tReturn[2]
-		$tReturn[0] = "Error"
-		$tReturn[1] = "UDP Send: " & $iError
-		UDPShutdown()
-		Return $tReturn
-	EndIf
-
-	$timer = TimerInit()
-	$lastDiff = 0
-	While 1
-		$data = UDPRecv($socket, 99999, 2)
-		If $data = "" And @error < -1 Then
-			Local $iError = @error
-			If $iError = -1 Then
-				$tError = "Invalid Socket"
-			ElseIf $iError = -2 Then
-				$tError = "Not Connected. Try using query port +1"
-			ElseIf $iError = -3 Then
-				$tError = "Invalid Socket Array"
-			ElseIf $iError = -4 Then
-				$tError = "Invalid Socket Array"
-			Else
-				$tError = "[" & $iError & "] See Windows Sockets Error Codes webpage: https://docs.microsoft.com/en-us/windows/win32/winsock/windows-sockets-error-codes-2"
-			EndIf
-			Local $tReturn[2]
-			$tReturn[0] = "Error"
-			$tReturn[1] = $tError
-			UDPShutdown()
-			Return $tReturn
-		EndIf
-		If IsArray($data) And BinaryLen($data[0]) > 0 Then
-			Local $xReply = _ConvertHextoStringWithReplace($data[0])
-			UDPShutdown()
-			Return $xReply
-		EndIf
-		$stamp = TimerDiff($timer) / 1000
-		If $stamp > $lastDiff + 1 Then
-			UDPSend($socket, String("Stamp:" & $stamp))
-			$lastDiff = $stamp
-		EndIf
+	Local $mWaitms = 1000
+	Local $tQuerycmd = $tFileRun & " -po " & $tIP & ":" & $tPort
+	Local $mOut = Run($tQuerycmd, @ScriptDir, @SW_HIDE, $STDOUT_CHILD)
+	Local $tTimer1 = TimerInit()
+	Local $tExit = False
+	While ProcessExists($mOut) And $tExit = False
+		Sleep(50)
+		If TimerDiff($tTimer1) > $mWaitms Then $tExit = True
 	WEnd
+	Local $tcrcatch = StdoutRead($mOut)
+	StdioClose($mOut)
+	If ProcessExists($mOut) Then ProcessClose($mOut)
+	Local $tReturn = StringSplit($tcrcatch, @CRLF, 3)
+	Return $tReturn
 EndFunc   ;==>_GetQuery
-Func _ConvertHextoStringWithReplace($tTxt0)
-	Local $tArray[1]
-	$tArray[0] = $tTxt0
-	Local $tPos = 0
-	; -------------- Remove Header --------------
-	$tTxt0 = StringTrimLeft($tTxt0, 14)
-	Local $tLen = StringLen($tTxt0)
-	; -------------- 1 Name --------------
-	Local $tTxt2 = ""
-	For $t = $tPos To $tLen Step 2
-		$tPos += 2
-		$tHex1 = StringMid($tTxt0, $t + 1, 2)
-		If $tHex1 = "00" Then
-			_ArrayAdd($tArray, $tTxt2)
-			ExitLoop
-		ElseIf $tHex1 = "7C" Then
-;~ 			$tTxt2 &= _HexToString("2F")
-			$tTxt2 &= "$~!"
+Func _Splash($tTxt, $tTime = 0, $tWidth = 400, $tHeight = 125)
+	Local $tPID = SplashTextOn($aUtilName, $tTxt, $tWidth, $tHeight, -1, -1, $DLG_MOVEABLE, "")
+	If $tTime > 0 Then
+		Sleep($tTime)
+		SplashOff()
+	EndIf
+	Return $tPID
+EndFunc   ;==>_Splash
+
+Func _DownloadAndExtractFile($tFileName, $tURL1, $tURL2 = "", $tSplash = 0, $tFolder = @ScriptDir, $tFile2 = 0, $tFile3 = 0, $tFile4 = 0, $tFile5 = 0)
+	$tFolder = RemoveTrailingSlash($tFolder)
+	If FileExists($tFolder & "\" & $tFileName & ".exe") = 0 Then
+		If $tSplash > 0 Then
+			ControlSetText($tSplash, "", "Static1", "Downloading " & $tFileName & ".exe.")
 		Else
-			$tTxt2 &= _HexToString($tHex1)
+			_Splash("Downloading " & $tFileName & ".exe.", 0, 475)
 		EndIf
-	Next
-	; -------------- 2 Map --------------
-	Local $tTxt2 = ""
-	For $t = $tPos To $tLen Step 2
-		$tPos += 2
-		$tHex1 = StringMid($tTxt0, $t + 1, 2)
-		If $tHex1 = "00" Then
-			_ArrayAdd($tArray, $tTxt2)
-			ExitLoop
-		ElseIf $tHex1 = "7C" Then
-			$tTxt2 &= _HexToString("2F")
+		DirCreate($tFolder)     ; to extract to
+		InetGet($tURL1, $tFolder & "\" & $tFileName & ".zip", 1)
+		If Not FileExists($tFolder & "\" & $tFileName & ".zip") Then
+			SetError(1, 1)     ; Failed to download from source 1
+			LogWrite(" [Util] Error downloading " & $tFileName & " from Source1: " & $tURL1)
+			InetGet($tURL2, $tFolder & "\" & $tFileName & ".zip", 1)
+			If Not FileExists($tFolder & "\" & $tFileName & ".zip") Then
+				SetError(1, 2)     ; Failed to download from source 2
+				LogWrite(" [Util] Error downloading " & $tFileName & " from Source2: " & $tURL2)
+				SplashOff()
+				MsgBox($MB_OK, $aUtilName, "ERROR!!!  " & $tFileName & ".zip download failed.")
+				$aSplashStartUp = _Splash($aStartText, 0, 475)
+				Return
+			EndIf
+		EndIf
+		DirCreate($tFolder)     ; to extract to
+		_ExtractZip($tFolder & "\" & $tFileName & ".zip", "", $tFileName & ".exe", $tFolder)
+		If $tFile2 <> 0 Then _ExtractZip($tFolder & "\" & $tFileName & ".zip", "", $tFile2, $tFolder)
+		If $tFile3 <> 0 Then _ExtractZip($tFolder & "\" & $tFileName & ".zip", "", $tFile3, $tFolder)
+		If $tFile4 <> 0 Then _ExtractZip($tFolder & "\" & $tFileName & ".zip", "", $tFile4, $tFolder)
+		If $tFile5 <> 0 Then _ExtractZip($tFolder & "\" & $tFileName & ".zip", "", $tFile5, $tFolder)
+		If FileExists($tFolder & "\" & $tFileName & ".exe") Then
+			LogWrite(" [Util] Downloaded and installed " & $tFileName & ".")
 		Else
-			$tTxt2 &= _HexToString($tHex1)
+			LogWrite(" [Util] Error extracting " & $tFileName & ".exe from " & $tFileName & ".zip")
+			SetError(1, 3)     ; Failed to extract file
+			SplashOff()
+			MsgBox($MB_OK, $aUtilName, "ERROR!!! Extracting " & $tFileName & ".exe from " & $tFileName & ".zip failed.")
+			$aSplashStartUp = _Splash($aStartText, 0, 475)
+			SplashOff()
+			Return
 		EndIf
-	Next
-	; -------------- 3 Folder --------------
-	Local $tTxt2 = ""
-	For $t = $tPos To $tLen Step 2
-		$tPos += 2
-		$tHex1 = StringMid($tTxt0, $t + 1, 2)
-		If $tHex1 = "00" Then
-			_ArrayAdd($tArray, $tTxt2)
-			ExitLoop
-		ElseIf $tHex1 = "7C" Then
-			$tTxt2 &= _HexToString("2F")
-		Else
-			$tTxt2 &= _HexToString($tHex1)
-		EndIf
-	Next
-	; -------------- 4 Game --------------
-	Local $tTxt2 = ""
-	For $t = $tPos To $tLen Step 2
-		$tPos += 2
-		$tHex1 = StringMid($tTxt0, $t + 1, 2)
-		If $tHex1 = "00" Then
-			_ArrayAdd($tArray, $tTxt2)
-			ExitLoop
-		ElseIf $tHex1 = "7C" Then
-			$tTxt2 &= _HexToString("2F")
-		Else
-			$tTxt2 &= _HexToString($tHex1)
-		EndIf
-	Next
-	; -------------- 5 ID --------------
-	Local $tTxt2 = ""
-	For $t = $tPos To $tLen Step 2
-		$tPos += 2
-		$tHex1 = StringMid($tTxt0, $t + 1, 2)
-		If $tHex1 = "00" Then
-			_ArrayAdd($tArray, Dec($tTxt2))
-;~ 			_ArrayAdd($tArray, $tTxt2)
-			ExitLoop
-		ElseIf $tHex1 = "7C" Then
-			$tTxt2 &= _HexToString("2F")
-		Else
-			$tTxt2 &= $tHex1
-		EndIf
-	Next
-	; -------------- 6 Players --------------
-	$tPos += 2
-	$tHex1 = StringMid($tTxt0, $tPos + 1, 2)
-	_ArrayAdd($tArray, Dec($tHex1))
-	; -------------- 7 Max Players --------------
-	$tPos += 2
-	$tHex1 = StringMid($tTxt0, $tPos + 1, 2)
-	_ArrayAdd($tArray, Dec($tHex1))
-	; -------------- 8 Bots --------------
-	$tPos += 2
-	$tHex1 = StringMid($tTxt0, $tPos + 1, 2)
-	_ArrayAdd($tArray, Dec($tHex1))
-	; -------------- 9 Server type --------------
-	$tPos += 2
-	$tHex1 = StringMid($tTxt0, $tPos + 1, 2)
-	_ArrayAdd($tArray, _HexToString($tHex1))
-	; -------------- 10 Environment --------------
-	$tPos += 2
-	$tHex1 = StringMid($tTxt0, $tPos + 1, 2)
-	_ArrayAdd($tArray, _HexToString($tHex1))
-	; -------------- 11 Visibility --------------
-	$tPos += 2
-	$tHex1 = StringMid($tTxt0, $tPos + 1, 2)
-	_ArrayAdd($tArray, Dec($tHex1))
-	; -------------- 12 VAC --------------
-	$tPos += 2
-	$tHex1 = StringMid($tTxt0, $tPos + 1, 2)
-	_ArrayAdd($tArray, Dec($tHex1))
-	; -------------- 13 Version --------------
-	Local $tTxt2 = ""
-	$tPos += 2
-	For $t = $tPos To $tLen Step 2
-		$tPos += 2
-		$tHex1 = StringMid($tTxt0, $t + 1, 2)
-		If $tHex1 = "00" Then
-			_ArrayAdd($tArray, $tTxt2)
-			ExitLoop
-		ElseIf $tHex1 = "7C" Then
-			$tTxt2 &= _HexToString("2F")
-		Else
-			$tTxt2 &= _HexToString($tHex1)
-		EndIf
-	Next
-	; -------------- 14 EDF --------------
-	$tPos += 2
-	Local $tTxt2 = StringTrimLeft($tTxt0, $tPos)
-	Local $tTxt1 = "0x"
-	For $i = 0 To (StringLen($tTxt0) / 2)
-		If StringMid($tTxt2, $i * 2 + 1, 2) = "00" Then
-			$tTxt1 &= "7E"
-		ElseIf $tHex1 = "7C" Then
-			$tTxt2 &= _HexToString("2F")
-		Else
-			$tTxt1 &= StringMid($tTxt2, $i * 2 + 1, 2)
-		EndIf
-	Next
-	_ArrayAdd($tArray, _HexToString($tTxt1))
-	; -------------- Done ----------------
-	Return $tArray
-EndFunc   ;==>_ConvertHextoStringWithReplace
+		FileDelete($tFolder & "\" & $tFileName & ".zip")
+		SplashOff()
+		Return True     ; Downloaded and installed file
+	Else
+		SplashOff()
+		Return False     ; File existed
+	EndIf
+EndFunc   ;==>_DownloadAndExtractFile
+
 Func LogWrite($Msg, $msgdebug = -1)
 	$aLogFile = $aFolderLog & $aUtilName & "_Log_" & @YEAR & "-" & @MON & "-" & @MDAY & ".txt"
 	$aLogDebugFile = $aFolderLog & $aUtilName & "_LogFull_" & @YEAR & "-" & @MON & "-" & @MDAY & ".txt"
