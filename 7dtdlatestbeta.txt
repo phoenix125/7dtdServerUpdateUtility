@@ -1,1 +1,1 @@
-v2.3.4^v2.3.4|Several bug fixes. Added Watchdog Failed response count before restarting servers.|
+v2.5.0^v2.5.0|Config window. Backups.|More Discord options.|No more telnet popup windows.|Several bug fixes, including SteamCMD improvements.|

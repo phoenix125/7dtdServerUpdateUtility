@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.3.4 (2020-07-09) (Beta and Stable are the same version)
+- Latest version: 7dtdServerUpdateUtility_v2.5.0 (2020-07-30) (Beta and Stable are the same version)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -147,12 +147,27 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2020-07-30) v2.5.0 Config window. Backups. More Discord options. No more telnet popup windows. Several bug fixes, including SteamCMD improvements.
+- Added: Player Chat to Discord. See what your friends are saying even when you can't play!
+- Added: Config GUI menu.
+- Fixed: Steam update would fail if there was a space in folder structure.
+- Fixed: Telnet: Now uses plink instead of TeraTerm. No more popup screen interruptions!
+- Added: Backup: Scheduled focused and complete backups.
+- Added: Use up to four Discord webhooks.
+- Added: Optional SteamCMD login and password.
+- Added: Fully customizable Steam update command line.
+- Added: Future-Proof: Optional Mod folder renaming in case mods are causing the updated server to fail.
+- Fixed: Several bug fixes and stabiolization improvements.
+- Added: Restart util tray icon option
+- Added: Startup Image
+
 (2020-07-09) v2.3.4 Several bug fixes. Added Watchdog Failed response count before restarting servers.
+- Fixed: SteamCMD update did not work if there was a space in the folder structure.
 - Fixed: GameTime sometimes grabbed extra data
 - Fixed: Query Watchdog could fail after several hours due to an AutoIT limitation.
 - Changed: Improved wording of the SteamCMD extra command line config parameter.
 - Changed: Default Query and Telnet IP to 127.0.0.1
-- Added: Config: Number of failed responses (after server has responded at least once) before restarting server. USed to avoid unecessary restarts if server was unreponsive only momentarily.
+- Added: Config: Number of failed responses (after server has responded at least once) before restarting server. Used to avoid unnecessary restarts if server was unresponsive only momentarily.
 
 (2020-07-02) v2.3.3 Many Bug Fixes and improvements
 - Added: Two Discord WH: One for Server Status and one for Online Players / Server Time
