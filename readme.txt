@@ -1,31 +1,33 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.5.0 (2020-07-30) (Beta and Stable are the same version)
+- Latest version: 7dtdServerUpdateUtility_v2.5.1 (2020-08-01) (Beta and Stable are the same version)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
 ----------
  FEATURES
 ----------
-- OK to use with most other server managers: Use this tool to install and maintain the server and use your other tools to manage game play features.
-- Automatically download and install a new 7 Days To Die Dedicated Server: No need to do it manually.
-- Automatically keeps server updated.
-- Now send telnet & global chat in-game messages with a click.
-- After updates, "(Almost) Future Proof" option adds 19 existing parameters to the new serverconfig.xml file to accommodate config changes during updates.
+- Works with other managers.
+- Easy to use and set up.
+- New! Discord: Send server status, in-game chat messages, players join or leave, and game time.
+- New! Backups. Partial and full server.
+- New! Config window.
+- Keeps server updated and running.
+- Easily downloads, installs, and set up a new 7 Days To Die Dedicated Server.
+- Send telnet & chat messages with a click.
+- After updates, "(Almost) Future Proof" option adds 19 existing parameters to the new serverconfig.xml file to accommodate config changes during updates and can disable mod folder.
 - Announce server updates and/or restarts in game, on Discord and Twitch.
-- Works with both STABLE and EXPERIMENTAL versions.
+- Works with all version: Public, Latest_experimental, and custom.
 - Optionally automatically add version (ex: Alpha 17 (b240)) to server name with each update, so that users can quickly identify that you are running the latest version.
 - Optionally automatically rename GameName to current version (ex: Alpha 17 b240) with each update, therefore saving old world while creating new world (aka: SERVER WIPE).
-- KeepServerAlive: Detects server crashes (checks for 7DaysToDieServer.EXE and telnet response) and will restart the server.
-- User-defined scheduled reboots.
+- KeepAlive Watchdog: Restarts frozen servers. Monitors for process, valid telenet, and query responses.
+- Scheduled restarts.
 - Remote restart (via web browser).
-- Run multiple instances of 7dtdServerUpdateUtility to manage multiple servers.
-- Clean shutdown of your server.
-- Retain detailed logs of 7DTD dedicated server and 7dtdServerUpdateUtility.
-- Optionally restart server on excessive memory use.
+- Run multiple instances to manage multiple servers.
+- Detailed logs.
+- Watchdog: restart server on excessive memory use.
 More detailed features:
 - Optionally execute external files for six unique conditions, including at updates, scheduled restarts, remote restart, when first restart notice is announced
   *These options are great executing a batch file to disable certain mods during a server update, to run custom announcement scripts, make config changes (enable PVP at scheduled times), etc.
-- Keeps only the latest 20 logfiles of the 7dtd dedicated server (the default value set by The Fun Pimps).
 - Can validate files on first run, then optionally only when buildid (server version) changes. Backs up & erases appmanifest_294420.acf to force update when client-only update is released by The Fun Pimps.
 - Automatically imports server settings from serverconfig.xml (or comparable file) and creates a temporary file... leaving the original file untouched.
 
@@ -147,6 +149,14 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2020-08-01) v2.5.1 Discord Bug Fix. Minor improvements
+- Fixed: Quotation marks " in any announcement were causing Discord failures. Util now removes quotation marks.
+- Added: Open Server and Util logs tray item.
+- Added: Open Server config tray item.
+- Added: Customizable telnet check interval.
+- Changed: Improved online player polling. Records in near-realtime now.
+- Added: Config Window: 3 close buttons in top right.
+
 (2020-07-30) v2.5.0 Config window. Backups. More Discord options. No more telnet popup windows. Several bug fixes, including SteamCMD improvements.
 - Added: Player Chat to Discord. See what your friends are saying even when you can't play!
 - Added: Config GUI menu.
