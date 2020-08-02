@@ -1,11 +1,11 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.5.1.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.5.2.exe
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.5.1.0
+#AutoIt3Wrapper_Res_Fileversion=2.5.2.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.5.1
+#AutoIt3Wrapper_Res_ProductVersion=2.5.2
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -45,14 +45,14 @@ Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
 
 ; *** End added by AutoIt3Wrapper ***
 
-$aUtilVerStable = "v2.5.1" ; (2020-08-01)
-$aUtilVerBeta = "v2.5.1" ; (2020-08-01)
+$aUtilVerStable = "v2.5.2" ; (2020-08-02)
+$aUtilVerBeta = "v2.5.2" ; (2020-08-02)
 $aUtilVersion = $aUtilVerStable
 Global $aUtilVerNumber = 4
 ; 1 = v2.3.3
 ; 2 = v2.3.4
 ; 3 = v2.5.0
-; 4 = v2.5.1
+; 4 = v2.5.1/2
 
 ;**** Directives created by AutoIt3Wrapper_GUI ****
 ;Originally written by Dateranoth for use and modified for 7DTD by Phoenix125.com
@@ -393,10 +393,11 @@ If $sFileExists = 0 Then
 	SplashOff()
 	Local $xFileName = _PathSplit($sConfigPath, "", "", "", "")
 	Local $tFileName = $xFileName[3] & $xFileName[4]
-	$aContinue = MsgBox($MB_YESNO, $aConfigFile & " Not Found", "Could not find 7DTD Config: [" & $tFileName & "]" & @CRLF & @CRLF & $sConfigPath & @CRLF & @CRLF & "This is normal for New Install" & @CRLF & "Do you wish to continue with installation?", 60)
-	If $aContinue = 7 Then
-		LogWrite("!!! ERROR !!! Could not find " & $sConfigPath & ". Program terminated by user.")
-		_ExitUtil()
+	$tMsg = MsgBox($MB_YESNO, $aConfigFile & " Not Found", "Could not find 7DTD Config: [" & $tFileName & "]" & @CRLF & @CRLF & $sConfigPath & @CRLF & @CRLF & _
+			"This is normal for New Install" & @CRLF & "Do you wish to continue with installation?" & @CRLF & "(YES) Continue with installation" & @CRLF & "(NO) Open Config Window", 60)
+	If $tMsg = 7 Then
+		LogWrite("!!! ERROR !!! Could not find " & $sConfigPath & ". Config Window opened.")
+		GUI_Config()
 	Else
 	EndIf
 EndIf
@@ -3203,7 +3204,7 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniError = $iIniError & "ServerDirLocal, "
 	EndIf
 	If $iniCheck = $aSteamCMDDir Then
-		$aSteamCMDDir = @ScriptDir & "\7 Days to Die Dedicated Server\SteamCMD"
+		$aSteamCMDDir = @ScriptDir & "\SteamCMD"
 		$iIniFail += 1
 		$iIniError = $iIniError & "SteamCMDDir, "
 	EndIf
@@ -3398,7 +3399,7 @@ Func ReadUini($aIniFile, $sLogFile)
 		LogWrite(" [Watchdog] Watchdog wait for server to start was out of range. Interval set to: " & $aWatchdogWaitServerStart & " minutes.")
 	EndIf
 	If $iniCheck = $aWatchdogAttemptsBeforeRestart Then
-		$aWatchdogWaitServerStart = "3"
+		$aWatchdogAttemptsBeforeRestart = "3"
 		$iIniFail += 1
 		$iIniError = $iIniError & "WatchdogAttemptsBeforeRestart, "
 	ElseIf $aWatchdogAttemptsBeforeRestart < 1 Then
@@ -7299,6 +7300,7 @@ EndFunc   ;==>W1_T1_B_ConfigClick
 Func W1_T1_B_DIRClick()
 	Local $tCtrlID = $W1_T1_I_DIR
 	Local $tFile = $aServerDirLocal
+	If FileExists($tFile) = 0 Then $tFile = @ScriptDir
 	Local $tInput = FileSelectFolder("Please select server foler", $tFile)
 	If @error Then
 		Local $tRead = GUICtrlRead($tCtrlID)
@@ -7522,10 +7524,7 @@ Func W1_T1_I_DIRChange()
 	IniWrite($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", $aServerShort & " DIR ###", $aServerDirLocal)
 EndFunc   ;==>W1_T1_I_DIRChange
 Func W1_T1_I_IPChange()
-	Local $tCtrlID = $W1_T1_I_IP
-	$tMsg = InputBox($aUtilName, "Local IP:", "Enter local IP", $tCtrlID, 400, 125, Default, Default, 360)
-	GUICtrlSetData($tCtrlID, $tMsg)
-	$aServerIP = $tFile
+	$aServerIP = GUICtrlRead($W1_T1_I_IP)
 	IniWrite($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "Server Local IP (ex. 192.168.1.10) ###", $aServerIP)
 EndFunc   ;==>W1_T1_I_IPChange
 Func W1_T1_B_OpenServerConfigClick()
