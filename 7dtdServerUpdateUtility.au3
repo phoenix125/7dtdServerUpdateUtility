@@ -1,11 +1,11 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.5.2.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.5.3.exe
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.5.2.0
+#AutoIt3Wrapper_Res_Fileversion=2.5.3.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.5.2
+#AutoIt3Wrapper_Res_ProductVersion=2.5.3
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -45,14 +45,14 @@ Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
 
 ; *** End added by AutoIt3Wrapper ***
 
-$aUtilVerStable = "v2.5.2" ; (2020-08-02)
-$aUtilVerBeta = "v2.5.2" ; (2020-08-02)
+$aUtilVerStable = "v2.5.3" ; (2020-08-04)
+$aUtilVerBeta = "v2.5.3" ; (2020-08-04)
 $aUtilVersion = $aUtilVerStable
 Global $aUtilVerNumber = 4
 ; 1 = v2.3.3
 ; 2 = v2.3.4
 ; 3 = v2.5.0
-; 4 = v2.5.1/2
+; 4 = v2.5.1/2/3
 
 ;**** Directives created by AutoIt3Wrapper_GUI ****
 ;Originally written by Dateranoth for use and modified for 7DTD by Phoenix125.com
@@ -196,6 +196,7 @@ Global Const $WinHttpRequestOption_SslErrorIgnoreFlags_IgnoreAll = 0x3300 ;IGNOR
 Global $oErrorFunc = ObjEvent("AutoIt.Error", "_ErrFunc")
 Global $aObjErrFunc = "System"
 Func _ErrFunc($oError = 0)
+	Local $tHex = "0x" & Hex($oError.number)
 	LogWrite(" [" & $aObjErrFunc & "] Error in ObjEvent [0x" & Hex($oError.number) & "] " & _ErrorCode($tHex))
 EndFunc   ;==>_ErrFunc
 _ShowLoginLogo()
@@ -347,17 +348,17 @@ EndIf
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
 
-Local $tSplash = SplashTextOn($aUtilName, "7dtdServerUpdateUtility started.", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+Global $aSplash = _Splash("7dtdServerUpdateUtility started.")
 LogWrite(" ============================ " & $aUtilityVer & " Started ============================")
-
-Global $aServerPID = PIDReadServer($tSplash)
+FileDelete($aUtilUpdateFile)
+Global $aServerPID = PIDReadServer($aSplash)
 Global $gWatchdogServerStartTimeCheck = IniRead($aUtilCFGFile, "CFG", "Last Server Start", "no")
 If $gWatchdogServerStartTimeCheck = "no" Then
 	$gWatchdogServerStartTimeCheck = _NowCalc()
 	IniWrite($aUtilCFGFile, "CFG", "Last Server Start", $gWatchdogServerStartTimeCheck)
 EndIf
 
-ControlSetText($tSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Importing settings from " & $aIniFile & ".")
+ControlSetText($aSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Importing settings from " & $aIniFile & ".")
 ReadUini($aIniFile, $aLogFile)
 If FileExists($aBackupOutputFolder) = 0 Then DirCreate($aBackupOutputFolder)
 
@@ -376,7 +377,7 @@ Else
 EndIf
 $aUtilityVer = $aUtilName & " " & $aUtilVersion
 
-ControlSetText($tSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Updating config file.")
+ControlSetText($aSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Updating config file.")
 ;~ AppendConfigSettings()
 ;GetfromServerConfig()
 
@@ -384,7 +385,7 @@ If $aUpdateUtil = "yes" Then
 	UtilUpdate($aServerUpdateLinkVerUse, $aServerUpdateLinkDLUse, $aUtilVersion, $aUtilName)
 EndIf
 
-ControlSetText($tSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Creating temp config file.")
+ControlSetText($aSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Creating temp config file.")
 ;Func GetfromServerConfig()
 Global $sConfigPath = $aServerDirLocal & "\" & $aConfigFile
 Local $sFileExists = FileExists($sConfigPath)
@@ -529,7 +530,7 @@ EndFunc   ;==>_ImportServerConfig
 If $aUseSteamCMD = "yes" Then
 	Local $sFileExists = FileExists($aSteamCMDDir & "\steamcmd.exe")
 	If $sFileExists = 0 Then
-		SplashTextOn($aUtilName, $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Downloading and installing SteamCMD.", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+		ControlSetText($aSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Downloading and installing SteamCMD.")
 		InetGet("https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip", @ScriptDir & "\steamcmd.zip", 0)
 		DirCreate($aSteamCMDDir) ; to extract to
 		_ExtractZip(@ScriptDir & "\steamcmd.zip", "", "steamcmd.exe", $aSteamCMDDir)
@@ -537,15 +538,15 @@ If $aUseSteamCMD = "yes" Then
 		LogWrite(" [Steam Update] Running SteamCMD. [steamcmd.exe +quit]")
 		RunWait("" & $aSteamCMDDir & "\steamcmd.exe +quit", @SW_MINIMIZE)
 		If Not FileExists($aSteamCMDDir & "\steamcmd.exe") Then
-			MsgBox(0x0, "SteamCMD Not Found", "Could not find steamcmd.exe at " & $aSteamCMDDir)
-			_ExitUtil()
+			MsgBox(0x0, "SteamCMD Not Found", "Could not find steamcmd.exe at " & $aSteamCMDDir, 60)
+;~ 			_ExitUtil()
 		EndIf
 	EndIf
 Else
 	Local $cFileExists = FileExists($aServerDirLocal & "\" & $aServerEXE)
 	If $cFileExists = 0 Then
-		MsgBox(0x0, "7 Days To Die Server Not Found", "Could not find " & $aServerEXE & " at " & $aServerDirLocal)
-		_ExitUtil()
+		MsgBox(0x0, "7 Days To Die Server Not Found", "Could not find " & $aServerEXE & " at " & $aServerDirLocal, 60)
+;~ 		_ExitUtil()
 	EndIf
 EndIf
 _SteamCMDCommandlineRead()
@@ -702,28 +703,27 @@ Func _SteamCMDBatchFilesCreate()
 EndFunc   ;==>_SteamCMDBatchFilesCreate
 #Region ;**** Check for Update At Startup ****
 If ($aCheckForUpdate = "yes") Then
-	ControlSetText($tSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Checking for server updates.")
+	ControlSetText($aSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Checking for server updates.")
 	LogWrite(" [Update] Running initial update check . . ")
-	Local $bRestart = UpdateCheck(True, $tSplash, True)
+	Local $bRestart = UpdateCheck(True, $aSplash, True)
 	If $bRestart Then
 		If ProcessExists($aServerPID) Then
 			$aBeginDelayedShutdown = 1
-			ControlSetText($tSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Server outdated. Server update scheduled.")
+			ControlSetText($aSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Server outdated. Server update scheduled.")
 			Sleep(5000)
 		Else
-			ControlSetText($tSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Server outdated. Server update process inititiated.")
+			ControlSetText($aSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Server outdated. Server update process inititiated.")
 			SteamUpdate()
 		EndIf
 	EndIf
-	SplashOff()
+;~ 	SplashOff()
 EndIf
 #EndRegion ;**** Check for Update At Startup ****
-
 ExternalScriptExist()
 _StartRemoteRestart()
 Func _StartRemoteRestart()
 	If $aRemoteRestartUse = "yes" Then
-		ControlSetText($tSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Starting Remote Restart.")
+		ControlSetText($aSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Starting Remote Restart.")
 		TCPStartup() ; Start The TCP Services
 		Global $MainSocket = TCPListen($aServerIP, $aRemoteRestartPort, 100)
 		If $MainSocket = -1 Then
@@ -738,14 +738,9 @@ Func _StartRemoteRestart()
 		EndIf
 	EndIf
 EndFunc   ;==>_StartRemoteRestart
-;~ If $aTelnetStayConnectedYN = "yes" Then
-;~ 	ControlSetText($tSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Connecting to telnet.")
-;~ 	$tResult = _PlinkConnect($aTelnetIP, $aTelnetPort, $aTelnetPass)
-;~ EndIf
-ControlSetText($tSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Preparing icon tray.")
+ControlSetText($aSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Preparing icon tray.")
 Opt("TrayMenuMode", 3) ; The default tray menu items will not be shown and items are not checked when selected. These are options 1 and 2 for TrayMenuMode.
-Opt("TrayOnEventMode", 1) ; Enable TrayOnEventMode.
-;~ Global $iTrayQueryServerName = TrayCreateItem("(" & $aServerPID & ") " & $aServerQueryName)
+Opt("TrayOnEventMode", 1)
 Global $iTrayQueryServerName = TrayCreateItem("PID(" & $aServerPID & ") " & $aServerQueryName)
 TrayItemSetOnEvent(-1, "TrayShowPlayerCount")
 Global $iTrayQueryPlayers = TrayCreateItem("Players Online: [Enable Query or Online Player Check]")
@@ -838,19 +833,15 @@ If $gServerUpdatedTimeCheck0 = "no" Then
 	$gServerUpdatedTimeCheck0 = _NowCalc()
 	IniWrite($aUtilCFGFile, "CFG", "Last Server Update", $gServerUpdatedTimeCheck0)
 EndIf
-
 ; -----------------------------------------------------------------------------------------------------------------------
 $aServerCheck = TimerInit()
 $aTelnetCheckTimer = TimerInit()
 If ProcessExists($aServerPID) Then
 	$aTimeCheck8 = _DateAdd('h', -1, $aTimeCheck8)
 	$aServerCheck = _DateAdd('h', -1, $aServerCheck)
-;~ 	SplashOff()
 Else
 	$aServerCheck = _DateAdd('h', -1, $aServerCheck)
-	ControlSetText($tSplash, "", "Static1", "Preparing to start server...")
-;~ 	MsgBox(4096, $aUtilName, "Startup process complete." & @CRLF & @CRLF & "The Phoenix tray icon turns grey (busy):" & @CRLF & "- When scanning for online players" & @CRLF & _
-;~ 			"- During server process checks every 10 seconds" & @CRLF & @CRLF & "Tray icon menu ready . . .", 10)
+	ControlSetText($aSplash, "", "Static1", "Preparing to start server...")
 EndIf
 
 While True ;**** Loop Until Closed ****
@@ -893,7 +884,7 @@ While True ;**** Loop Until Closed ****
 			$tReturn = _CheckForExistingServer()
 			If $tReturn = 0 Then
 				$aBeginDelayedShutdown = 0
-				$tSplash = SplashTextOn($aUtilName, "Starting server.", 550, 110, -1, -1, $DLG_MOVEABLE, "")
+				$aSplash = _Splash("Starting server.")
 				If $aExecuteExternalScript = "yes" Then
 					LogWrite(" Executing External Script " & $aExternalScriptDir & "\" & $aExternalScriptName)
 					If $aExternalScriptAnnounceWait = "no" Then
@@ -918,7 +909,7 @@ While True ;**** Loop Until Closed ****
 				LogWrite(" [Server] **** Server Started **** PID(" & $aServerPID & ")", " [Server] **** Server Started **** PID(" & $aServerPID & ") [" & $tRun & "]")
 				$gWatchdogServerStartTimeCheck = _NowCalc()
 				IniWrite($aUtilCFGFile, "CFG", "Last Server Start", $gWatchdogServerStartTimeCheck)
-				ControlSetText($tSplash, "", "Static1", "Server Started." & @CRLF & @CRLF & "PID[" & $aServerPID & "]")
+				ControlSetText($aSplash, "", "Static1", "Server Started." & @CRLF & @CRLF & "PID[" & $aServerPID & "]")
 				$gTelnetTimeCheck0 = _NowCalc()
 				$tQueryLogReadDoneTF = False
 				$aFPCount = $aFPCount + 1
@@ -926,7 +917,7 @@ While True ;**** Loop Until Closed ****
 
 				; **** Retrieve Server Version ****
 				Sleep(3000)
-				ControlSetText($tSplash, "", "Static1", "Server Started." & @CRLF & @CRLF & "Retrieving server version from log.")
+				ControlSetText($aSplash, "", "Static1", "Server Started." & @CRLF & @CRLF & "Retrieving server version from log.")
 				Local $sLogPath = $LogTimeStamp
 				Local $sLogPathOpen = FileOpen($sLogPath, 0)
 				Local $sLogRead = StringLeft(FileRead($sLogPathOpen), 2500)
@@ -939,7 +930,7 @@ While True ;**** Loop Until Closed ****
 					Local $sLogRead = StringLeft(FileRead($sLogPathOpen), 2500)
 					$xGameVer = _StringBetween($sLogRead, "INF Version: ", " Compatibility Version")
 					If @error Then
-						ControlSetText($tSplash, "", "Static1", "Server Started." & @CRLF & @CRLF & "Unable to retrieve server version from log.")
+						ControlSetText($aSplash, "", "Static1", "Server Started." & @CRLF & @CRLF & "Unable to retrieve server version from log.")
 						Sleep(5000)
 						$aGameVer = "[Unable to retrieve]"
 					Else
@@ -948,7 +939,7 @@ While True ;**** Loop Until Closed ****
 					$aGameVer = _ArrayToString(_StringBetween($sLogRead, "INF Version: ", " Compatibility Version"))
 					FileClose($sLogPath)
 				EndIf
-				ControlSetText($tSplash, "", "Static1", "Server Started." & @CRLF & @CRLF & "Server Version: " & $aGameVer)
+				ControlSetText($aSplash, "", "Static1", "Server Started." & @CRLF & @CRLF & "Server Version: " & $aGameVer)
 				LogWrite(" [Server] Server version: " & $aGameVer & ".", " [Server] Server version: " & $aGameVer & ". Version derived from """ & $LogTimeStamp & """.")
 				IniWrite($aUtilCFGFile, "CFG", "Last Server Version", $aGameVer)
 				Sleep(3000)
@@ -957,8 +948,8 @@ While True ;**** Loop Until Closed ****
 				; **** Append Server Version to Server Name And/Or Change GameName to Server Version ****
 				Local $tRebootTF = False
 				If $aAppendVerBegin = "yes" Or $aAppendVerEnd = "yes" Then
-					ControlSetText($tSplash, "", "Static1", "Server Started." & @CRLF & @CRLF & "Waiting for Server Name to be written in log")
-					$aServerNamFromLog = _GetServerNameFromLog($tSplash)
+					ControlSetText($aSplash, "", "Static1", "Server Started." & @CRLF & @CRLF & "Waiting for Server Name to be written in log")
+					$aServerNamFromLog = _GetServerNameFromLog($aSplash)
 					Local $tConfigPathOpen = FileOpen($aConfigFileTempFull, 0)
 					Local $tConfigRead2 = FileRead($tConfigPathOpen)
 					FileClose($tConfigPathOpen)
@@ -997,7 +988,7 @@ While True ;**** Loop Until Closed ****
 						LogWrite("", " [Server] Running server name contains correct server name. No restart necessary. [" & $aServerNameVer & "]")
 					Else
 						If $aServerNamFromLog = "[Unable to retrieve]" Then
-							ControlSetText($tSplash, "", "Static1", "Server Started." & @CRLF & @CRLF & "Unable to retrieve server name from log.")
+							ControlSetText($aSplash, "", "Static1", "Server Started." & @CRLF & @CRLF & "Unable to retrieve server name from log.")
 							Sleep(5000)
 						Else
 							$tRebootTF = True
@@ -1028,7 +1019,7 @@ While True ;**** Loop Until Closed ****
 				EndIf
 				If $aQueryYN = "no" Then $aServerQueryName = $aServerNamFromLog
 				If $tRebootTF Then
-					ControlSetText($tSplash, "", "Static1", "Restarting server to apply config change(s)." & @CRLF & "Server name: " & $aServerNameVer & @CRLF & "Game Name: " & $aGameName)
+					ControlSetText($aSplash, "", "Static1", "Restarting server to apply config change(s)." & @CRLF & "Server name: " & $aServerNameVer & @CRLF & "Game Name: " & $aGameName)
 					LogWrite(" [Server] ----- Restarting server to apply config change(s).")
 					$aRebootConfigUpdate = "yes"
 					$aRebootMe = "no"
@@ -1071,7 +1062,7 @@ While True ;**** Loop Until Closed ****
 			Local $tDiffStart = _DateDiff('n', $gWatchdogServerStartTimeCheck, _NowCalc())
 			If $tDiffStart < 1 Then
 			Else
-				$aServerNamFromLog = _GetServerNameFromLog($tSplash)
+				$aServerNamFromLog = _GetServerNameFromLog($aSplash)
 				$tQueryLogReadDoneTF = True
 			EndIf
 		EndIf
@@ -1250,17 +1241,17 @@ While True ;**** Loop Until Closed ****
 				$aBeginDelayedShutdown = 0
 				$aTimeCheck0 = _NowCalc()
 				If $aRebootReason = "daily" Then
-					SplashTextOn($aUtilName, "Daily server request. Restarting server . . .", 350, 50, -1, -1, $DLG_MOVEABLE, "")
+					$aSplash = _Splash("Daily server request. Restarting server . . .", 0, 350, 50)
 					RunExternalScriptDaily()
 				EndIf
 				If $aRebootReason = "update" Then
-					SplashTextOn($aUtilName, "New server update. Restarting server . . .", 350, 50, -1, -1, $DLG_MOVEABLE, "")
+					$aSplash = _Splash("New server update. Restarting server . . .", 0, 350, 50)
 					RunExternalScriptUpdate()
 					$gServerUpdatedTimeCheck0 = _NowCalc()
 					IniWrite($aUtilCFGFile, "CFG", "Last Server Update", $gServerUpdatedTimeCheck0)
 				EndIf
 				If $aRebootReason = "remoterestart" Then
-					SplashTextOn($aUtilName, "Remote Restart request. Restarting server . . .", 350, 50, -1, -1, $DLG_MOVEABLE, "")
+					$aSplash = _Splash("Remote Restart request. Restarting server . . .", 0, 350, 50)
 					RunExternalRemoteRestart()
 				EndIf
 				If $sInGameAnnounce = "yes" Then
@@ -1342,9 +1333,6 @@ Func Gamercide()
 				"Close utility?" & @CRLF & @CRLF & _
 				"Click (YES) to shutdown server and exit utility." & @CRLF & _
 				"Click (NO) or (CANCEL) to exit utility but leave server running.", 60)
-		;				"Click (NO) to exit utility but leave servers and redis still running." & @CRLF & _
-		;				"Click (CANCEL) to cancel and resume utility.", 15)
-		;		$Shutdown = MsgBox(4100, "Shut Down?", "Do you wish to shutdown Server " & $aServerName & "?", 60)
 		; ----------------------------------------------------------
 		If $Shutdown = 6 Then
 			LogWrite(" [Server] Server Shutdown - Initiated by User when closing " & $aUtilityVer & " Script")
@@ -1369,8 +1357,6 @@ Func Gamercide()
 			_ExitUtil()
 			; ----------------------------------------------------------
 		ElseIf $Shutdown = 2 Then
-			;			SplashTextOn($aUtilName, "Shutdown canceled. Resuming utility . . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
-			;			Sleep(2000)
 			LogWrite(" [Server] Server Shutdown - Initiated by User when closing " & $aUtilityVer & " Script")
 			If $aRemoteRestartUse = "yes" Then
 				TCPShutdown()
@@ -1422,40 +1408,40 @@ Func _PlayersOnlineCheck()
 			If $sUseDiscordBotServersUpYN = "yes" Then
 				Local $aAnnounceCount3 = 0
 				If $aRebootReason = "remoterestart" And $sUseDiscordBotRemoteRestart = "yes" Then
-					SplashTextOn($aUtilName, " Server online and ready for connection." & @CRLF & @CRLF & "Discord announcement sent . . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+					$aSplash = _Splash("Server online and ready for connection." & @CRLF & @CRLF & "Discord announcement sent . . .")
 					_SendDiscordStatus($sDiscordServersUpMessage)
 					If StringLen($aGameTime) > 5 Then _SendDiscordPlayer()
 					$aAnnounceCount3 = $aAnnounceCount3 + 1
 				EndIf
 				If $aRebootReason = "update" And $sUseDiscordBotUpdate = "yes" And ($aAnnounceCount3 = 0) Then
-					SplashTextOn($aUtilName, " Server online and ready for connection." & @CRLF & @CRLF & "Discord announcement sent . . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+					$aSplash = _Splash("Server online and ready for connection." & @CRLF & @CRLF & "Discord announcement sent . . .")
 					_SendDiscordStatus($sDiscordServersUpMessage)
 					If StringLen($aGameTime) > 5 Then _SendDiscordPlayer()
 					$aAnnounceCount3 = $aAnnounceCount3 + 1
 				EndIf
 				If $aRebootReason = "mod" And $sUseDiscordBotUpdate = "yes" And ($aAnnounceCount3 = 0) Then
-					SplashTextOn($aUtilName, " Server online and ready for connection." & @CRLF & @CRLF & "Discord announcement sent . . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+					$aSplash = _Splash("Server online and ready for connection." & @CRLF & @CRLF & "Discord announcement sent . . .")
 					_SendDiscordStatus($sDiscordServersUpMessage)
 					If StringLen($aGameTime) > 5 Then _SendDiscordPlayer()
 					$aAnnounceCount3 = $aAnnounceCount3 + 1
 				EndIf
 				If $aRebootReason = "daily" And $sUseDiscordBotDaily = "yes" And ($aAnnounceCount3 = 0) Then
-					SplashTextOn($aUtilName, " Server online and ready for connection." & @CRLF & @CRLF & "Discord announcement sent . . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+					$aSplash = _Splash("Server online and ready for connection." & @CRLF & @CRLF & "Discord announcement sent . . .")
 					_SendDiscordStatus($sDiscordServersUpMessage)
 					If StringLen($aGameTime) > 5 Then _SendDiscordPlayer()
 					$aAnnounceCount3 = $aAnnounceCount3 + 1
 				EndIf
 				If $aFirstStartDiscordAnnounce And ($aAnnounceCount3 = 0) Then
-					SplashTextOn($aUtilName, " Server online and ready for connection." & @CRLF & @CRLF & "Discord announcement sent . . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+					$aSplash = _Splash("Server online and ready for connection." & @CRLF & @CRLF & "Discord announcement sent . . .")
 					_SendDiscordStatus($sDiscordServersUpMessage)
 					If StringLen($aGameTime) > 5 Then _SendDiscordPlayer()
 					$aFirstStartDiscordAnnounce = False
 				EndIf
 			Else
-				SplashTextOn($aUtilName, " Server online and ready for connection." & @CRLF & @CRLF & "Discord announcement NOT sent. Enable first announcement and/or daily, mod, update, remote restart annoucements in config if desired.", 400, 200, -1, -1, $DLG_MOVEABLE, "")
+				$aSplash = _Splash("Server online and ready for connection." & @CRLF & @CRLF & "Discord announcement NOT sent. Enable first announcement and/or daily, mod, update, remote restart annoucements in config if desired.")
 			EndIf
 		Else
-			SplashTextOn($aUtilName, " Server online and ready for connection." & @CRLF & @CRLF & "Discord announcement SKIPPED because server was already running or feature disabled in config.", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+			$aSplash = _Splash("Server online and ready for connection." & @CRLF & @CRLF & "Discord announcement SKIPPED because server was already running or feature disabled in config.")
 			$aNoExistingPID = True
 		EndIf
 		$aServerReadyOnce = False
@@ -1705,7 +1691,7 @@ EndFunc   ;==>_GetServerNameFromLog
 #Region 	 ;**** Close Server ****
 Func CloseServer($ip, $port, $pass)
 	If $aRebootConfigUpdate = "no" Then
-		$tSplash = SplashTextOn($aUtilName, "Shutting down 7 Days to Die server . . .", 350, 110, -1, -1, $DLG_MOVEABLE, "")
+		$aSplash = _Splash("Shutting down 7 Days to Die server . . .", 0, 350, 110)
 	EndIf
 	$aServerReadyOnce = True
 	$aServerReadyTF = False
@@ -1714,7 +1700,7 @@ Func CloseServer($ip, $port, $pass)
 	$tQueryLogReadDoneTF = False
 	For $i = 1 To 5
 		If $aRebootConfigUpdate = "no" Then
-			ControlSetText($tSplash, "", "Static1", "Sending shutdown command to server . . ." & @CRLF & @CRLF & "Countdown: " & (6 - $i))
+			ControlSetText($aSplash, "", "Static1", "Sending shutdown command to server . . ." & @CRLF & @CRLF & "Countdown: " & (6 - $i))
 		EndIf
 		LogWrite(" [Server] Sending shutdown command to server. Countdown:" & (6 - $i))
 		$aReply = _PlinkSend("shutdown")
@@ -1725,11 +1711,10 @@ Func CloseServer($ip, $port, $pass)
 			ExitLoop
 		EndIf
 	Next
-
 	For $i = 1 To 10
 		If ProcessExists($aServerPID) Then
 			If $aRebootConfigUpdate = "no" Then
-				ControlSetText($tSplash, "", "Static1", "Waiting for server to finish shutting down." & @CRLF & @CRLF & "Countdown: " & (11 - $i))
+				ControlSetText($aSplash, "", "Static1", "Waiting for server to finish shutting down." & @CRLF & @CRLF & "Countdown: " & (11 - $i))
 			EndIf
 			;		LogWrite(" [" & $aServerName & " (PID: " & $aServerPID & ")] Server failed to shutdown. Killing process. Countdown:" & (11-$i))
 			Sleep(1000)
@@ -1738,12 +1723,11 @@ Func CloseServer($ip, $port, $pass)
 			ExitLoop
 		EndIf
 	Next
-
 	For $i = 1 To 10
 		If ProcessExists($aServerPID) Then
 			ProcessClose($aServerPID)
 			If $aRebootConfigUpdate = "no" Then
-				ControlSetText($tSplash, "", "Static1", "Server failed to shutdown. Killing process." & @CRLF & @CRLF & "Countdown: " & (11 - $i))
+				ControlSetText($aSplash, "", "Static1", "Server failed to shutdown. Killing process." & @CRLF & @CRLF & "Countdown: " & (11 - $i))
 			EndIf
 			LogWrite(" [" & $aServerName & " (PID: " & $aServerPID & ")] Server failed to shutdown. Killing process. Countdown:" & (11 - $i))
 			Sleep(1000)
@@ -1779,33 +1763,9 @@ EndFunc   ;==>SendInGame
 Func _Discord_ErrFunc($oError)
 	LogWrite(" [" & $aServerName & " (PID: " & $aServerPID & ")] Error: 0x" & Hex($oError.number) & " While Sending Discord Bot Message.")
 EndFunc   ;==>_Discord_ErrFunc
-
-;~ Func SendDiscordMsg($sHookURLs, $sBotMessage, $sBotName = "", $sBotTTS = False, $sBotAvatar = "", $tWH = 1)
-;~ 	$sBotMessage = StringReplace($sBotMessage, @CRLF, "\n")
-;~ 	$sBotMessage = StringReplace($sBotMessage, @LF, "\n")
-;~ 	$sBotMessage = StringReplace($sBotMessage, @CR, "\n")
-;~ 	Local $oErrorHandler = ObjEvent("AutoIt.Error", "_Discord_ErrFunc")
-;~ 	Local $sJsonMessage = '{"content" : "' & $sBotMessage & '", "username" : "' & $sBotName & '", "tts" : "' & $sBotTTS & '", "avatar_url" : "' & $sBotAvatar & '"}'
-;~ 	Local $oHTTPOST = ObjCreate("WinHttp.WinHttpRequest.5.1")
-;~ 	Local $aHookURLs = StringSplit($sHookURLs, ",")
-;~ 	For $i = 1 To $aHookURLs[0]
-;~ 		$oHTTPOST.Open("POST", StringStripWS($aHookURLs[$i], 2) & "?wait=true", False)
-;~ 		$oHTTPOST.SetRequestHeader("Content-Type", "application/json")
-;~ 		$oHTTPOST.Send($sJsonMessage)
-;~ 		Local $oStatusCode = $oHTTPOST.Status
-;~ 		Local $sResponseText = ""
-;~ 		$sResponseText = "Message Response: " & $oHTTPOST.ResponseText
-;~ 		LogWrite(" [Discord Bot] Message sent: " & $sBotMessage, " [Discord Bot] Message Status Code {" & $oStatusCode & "} " & $sResponseText)
-;~ 	Next
-;~ EndFunc   ;==>SendDiscordMsg
-;~ #EndRegion ;**** Function to Send Message to Discord ****
 Func ReplaceCRLF($tMsg0)
 	Return StringRegExpReplace($tMsg0, '(*BSR_ANYCRLF)\R', "|")     ; Idea by Ascend4nt
 EndFunc   ;==>ReplaceCRLF
-;~ Func ReplaceCRLF($tMsg0)
-;~ 	Return StringReplace($tMsg0, @CRLF, "|")
-;~ EndFunc   ;==>ReplaceCRLF
-
 Func SendDiscordMsg($sHookURL, $sBotMessage, $sBotName = "", $sBotTTS = False, $sBotAvatar = "", $tWH = 1)
 	If $sHookURL <> "https://discordapp.com/api/webhooks/012345678901234567/abcdefghijklmnopqrstuvwxyz01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcde" Then
 		$aObjErrFunc = "Discord"
@@ -1849,11 +1809,9 @@ Func SendDiscordMsg($sHookURL, $sBotMessage, $sBotName = "", $sBotTTS = False, $
 			$sBotMessage = StringReplace($sBotMessage, "```", "")
 			$sBotMessage = StringReplace($sBotMessage, "> ", "")
 			$sBotMessage = StringReplace($sBotMessage, "\n", " | ")
-			If FileExists($aDiscordSendWebhookEXE) = 0 Then _DownloadAndExtractFile("DiscordSendWebhook", "http://www.phoenix125.com/share/atlas/DiscordSendWebhook.zip", "https://github.com/phoenix125/DiscordSendWebhook/releases/download/DiscordSendWebhook/DiscordSendWebhook.zip", $tSplash)
+			If FileExists($aDiscordSendWebhookEXE) = 0 Then _DownloadAndExtractFile("DiscordSendWebhook", "http://www.phoenix125.com/share/atlas/DiscordSendWebhook.zip", "https://github.com/phoenix125/DiscordSendWebhook/releases/download/DiscordSendWebhook/DiscordSendWebhook.zip", $aSplash)
 			Local $tFile = $aFolderTemp & "DiscordResponse.txt"
 			FileDelete($tFile)
-;~ 		Local $tCmd = '""' & $aDiscordSendWebhookEXE & '" "' & $sHookURL & '" "' & $sBotMessage & '" "' & $sBotName & '"'
-;~ 		$tCmd = @ComSpec & ' /c ' & $tCmd & ' > "' & $tFile & '"'
 			Local $tCmd = @ComSpec & ' /c ' & '""' & $aDiscordSendWebhookEXE & '" "' & $sHookURL & '" "' & $sBotMessage & '" "' & $sBotName & '"' & ' > "' & $tFile & '"'
 			Local $mOut = Run($tCmd, $aFolderTemp, @SW_HIDE)
 			Local $tErr = ProcessWaitClose($mOut, 4)
@@ -2192,7 +2150,7 @@ Func GetLatestVerSteamDB($bSteamAppID, $bServerVer)
 	If $hBuildID < 100000 Then
 		SplashOff()
 		MsgBox($mb_ok, "ERROR", " [Update] Error retrieving buildid via SteamDB website. Please visit:" & @CRLF & @CRLF & $aURL & @CRLF & @CRLF & _
-				"in *Internet Explorer* (NOT Chrome.. must be Internet Explorer) to CAPTCHA authorize your PC or use SteamCMD for updates." & @CRLF & "! Press OK to close " & $aUtilName & " !")
+				"in *Internet Explorer* (NOT Chrome.. must be Internet Explorer) to CAPTCHA authorize your PC or use SteamCMD for updates." & @CRLF & "! Press OK to close " & $aUtilName & " !", 60)
 		LogWrite("Error retrieving buildid via SteamDB website. Please visit:" & $aURL & _
 				"in **Internet Explorer** (NOT Chrome.. must be Internet Explorer) to CAPTCHA authorize your PC or use SteamCMD for updates.")
 	EndIf
@@ -2234,7 +2192,7 @@ Func GetLatestVersion($sCmdDir)
 				LogWrite(" [Update] ERROR!!! " & $aServerVer & " branch not found by SteamCMD")
 				SplashOff()
 				For $x1 = 0 To 5
-					Local $tSplash = SplashTextOn($aUtilName, "ERROR! " & $aServerVer & " branch not found by SteamCMD.", 300, 75, -1, -1, $DLG_MOVEABLE, "")
+					$aSplash = _Splash("ERROR! " & $aServerVer & " branch not found by SteamCMD.", 0, 300, 75)
 					Sleep(850)
 					ControlSetText($tSplash, "", "Static1", "")
 					Sleep(150)
@@ -2308,7 +2266,7 @@ Func UpdateCheck($tAsk, $tSplash = 0, $tShowIfNoUpdate = False)
 			If $tSplash > 0 Then
 				ControlSetText($tSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Acquiring latest buildid from SteamDB.")
 			Else
-				SplashTextOn($aUtilName, $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Acquiring latest buildid from SteamDB.", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+				$aSplash = _Splash($aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Acquiring latest buildid from SteamDB.")
 			EndIf
 		EndIf
 		Local $aLatestVersion = GetLatestVerSteamDB($aSteamAppID, $aServerVer)
@@ -2317,7 +2275,7 @@ Func UpdateCheck($tAsk, $tSplash = 0, $tShowIfNoUpdate = False)
 			If $tSplash > 0 Then
 				ControlSetText($tSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Acquiring latest BuildID from SteamCMD.")
 			Else
-				SplashTextOn($aUtilName, $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Acquiring latest BuildID from SteamCMD.", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+				$aSplash = _Splash($aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Acquiring latest BuildID from SteamCMD.")
 			EndIf
 		EndIf
 		Local $aLatestVersion = GetLatestVersion($aSteamCMDDir)
@@ -2326,7 +2284,7 @@ Func UpdateCheck($tAsk, $tSplash = 0, $tShowIfNoUpdate = False)
 		If $tSplash > 0 Then
 			ControlSetText($tSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Retrieving installed BuildID.")
 		Else
-			SplashTextOn($aUtilName, $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Retrieving installed BuildID.", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+			$aSplash = _Splash($aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Retrieving installed BuildID.")
 		EndIf
 	EndIf
 	Local $aInstalledVersion = GetInstalledVersion($aServerDirLocal)
@@ -2355,7 +2313,7 @@ Func UpdateCheck($tAsk, $tSplash = 0, $tShowIfNoUpdate = False)
 					$aUpdateVerify = "yes"
 					RunExternalScriptUpdate()
 					$TimeStamp = StringRegExpReplace(_NowCalc(), "[\\\/\: ]", "_")
-					SplashTextOn($aUtilName, "Beginning update. Shutting down and updating server now.", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+					$aSplash = _Splash("Beginning update. Shutting down and updating server now.")
 					CloseServer($aTelnetIP, $aTelnetPort, $aTelnetPass)
 					SplashOff()
 ;~ 					Local $sManifestExists = FileExists($aSteamAppFile)
@@ -2366,70 +2324,36 @@ Func UpdateCheck($tAsk, $tSplash = 0, $tShowIfNoUpdate = False)
 					RunExternalScriptUpdate()
 					$TimeStamp = StringRegExpReplace(_NowCalc(), "[\\\/\: ]", "_")
 				Else
-					$tSplash = SplashTextOn($aUtilName, "Utility update check canceled by user." & @CRLF & "Resuming utility . . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+					$aSplash = _Splash("Utility update check canceled by user." & @CRLF & "Resuming utility . . .")
 				EndIf
 			Else
 				If $aFirstBoot Then
 					SplashOff()
-					$tSplash = SplashTextOn($aUtilName, "Server is Out of Date!" & @CRLF & "Installed BuildID: " & $aInstalledVersion[1] & @CRLF & "Latest BuildID: " & $aLatestVersion[1] & @CRLF & "Updating server . . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+					$aSplash = _Splash("Server is Out of Date!" & @CRLF & "Installed BuildID: " & $aInstalledVersion[1] & @CRLF & "Latest BuildID: " & $aLatestVersion[1] & @CRLF & "Updating server . . .")
 				EndIf
-
 				$bUpdateRequired = True
 				$aSteamUpdateNow = True
 				$aUpdateVerify = "yes"
 				RunExternalScriptUpdate()
 				$TimeStamp = StringRegExpReplace(_NowCalc(), "[\\\/\: ]", "_")
-				;Local $sManifestExists = FileExists($aSteamAppFile)
-				;			If $sManifestExists = 1 Then
-				;				FileMove($aSteamAppFile, $aServerDirLocal & "\steamapps\appmanifest_" & $aSteamAppID & "_" & $TimeStamp & ".acf", 1)
-				;				If $xDebug Then
-				;					LogWrite(" Notice: """ & $aSteamAppFile & """ renamed to ""appmanifest_" & $aSteamAppID & "_" & $TimeStamp & ".acf""")
-				;				EndIf
-				;			EndIf
-				;			EndIf
-				;			If $aFirstBoot Then
-				;				SplashTextOn($aUtilName, "Server is Out of Date!" & @CRLF & "Installed Version: " & $aInstalledVersion[1] & @CRLF & "Latest Version: " & $aLatestVersion[1] & @CRLF & "Updating server . . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
-				;			EndIf
-
 				$aRebootMe = "yes"
-				;RunExternalScriptUpdate()
-				;			$TimeStamp = StringRegExpReplace(_NowCalc(), "[\\\/\: ]", "_")
-				;			Local $sManifestExists = FileExists($aSteamCMDDir & "\steamapps\appmanifest_294420.acf")
-				;			If $sManifestExists = 1 Then
-				;				FileMove($aSteamCMDDir & "\steamapps\appmanifest_294420.acf", $aSteamCMDDir & "\steamapps\appmanifest_294420_" & $TimeStamp & ".acf", 1)
-				;				If $xDebug Then
-				;					LogWrite(" Notice: """ & $aServerDirLocal & "\steamapps\appmanifest_294420.acf"" renamed to ""appmanifest_294420_" & $TimeStamp & ".acf""")
-				;				EndIf
-				;			EndIf
-				;			Local $sManifestExists = FileExists($aServerDirLocal & "\steamapps\appmanifest_294420.acf")
-				;			If $sManifestExists = 1 Then
-				;				FileMove($aServerDirLocal & "\steamapps\appmanifest_294420.acf", $aServerDirLocal & "\steamapps\appmanifest_294420_" & $TimeStamp & ".acf", 1)
-				;				If $xDebug Then
-				;					LogWrite(" Notice: """ & $aServerDirLocal & "\steamapps\appmanifest_294420.acf"" renamed to ""appmanifest_294420_" & $TimeStamp & ".acf""")
-				;				EndIf
-				;			EndIf
 				$bUpdateRequired = True
 			EndIf
 		EndIf
 	ElseIf Not $aLatestVersion[0] And Not $aInstalledVersion[0] Then
 		LogWrite(" [Update] Something went wrong retrieving Latest & Installed Versions. Running update with -validate")
-		$tSplash = SplashTextOn($aUtilName, "Something went wrong retrieving Latest & Installed Versions." & @CRLF & "- Running update with -validate" & @CRLF & @CRLF & "(Restart will be delayed if 'announce restart' is enabled)", 500, 125, -1, -1, $DLG_MOVEABLE, "")
+		$aSplash = _Splash("Something went wrong retrieving Latest & Installed Versions." & @CRLF & "- Running update with -validate" & @CRLF & @CRLF & "(Restart will be delayed if 'announce restart' is enabled)", 0, 500, 125)
 		$bUpdateRequired = True
 		$aSteamUpdateNow = True
 	ElseIf Not $aInstalledVersion[0] Then
 		LogWrite(" [Update] Something went wrong retrieving Installed Version. Running update with -validate. (This is normal for new install)")
-		$tSplash = SplashTextOn($aUtilName, "Something went wrong retrieving Installed Version." & @CRLF & "(This is normal for new install)" & @CRLF & "- Running update with -validate" & @CRLF & @CRLF & "(Restart will be delayed if 'announce restart' is enabled)", 450, 175, -1, -1, $DLG_MOVEABLE, "")
+		$aSplash = _Splash("Something went wrong retrieving Installed Version." & @CRLF & "(This is normal for new install)" & @CRLF & "- Running update with -validate" & @CRLF & @CRLF & _
+				"(Restart will be delayed if 'announce restart' is enabled)", 0, 450, 175)
 		$bUpdateRequired = True
 		$aSteamUpdateNow = True
 	ElseIf Not $aLatestVersion[0] Then
 		LogWrite(" [Update] Something went wrong retrieving Latest Version.  Skipping this update check.")
-		$tSplash = SplashTextOn($aUtilName, "Something went wrong retrieving Latest Version. Skipping this update check." & @CRLF & @CRLF & "(This window will close in 5 seconds)", 450, 175, -1, -1, $DLG_MOVEABLE, "")
-		Sleep(5000)
-		SplashOff()
-;~ 		MsgBox($MB_OK, $aUtilityVer, "Something went wrong retrieving Latest Version. Skipping this update check." & @CRLF & @CRLF & "(This window will close in 5 seconds)", 5)
-		;		$aUpdateVerify = "yes"
-		;		$aSteamFailedTwice = True
-		;		$bUpdateRequired = True
+		$aSplash = _Splash("Something went wrong retrieving Latest Version. Skipping this update check." & @CRLF & @CRLF & "(This window will close in 5 seconds)", 5000, 450, 175)
 	EndIf
 	$aFirstBoot = False
 	Return $bUpdateRequired
@@ -2451,7 +2375,6 @@ Func DailyRestartOffset($bHour0, $sMin, $sTime)
 		Next
 		Global $aRestartMin = 60 - $sTime + $bRestartMin
 		Global $aRestartHours = StringTrimLeft($bHour2, 1)
-
 	Else
 		Global $aRestartMin = $bRestartMin - $sTime
 		Global $aRestartHours = $bRestartHours
@@ -2487,7 +2410,7 @@ EndFunc   ;==>RemoveInvalidCharacters
 #EndRegion ;**** Remove invalid characters ****
 
 Func SteamUpdate()
-	SplashTextOn($aUtilName, "Updating server now...", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+	$aSplash = _Splash("Updating server now...")
 	$TimeStamp = StringRegExpReplace(_NowCalc(), "[\\\/\: ]", "_")
 	_SteamCMDCreate()
 	Local $sManifestExists = FileExists($aSteamCMDDir & "\steamapps\appmanifest_" & $aSteamAppID & ".acf")
@@ -2605,13 +2528,13 @@ EndFunc   ;==>_ExtractZip
 ;==========================================================================================
 #Region ;**** Check for Server Utility Update ****
 Func UtilUpdate($tLink, $tDL, $tUtil, $tUtilName)
-	SplashTextOn($aUtilName, $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Checking for " & $tUtilName & " updates.", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+	$aSplash = _Splash($aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Checking for " & $tUtilName & " updates.")
 	Local $tVer[2]
 	$hFileRead = _INetGetSource($tLink)
 	If @error Then
 		LogWrite(" [UTIL] " & $tUtilName & " update check failed to download latest version: " & $tLink)
 		If $aShowUpdate Then
-			SplashTextOn($aUtilName, $aUtilName & " update check failed." & @CRLF & "Please try again later.", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+			ControlSetText($aSplash, "", "Static1", $aUtilName & " update check failed." & @CRLF & "Please try again later.")
 			Sleep(2000)
 			$aShowUpdate = False
 		EndIf
@@ -2619,9 +2542,8 @@ Func UtilUpdate($tLink, $tDL, $tUtil, $tUtilName)
 		$tVer = StringSplit($hFileRead, "^", 2)
 		If $tVer[0] = $tUtil Then
 			LogWrite(" [UTIL] " & $tUtilName & " up to date.", " [UTIL] " & $tUtilName & " up to date. Version: " & $tVer[0] & " , Notes: " & $tVer[1])
-			FileDelete($aUtilUpdateFile)
 			If $aShowUpdate Then
-				SplashTextOn($aUtilName, $aUtilName & " up to date . . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+				ControlSetText($aSplash, "", "Static1", $aUtilName & " up to date . . .")
 				Sleep(2000)
 				$aShowUpdate = False
 				SplashOff()
@@ -2637,7 +2559,7 @@ Func UtilUpdate($tLink, $tDL, $tUtil, $tUtilName)
 					"Click (NO) to stop checking for updates." & @CRLF & _
 					"Click (CANCEL) to skip this update check.", 15)
 			If $tMB = 6 Then
-				SplashTextOn($aUtilityVer, " Downloading latest version of " & @CRLF & $tUtilName, 400, 110, -1, -1, $DLG_MOVEABLE, "")
+				$aSplash = _Splash("Downloading latest version of " & @CRLF & $tUtilName)
 				Local $tZIP = @ScriptDir & "\" & $tUtilName & "_" & $tVer[0] & ".zip"
 				If FileExists($tZIP) Then
 					FileDelete($tZIP)
@@ -2673,72 +2595,16 @@ Func UtilUpdate($tLink, $tDL, $tUtil, $tUtilName)
 				$aUpdateUtil = "no"
 				IniWrite($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Check for " & $aUtilName & " updates? (yes/no) ###", "no")
 				LogWrite(" [UTIL] " & "Utility update check disabled. To enable update check, change [Check for Updates ###=yes] in the .ini.")
-				SplashTextOn($aUtilName, "Utility update check disabled." & @CRLF & "To enable update check, change [Check for Updates ###=yes] in the .ini.", 500, 110, -1, -1, $DLG_MOVEABLE, "")
-				Sleep(5000)
+				$aSplash = _Splash("Utility update check disabled." & @CRLF & "To enable update check, change [Check for Updates ###=yes] in the .ini.", 5000, 500, 110)
 			ElseIf $tMB = 2 Then
 				LogWrite(" [UTIL] Utility update check canceled by user. Resuming utility . . .")
-				SplashTextOn($aUtilName, "Utility update check canceled by user." & @CRLF & "Resuming utility . . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
-				Sleep(2000)
+				$aSplash = _Splash("Utility update check canceled by user." & @CRLF & "Resuming utility . . .", 2000)
 			EndIf
 			SplashOff()
 		EndIf
 		;	Local $tVer[2]
 	EndIf
 EndFunc   ;==>UtilUpdate
-;Func UtilUpdate($tLink, $tDL, $tUtil, $tUtilName)
-;	SplashTextOn($aUtilName, $aUtilName & " started." & @CRLF & @CRLF & "Checking for " & $tUtilName & " updates.", 400, 100, -1, -1, $DLG_MOVEABLE, "")
-;	$sFilePath = @ScriptDir & "\" & $aUtilName & "_latest_ver.tmp"
-;	If FileExists($sFilePath) Then
-;		FileDelete($sFilePath)
-;	EndIf
-;	InetGet($tLink, $sFilePath, 1)
-;	Local $hFileOpen = FileOpen($sFilePath, 0)
-;	If $hFileOpen = -1 Then
-;		LogWrite(" [UTIL] " & $tUtilName & " update check failed to download latest version: " & $tLink)
-;	Else
-;		Local $hFileRead = FileRead($hFileOpen)
-;		$tVer = StringSplit($hFileRead, "^", 2)
-;		FileClose($hFileOpen)
-;		If $tVer[0] = $tUtil Then
-;			LogWrite(" [UTIL] " & $tUtilName & " up to date. Version: " & $tVer[0] & " , Notes: " & $tVer[1])
-;		Else
-;			LogWrite(" [UTIL] New " & $aUtilName & " update available. Installed version: " & $tUtil & ", Latest version: " & $tVer[0] & ", Notes: " & $tVer[1])
-;			SplashOff()
-;			$tVer[1] = ReplaceReturn($tVer[1])
-;			$tMB = MsgBox($MB_OKCANCEL, $aUtilityVer, "New " & $aUtilName & " update available. " & @CRLF & "Installed version: " & $tUtil & @CRLF & "Latest version: " & $tVer[0] & @CRLF & @CRLF & "Notes: " & @CRLF & $tVer[1] & @CRLF & @CRLF & "Click (OK) to download update, but NOT install, to " & @CRLF & @ScriptDir & @CRLF & "Click (CANCEL), or wait 30 seconds, to close this window.", 30)
-;			If $tMB = 1 Then
-;				SplashTextOn($aUtilityVer, " Downloading latest version of " & @CRLF & $tUtilName, 400, 100, -1, -1, $DLG_MOVEABLE, "")
-;				Local $tZIP = @ScriptDir & "\" & $tUtilName & "_" & $tVer[0] & ".zip"
-;				If FileExists($tZIP) Then
-;					FileDelete($tZIP)
-;				EndIf
-;				If FileExists($tUtilName & "_" & $tVer[0] & ".exe") Then
-;					FileDelete($tUtilName & "_" & $tVer[0] & ".exe")
-;				EndIf
-;				InetGet($tDL, $tZIP, 1)
-;				_ExtractZip($tZIP, "", $tUtilName & "_" & $tVer[0] & ".exe", @ScriptDir)
-;				If FileExists(@ScriptDir & "\readme.txt") Then
-;					FileDelete(@ScriptDir & "\readme.txt")
-;				EndIf
-;				_ExtractZip($tZIP, "", "readme.txt", @ScriptDir)
-;				;				FileDelete(@ScriptDir & "\" & $tUtilName & "_" & $tVer[1] & ".zip")
-;				If Not FileExists(@ScriptDir & "\" & $tUtilName & "_" & $tVer[0] & ".exe") Then
-;					LogWrite(" [UTIL] ERROR! " & $tUtilName & ".exe download failed.")
-;					SplashOff()
-;					$tMB = MsgBox($MB_OKCANCEL, $aUtilityVer, "Download failed . . . " & @CRLF & "Go to """ & $tLink & """ to download latest version." & @CRLF & @CRLF & "Click (OK), (CANCEL), or wait 15 seconds, to resume current version.", 15)
-;				Else
-;					SplashOff()
-;					$tMB = MsgBox($MB_OKCANCEL, $aUtilityVer, "Download complete. . . " & @CRLF & @CRLF & "Click (OK) to exit program OR" & @CRLF & "Click (CANCEL), or wait 15 seconds, to resume current version.", 15)
-;					If $tMB = 1 Then
-;						Global $aRemoteRestartUse = "no"
-;						Exit
-;					EndIf
-;				EndIf
-;			EndIf
-;		EndIf
-;	EndIf
-;EndFunc   ;==>UtilUpdate
-
 Func ReplaceReturn($tMsg0)
 	If StringInStr($tMsg0, "|") = "0" Then
 		Return $tMsg0
@@ -2949,7 +2815,6 @@ EndFunc   ;==>MultipleAttempts
 #EndRegion ;**** Function to Check for Multiple Password Failures****
 
 #Region ;**** Uses other Functions to check connection, verify request is valid, verify restart code is correct, gather IP, and send proper message back to User depending on request received****
-;Func _RemoteRestart($vMSocket, $sCodes, $sKey = "restart", $sHideCodes = "no", $sServIP = "0.0.0.0", $sName = "Server", $bDebug = False)
 Func _RemoteRestart($vMSocket, $sCodes, $sKey, $sHideCodes = "no", $sServIP = "127.0.0.1", $sName = "7DTD Server")
 	Local $vConnectedSocket = TCPAccept($vMSocket)
 	If $vConnectedSocket >= 0 Then
@@ -3039,7 +2904,6 @@ Func ReadUini($aIniFile, $sLogFile)
 	Global $aSteamCMDDir = IniRead($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "SteamCMD DIR ###", $iniCheck)
 	Global $aSteamCMDUserName = IniRead($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "SteamCMD Username (optional) ###", $iniCheck)
 	Global $aSteamCMDPassword = IniRead($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "SteamCMD Password (optional) ###", $iniCheck)
-;~ 	Global $aSteamExtraCMD = IniRead($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "SteamCMD extra commandline parameters (See note below) ###", $iniCheck)
 	Global $aSteamUpdateCommandline = IniRead($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "SteamCMD commandline (caution: overwrites all settings above) ###", $iniCheck)
 	Global $aServerOnlinePlayerYN = IniRead($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "Check for, and log, online players? (yes/no) ###", $iniCheck)
 	Global $aServerOnlinePlayerSec = IniRead($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "Check for online players every _ seconds (30-600) ###", $iniCheck)
@@ -3087,8 +2951,6 @@ Func ReadUini($aIniFile, $sLogFile)
 	Global $sAnnounceNotifyTime1 = IniRead($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before DAILY reboot (comma separated 0-60) ###", $iniCheck)
 	Global $sAnnounceNotifyTime2 = IniRead($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before UPDATES reboot (comma separated 0-60) ###", $iniCheck)
 	Global $sAnnounceNotifyTime3 = IniRead($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before REMOTE RESTART reboot (comma separated 0-60) ###", $iniCheck)
-	;	Global $sAnnounceDailyMessage = IniRead($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement Daily (\m - minutes) ###", $iniCheck)
-	;	Global $sAnnounceDailyMessage = IniRead($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement Daily (\m - minutes) ###", $iniCheck)
 	Global $sInGameAnnounce = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce messages in-game? (Requires telnet) (yes/no) ###", $iniCheck)
 	Global $sInGameDailyMessage = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement DAILY (\m - minutes) ###", $iniCheck)
 	Global $sInGameUpdateMessage = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement UPDATES (\m - minutes) ###", $iniCheck)
@@ -3172,7 +3034,6 @@ Func ReadUini($aIniFile, $sLogFile)
 	Global $aTelnetMonitorAllYN = IniRead($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Telnet: Monitor all traffic (Required for player chat and death announcements) (yes/no) ###", $iniCheck)
 	Global $aTelnetTrafficCheckSec = IniRead($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Telnet: Check traffic every _ seconds) (1-10) ###", $iniCheck)
 	Global $aUpdateSource = IniRead($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "For update checks, use (0)SteamCMD or (1)SteamDB.com ###", $iniCheck)
-	;	Global $aUsePuttytel = IniRead($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Use puttytel for telnet client? (yes/no) ###", $iniCheck)
 	Global $sObfuscatePass = IniRead($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Hide passwords in log files? (yes/no) ###", $iniCheck)
 	Global $aUpdateUtil = IniRead($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Check for " & $aUtilName & " updates? (yes/no) ###", $iniCheck)
 	Global $aUtilBetaYN = IniRead($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", $aUtilName & " version: (0)Stable, (1)Beta ###", $iniCheck)
@@ -3218,11 +3079,6 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniFail += 1
 		$iIniError = $iIniError & "SteamCMDPassword, "
 	EndIf
-;~ 	If $iniCheck = $aSteamExtraCMD Then
-;~ 		$aSteamExtraCMD = ""
-;~ 		$iIniFail += 1
-;~ 		$iIniError = $iIniError & "SteamExtraCMD, "
-;~ 	EndIf
 	If $iniCheck = $aServerVer Then
 		$aServerVer = "public"
 		$iIniFail += 1
@@ -3329,11 +3185,6 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniFail += 1
 		$iIniError = $iIniError & "RemoteRestartCode, "
 	EndIf
-	;	If $iniCheck = $aUsePuttytel Then
-	;		$aUsePuttytel = "yes"
-	;		$iIniFail += 1
-	;		$iIniError = $iIniError & "UsePuttytel, "
-	;	EndIf
 	If $iniCheck = $aQueryYN Then
 		$aQueryYN = "yes"
 		$iIniFail += 1
@@ -4010,14 +3861,6 @@ Func ReadUini($aIniFile, $sLogFile)
 	;		$iIniFail += 1
 	;	EndIf
 
-;~ 	If ($aAppendVerBegin = "yes") Or ($aAppendVerEnd = "yes") Then
-;~ 		$aRebootMe = "yes"
-;~ 		$aServerRebootReason = $aServerRebootReason & "Append version to server name." & @CRLF
-;~ 	EndIf
-;~ 	If $aWipeServer = "yes" Then
-;~ 		$aServerRebootReason = $aServerRebootReason & "Change save folder (server wipe)." & @CRLF
-;~ 		$aRebootMe = "yes"
-;~ 	EndIf
 	LogWrite(" [Config] Importing settings from 7dtdServerUtil.ini.")
 
 	$aServerDirLocal = RemoveInvalidCharacters($aServerDirLocal)
@@ -4114,7 +3957,7 @@ Func iniFileCheck($aIniFile, $iIniFail, $iIniError)
 		LogWrite(" INI MISMATCH: Parameters missing: " & $iIniFail)
 		SplashOff()
 		MsgBox(4096, "INI MISMATCH", "INI FILE WAS UPDATED." & @CRLF & "Found " & $iIniFail & " missing variable(s) in " & $aUtilName & ".ini:" & @CRLF & @CRLF & $iIniError & @CRLF & @CRLF & _
-				"Backup created and all existing settings transfered to new INI." & @CRLF & @CRLF & "Click OK to open config." & @CRLF & @CRLF & "File created: ___INI_FAIL_VARIABLES___.txt")
+				"Backup created and all existing settings transfered to new INI." & @CRLF & @CRLF & "Click OK to open config." & @CRLF & @CRLF & "File created: ___INI_FAIL_VARIABLES___.txt", 60)
 		ShellExecute($aIniFailFile)
 		_PlinkDisconnect()
 		Global $sConfigPath = $aServerDirLocal & "\" & $aConfigFile
@@ -4137,7 +3980,6 @@ Func UpdateIni($aIniFile)
 	FileWriteLine($aIniFile, "Forum    :  https://phoenix125.createaforum.com/index.php")
 	FileWriteLine($aIniFile, @CRLF)
 	IniWrite($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", $aServerShort & " DIR ###", $aServerDirLocal)
-	;	IniWrite($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", $aServerShort & " config file (New install: leave as ServerConfig.xml... after files downloaded, CHANGE name... SteamCMD WILL overwrite it)", $aConfigFile)
 	IniWrite($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", $aServerShort & " config ###", $aConfigFile)
 	IniWrite($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "Version (ex. public/latest_experimental/alpha18.4) ###", $aServerVer)
 	IniWrite($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", $aServerShort & " extra commandline parameters (ex. -serverpassword) ###", $aServerExtraCMD)
@@ -4145,7 +3987,6 @@ Func UpdateIni($aIniFile)
 	IniWrite($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "SteamCMD DIR ###", $aSteamCMDDir)
 	IniWrite($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "SteamCMD Username (optional) ###", $aSteamCMDUserName)
 	IniWrite($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "SteamCMD Password (optional) ###", $aSteamCMDPassword)
-;~ 	IniWrite($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "SteamCMD extra commandline parameters (See note below) ###", $aSteamExtraCMD)
 	IniWrite($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "SteamCMD commandline (caution: overwrites all settings above) Write between lines below ###", "(Write between lines below)")
 	FileWriteLine($aIniFile, '<--- BEGIN SteamCMD CODE --->')
 	FileWriteLine($aIniFile, $aSteamUpdateCommandline)
@@ -4296,7 +4137,6 @@ Func UpdateIni($aIniFile)
 	IniWrite($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Telnet: Monitor all traffic (Required for player chat and death announcements) (yes/no) ###", $aTelnetMonitorAllYN)
 	IniWrite($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Telnet: Check traffic every _ seconds) (1-10) ###", $aTelnetTrafficCheckSec)
 	IniWrite($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "For update checks, use (0)SteamCMD or (1)SteamDB.com ###", $aUpdateSource)
-	;	IniWrite($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Use puttytel for telnet client? (yes/no) ###", $aUsePuttytel)
 	IniWrite($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Hide passwords in log files? (yes/no) ###", $sObfuscatePass)
 	IniWrite($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Hide external scripts when executed? (if yes, scripts may not execute properly) (yes/no) ###", $aExternalScriptHideYN)
 	IniWrite($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Check for " & $aUtilName & " updates? (yes/no) ###", $aUpdateUtil)
@@ -4305,7 +4145,6 @@ Func UpdateIni($aIniFile)
 	FileWriteLine($aIniFile, "[--------------- (ALMOST) FUTURE PROOF UPDATE OPTIONS ---------------]")
 	FileWriteLine($aIniFile, "During updates, The Fun Pimps sometimes make changes to the ServerConfig.xml file, which can cause the server to fail to start when using the old config file.")
 	FileWriteLine($aIniFile, "  This section is a best-effort attempt to temporarily adjust to those changes during server updates to keep your server running.")
-	;	FileWriteLine($aIniFile, "If YES to either two questions below, this utility will make a backup of your existing serverconfig file (as listed in Game Server Configuration section),)")
 	FileWriteLine($aIniFile, "  If automatic import enabled above, this utility will attempt two reboots. If The server fails to boot after the second reboot,")
 	FileWriteLine($aIniFile, "  it will backup of your existing serverconfig file (as listed in Game Server Configuration section),")
 	FileWriteLine($aIniFile, "  copy the contents from the new ServerConfig.xml, import data from your existing config file, and add this data")
@@ -4411,7 +4250,7 @@ Func PIDReadServer($tSplash = 0)
 		If ProcessExists($tReturn) Then
 			LogWrite(" [Server] Server PID(" & $tReturn & ") found.")
 			If $tSplash = 0 Then
-				SplashTextOn($aUtilName, $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Running server found." & @CRLF & "PID(" & $tReturn & ")", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+				$aSplash = _Splash($aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Running server found." & @CRLF & "PID(" & $tReturn & ")")
 			Else
 				ControlSetText($tSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Running server found." & @CRLF & "PID(" & $tReturn & ")")
 			EndIf
@@ -4427,7 +4266,7 @@ Func TrayUtilConfig()
 	GUI_Config()
 EndFunc   ;==>TrayUtilConfig
 Func TrayUtilLog()
-	ShellExecute($aLogFile)
+	ShellExecute($aLogDebugFile)
 EndFunc   ;==>TrayUtilLog
 Func TrayServerLog()
 	Local $sLogPath = IniRead($aUtilCFGFile, "CFG", "Last Log Time Stamp", $aServerDirLocal & '\7DaysToDieServer_Data\output_log_dedi' & StringRegExpReplace(_NowCalc(), "[\\\/\: ]", "_") & ".txt")
@@ -4452,8 +4291,7 @@ Func TrayExitCloseN()
 		EndIf
 		_ExitUtil()
 	Else
-		SplashTextOn($aUtilName, "Shutdown canceled. Resuming utility . . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
-		Sleep(2000)
+		$aSplash = _Splash("Shutdown canceled. Resuming utility . . .", 2000)
 	EndIf
 	SplashOff()
 EndFunc   ;==>TrayExitCloseN
@@ -4476,10 +4314,8 @@ Func TrayExitCloseY()
 		SplashOff()
 		_ExitUtil()
 	Else
-		SplashTextOn($aUtilName, "Shutdown canceled. Resuming utility . . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
-		Sleep(2000)
+		$aSplash = _Splash("Shutdown canceled. Resuming utility . . .", 2000)
 	EndIf
-	SplashOff()
 EndFunc   ;==>TrayExitCloseY
 
 Func TrayRestartNow()
@@ -4494,10 +4330,8 @@ Func TrayRestartNow()
 ;~ 		EndIf
 	Else
 		LogWrite(" [Server] Restart Server Now request canceled by user.")
-		SplashTextOn($aUtilName, "Restart Server Now canceled. Resuming utility . . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
-		Sleep(2000)
+		$aSplash = _Splash("Restart Server Now canceled. Resuming utility . . .", 2000)
 	EndIf
-	SplashOff()
 EndFunc   ;==>TrayRestartNow
 
 Func TrayRemoteRestart()
@@ -4517,9 +4351,9 @@ Func TrayRemoteRestart()
 			TCPStartup() ; Start The TCP Services
 			Global $MainSocket = TCPListen($aServerIP, $aRemoteRestartPort, 100)
 			If $MainSocket = -1 Then
-				MsgBox(0x0, "Remote Restart", "Could not bind to [" & $aServerIP & ":" & $aRemoteRestartPort & "] Check server IP or disable Remote Restart in INI")
+				MsgBox(0x0, "Remote Restart", "Could not bind to [" & $aServerIP & ":" & $aRemoteRestartPort & "] Check server IP or disable Remote Restart in INI", 30)
 				LogWrite(" [Remote Restart] Remote Restart enabled. Could not bind to " & $aServerIP & ":" & $aRemoteRestartPort)
-				_ExitUtil()
+;~ 				_ExitUtil()
 			Else
 				If $sObfuscatePass = "no" Then
 					LogWrite("", " [Remote Restart] Remote Restart enabled. Listening for restart request at http://" & $aServerIP & ":" & $aRemoteRestartPort & "/?" & $aRemoteRestartKey & "=" & $aRemoteRestartCode)
@@ -4529,9 +4363,7 @@ Func TrayRemoteRestart()
 			EndIf
 		Else
 			LogWrite(" [Remote Restart] No changes made to Remote Restart setting in " & $aUtilName & ".ini per user request.")
-			SplashTextOn($aUtilName, "No changes were made. Resuming utility . . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
-			Sleep(2000)
-			SplashOff()
+			$aSplash = _Splash("No changes were made. Resuming utility . . .", 2000)
 		EndIf
 	Else
 		$tMB = MsgBox($MB_YESNOCANCEL, $aUtilName, "Do you wish to initiate Remote Restart (reboot server in " & $aRemoteTime[$aRemoteCnt] & "min)?" & @CRLF & @CRLF & _
@@ -4551,10 +4383,8 @@ Func TrayRemoteRestart()
 			EndIf
 		Else
 			LogWrite(" [Remote Restart] Remote Restart request canceled by user.")
-			SplashTextOn($aUtilName, "Remote Restart canceled. Resuming utility . . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
-			Sleep(2000)
+			$aSplash = _Splash("Remote Restart canceled. Resuming utility . . .", 2000)
 		EndIf
-		SplashOff()
 	EndIf
 EndFunc   ;==>TrayRemoteRestart
 
@@ -4570,17 +4400,15 @@ Func TraySendMessage()
 	$tMsg = InputBox($aUtilName, "Enter global chat message", "", "", 400, 125)
 	If $tMsg = "" Then
 		LogWrite(" [Telnet] Global chat message canceled by user.")
-		SplashTextOn($aUtilName, "Global chat Message canceled. Resuming utility . . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
-		Sleep(2000)
+		$aSplash = _Splash("Global chat Message canceled. Resuming utility . . .", 2000)
 	Else
 		$tMsg = "say """ & $tMsg & """"
-		SplashTextOn($aUtilName, "Sending global chat message:" & @CRLF & $tMsg, 400, 110, -1, -1, $DLG_MOVEABLE, "")
+		$aSplash = _Splash("Sending global chat message:" & @CRLF & $tMsg)
 		$aReply = _PlinkSend($tMsg)
 		LogWrite(" [Telnet] Global chat Message sent (" & $tMsg & ") " & $aReply)
 		SplashOff()
 		MsgBox($MB_OKCANCEL, $aUtilityVer, "Global chat Message sent:" & @CRLF & $tMsg & @CRLF & @CRLF & "Response:" & @CRLF & $aReply, 10)
 	EndIf
-	SplashOff()
 EndFunc   ;==>TraySendMessage
 
 Func TraySendInGame()
@@ -4590,22 +4418,20 @@ Func TraySendInGame()
 	$tMsg = InputBox($aUtilName, "Enter Telnet command to send to server", "", "", 400, 125)
 	If $tMsg = "" Then
 		LogWrite(" [Telnet] Send Telnet command canceled by user.")
-		SplashTextOn($aUtilName, "Send Telnet command canceled. Resuming utility . . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
-		Sleep(2000)
+		$aSplash = _Splash("Send Telnet command canceled. Resuming utility . . .", 2000)
 	Else
 		;		LogWrite(" [Telnet] Sending Telnet command to server: " & $tMsg)
-		SplashTextOn($aUtilName, "Sending Telnet command. " & @CRLF & $tMsg, 400, 110, -1, -1, $DLG_MOVEABLE, "")
+		$aSplash = _Splash("Sending Telnet command. " & @CRLF & $tMsg)
 		$aReply = _PlinkSend($tMsg)
 		LogWrite(" [Telnet] Telnet command sent (" & $tMsg & ") " & $aReply)
 		SplashOff()
 		MsgBox($MB_OKCANCEL, $aUtilityVer, "Telnet command sent: " & @CRLF & $tMsg & @CRLF & @CRLF & "Response:" & @CRLF & $aReply, 15)
 	EndIf
-	SplashOff()
 EndFunc   ;==>TraySendInGame
 
 Func TrayUpdateServCheck()
 	SplashOff()
-	SplashTextOn($aUtilName, "Checking for server update.", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+	$aSplash = _Splash("Checking for server update.")
 	UpdateCheck(True)
 	SplashOff()
 EndFunc   ;==>TrayUpdateServCheck
@@ -4620,7 +4446,7 @@ Func GetPlayerCount($tSplash)
 	TraySetToolTip("Scanning server for online players.")
 	TraySetIcon(@ScriptName, 201)
 	If $tSplash Then
-		SplashTextOn($aUtilName, " Checking online players. . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
+		$aSplash = _Splash("Checking online players. . .")
 	EndIf
 	Local $tTime9 = "00:00"
 	$sMsg = TelnetOnlinePlayers($aTelnetIP, $aTelnetPort, $aTelnetPass)
@@ -4820,9 +4646,7 @@ EndFunc   ;==>ShowPlayerCount
 Func TrayShowPlayerCount()
 	$aPlayerCountShowTF = True
 	If $aServerOnlinePlayerYN = "no" Then
-		SplashTextOn($aUtilName, "To show online players, you must Enable Online Players Check/Log. . .", 400, 110, -1, -1, $DLG_MOVEABLE, "")
-		Sleep(2000)
-		SplashOff()
+		$aSplash = _Splash("To show online players, you must Enable Online Players Check/Log. . .", 2000)
 	Else
 		ShowOnlineGUI(True)
 	EndIf
@@ -4936,8 +4760,8 @@ Func _DownloadAndExtractFile($tFileName, $tURL1, $tURL2 = "", $tSplash = 0, $tFo
 				SetError(1, 2)     ; Failed to download from source 2
 				LogWrite(" [Util] Error downloading " & $tFileName & " from Source2: " & $tURL2)
 				SplashOff()
-				MsgBox($MB_OK, $aUtilName, "ERROR!!!  " & $tFileName & ".zip download failed.")
-				$aSplashStartUp = _Splash($aStartText, 0, 475)
+				MsgBox($MB_OK, $aUtilName, "ERROR!!!  " & $tFileName & ".zip download failed.", 30)
+				$aSplash = _Splash("")
 				Return
 			EndIf
 		EndIf
@@ -4953,9 +4777,9 @@ Func _DownloadAndExtractFile($tFileName, $tURL1, $tURL2 = "", $tSplash = 0, $tFo
 			LogWrite(" [Util] Error extracting " & $tFileName & ".exe from " & $tFileName & ".zip")
 			SetError(1, 3)     ; Failed to extract file
 			SplashOff()
-			MsgBox($MB_OK, $aUtilName, "ERROR!!! Extracting " & $tFileName & ".exe from " & $tFileName & ".zip failed.")
-			$aSplashStartUp = _Splash($aStartText, 0, 475)
+			MsgBox($MB_OK, $aUtilName, "ERROR!!! Extracting " & $tFileName & ".exe from " & $tFileName & ".zip failed.", 30)
 			SplashOff()
+			$aSplash = _Splash("")
 			Return
 		EndIf
 		FileDelete($tFolder & "\" & $tFileName & ".zip")
@@ -5044,7 +4868,7 @@ EndFunc   ;==>_ArrayCompare
 Func _PlinkConnect($tIP, $tPort, $tPwd, $tLog012 = 2, $tSkipVerifyTF = False) ; $tLog0123: 0 = no log, 1 = Detailed log only, 2 = Both logs
 	Local $sReturn = -1
 	Local $kReturn = ""
-	_DownloadAndExtractFile("plink", "http://www.phoenix125.com/share/plink/plink.zip", "https://github.com/phoenix125/7dtdServerUpdateUtility/releases/download/LatestVersion/plink.zip", $tSplash, $aFolderTemp)
+	_DownloadAndExtractFile("plink", "http://www.phoenix125.com/share/plink/plink.zip", "https://github.com/phoenix125/7dtdServerUpdateUtility/releases/download/LatestVersion/plink.zip", $aSplash, $aFolderTemp)
 	Local $tPID = _CheckForExistingPlink()
 	If $tPID > 0 Then
 		Local $sReturn = $tPID
@@ -6665,7 +6489,7 @@ Func GUI_Config($tNewInstallTF = False)
 		Else
 			If $tNewInstallTF Then
 				LogWrite(" Default INI File Created . . Please Modify Default Values and Restart Program.")
-				MsgBox(4096, "7DTDServerUpdateUtility", "Welcome to 7DTDServerUpdateUtility! Please modify desired values then choose RESTART Util in the last tab." & @CRLF & @CRLF & "Visit us on Discord: http://discord.gg/EU7pzPs")
+				MsgBox(4096, "7DTDServerUpdateUtility", "Welcome to 7DTDServerUpdateUtility! Please modify desired values then choose RESTART Util in the last tab." & @CRLF & @CRLF & "Visit us on Discord: http://discord.gg/EU7pzPs", 60)
 			EndIf
 			While $aConfigWindowClose = False
 				Sleep(100)
@@ -8680,216 +8504,6 @@ Func W1_T9_C_RenameModFolderClick()
 	EndIf
 	IniWrite($aIniFile, " --------------- (ALMOST) FUTURE PROOF UPDATE OPTIONS --------------- ", "Rename the Mod Folder (therefore saving and disabling it) if Future Proof was needed (3 consecutive failed starts after an update)? (yes/no) ###", $aFPRenameModsYN)
 EndFunc   ;==>W1_T9_C_RenameModFolderClick
-Func Label10Click()
-EndFunc   ;==>Label10Click
-Func Label11Click()
-EndFunc   ;==>Label11Click
-Func Label12Click()
-EndFunc   ;==>Label12Click
-Func Label13Click()
-EndFunc   ;==>Label13Click
-Func Label14Click()
-EndFunc   ;==>Label14Click
-Func Label15Click()
-EndFunc   ;==>Label15Click
-Func Label16Click()
-EndFunc   ;==>Label16Click
-Func Label17Click()
-EndFunc   ;==>Label17Click
-Func Label18Click()
-EndFunc   ;==>Label18Click
-Func Label19Click()
-EndFunc   ;==>Label19Click
-Func Label1Click()
-EndFunc   ;==>Label1Click
-Func Label20Click()
-EndFunc   ;==>Label20Click
-Func Label21Click()
-EndFunc   ;==>Label21Click
-Func Label22Click()
-EndFunc   ;==>Label22Click
-Func Label23Click()
-EndFunc   ;==>Label23Click
-Func Label24Click()
-EndFunc   ;==>Label24Click
-Func Label25Click()
-EndFunc   ;==>Label25Click
-Func Label26Click()
-EndFunc   ;==>Label26Click
-Func Label27Click()
-EndFunc   ;==>Label27Click
-Func Label28Click()
-EndFunc   ;==>Label28Click
-Func Label29Click()
-EndFunc   ;==>Label29Click
-Func Label2Click()
-EndFunc   ;==>Label2Click
-Func Label30Click()
-EndFunc   ;==>Label30Click
-Func Label31Click()
-EndFunc   ;==>Label31Click
-Func Label32Click()
-EndFunc   ;==>Label32Click
-Func Label33Click()
-EndFunc   ;==>Label33Click
-Func Label34Click()
-EndFunc   ;==>Label34Click
-Func Label35Click()
-EndFunc   ;==>Label35Click
-Func Label36Click()
-EndFunc   ;==>Label36Click
-Func Label37Click()
-EndFunc   ;==>Label37Click
-Func Label38Click()
-EndFunc   ;==>Label38Click
-Func Label39Click()
-EndFunc   ;==>Label39Click
-Func Label3Click()
-EndFunc   ;==>Label3Click
-Func Label40Click()
-EndFunc   ;==>Label40Click
-Func Label41Click()
-EndFunc   ;==>Label41Click
-Func Label42Click()
-EndFunc   ;==>Label42Click
-Func Label43Click()
-EndFunc   ;==>Label43Click
-Func Label44Click()
-EndFunc   ;==>Label44Click
-Func Label45Click()
-EndFunc   ;==>Label45Click
-Func Label46Click()
-EndFunc   ;==>Label46Click
-Func Label47Click()
-EndFunc   ;==>Label47Click
-Func Label48Click()
-EndFunc   ;==>Label48Click
-Func Label49Click()
-EndFunc   ;==>Label49Click
-Func Label4Click()
-EndFunc   ;==>Label4Click
-Func Label50Click()
-EndFunc   ;==>Label50Click
-Func Label51Click()
-EndFunc   ;==>Label51Click
-Func Label52Click()
-EndFunc   ;==>Label52Click
-Func Label53Click()
-EndFunc   ;==>Label53Click
-Func Label54Click()
-EndFunc   ;==>Label54Click
-Func Label55Click()
-EndFunc   ;==>Label55Click
-Func Label56Click()
-EndFunc   ;==>Label56Click
-Func Label57Click()
-EndFunc   ;==>Label57Click
-Func Label58Click()
-EndFunc   ;==>Label58Click
-Func Label59Click()
-EndFunc   ;==>Label59Click
-Func Label5Click()
-EndFunc   ;==>Label5Click
-Func Label60Click()
-EndFunc   ;==>Label60Click
-Func Label61Click()
-EndFunc   ;==>Label61Click
-Func Label62Click()
-EndFunc   ;==>Label62Click
-Func Label63Click()
-EndFunc   ;==>Label63Click
-Func Label64Click()
-EndFunc   ;==>Label64Click
-Func Label65Click()
-EndFunc   ;==>Label65Click
-Func Label66Click()
-EndFunc   ;==>Label66Click
-Func Label67Click()
-EndFunc   ;==>Label67Click
-Func Label68Click()
-EndFunc   ;==>Label68Click
-Func Label69Click()
-EndFunc   ;==>Label69Click
-Func Label6Click()
-EndFunc   ;==>Label6Click
-Func Label70Click()
-EndFunc   ;==>Label70Click
-Func Label71Click()
-EndFunc   ;==>Label71Click
-Func Label72Click()
-EndFunc   ;==>Label72Click
-Func Label73Click()
-EndFunc   ;==>Label73Click
-Func Label74Click()
-EndFunc   ;==>Label74Click
-Func Label75Click()
-EndFunc   ;==>Label75Click
-Func Label76Click()
-EndFunc   ;==>Label76Click
-Func Label77Click()
-EndFunc   ;==>Label77Click
-Func Label78Click()
-EndFunc   ;==>Label78Click
-Func Label79Click()
-EndFunc   ;==>Label79Click
-Func Label7Click()
-EndFunc   ;==>Label7Click
-Func Label80Click()
-EndFunc   ;==>Label80Click
-Func Label81Click()
-EndFunc   ;==>Label81Click
-Func Label82Click()
-EndFunc   ;==>Label82Click
-Func Label83Click()
-EndFunc   ;==>Label83Click
-Func Label84Click()
-EndFunc   ;==>Label84Click
-Func Label85Click()
-EndFunc   ;==>Label85Click
-Func Label86Click()
-EndFunc   ;==>Label86Click
-Func Label87Click()
-EndFunc   ;==>Label87Click
-Func Label88Click()
-EndFunc   ;==>Label88Click
-Func Label89Click()
-EndFunc   ;==>Label89Click
-Func Label8Click()
-EndFunc   ;==>Label8Click
-Func Label90Click()
-EndFunc   ;==>Label90Click
-Func Label91Click()
-EndFunc   ;==>Label91Click
-Func Label92Click()
-EndFunc   ;==>Label92Click
-Func Label93Click()
-EndFunc   ;==>Label93Click
-Func Label94Click()
-EndFunc   ;==>Label94Click
-Func Label95Click()
-EndFunc   ;==>Label95Click
-Func Label96Click()
-EndFunc   ;==>Label96Click
-Func Label98Click()
-EndFunc   ;==>Label98Click
-Func Label99Click()
-EndFunc   ;==>Label99Click
-Func Label9Click()
-EndFunc   ;==>Label9Click
-Func Pic1Click()
-EndFunc   ;==>Pic1Click
-Func Pic2Click()
-EndFunc   ;==>Pic2Click
-Func Pic3Click()
-EndFunc   ;==>Pic3Click
-Func Pic4Click()
-EndFunc   ;==>Pic4Click
-Func Pic5Click()
-EndFunc   ;==>Pic5Click
-Func Pic6Click()
-EndFunc   ;==>Pic6Click
-Func Pic7Click()
-EndFunc   ;==>Pic7Click
 Func _ErrorCode($tError)
 	If IsDeclared("xErrorCodes") = 0 Then
 		Global $xErrorCodes[0][2]

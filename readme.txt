@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.5.2 (2020-08-02) (Beta and Stable are the same version)
+- Latest version: 7dtdServerUpdateUtility_v2.5.3 (2020-08-04) (Beta and Stable are the same version)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -149,6 +149,13 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2020-08-04) v2.5.3 Bug fixes.
+- Fixed: Line error when Discord message fails to send.
+- Fixed: Line error when downloading files fails.
+- Fixed: Only shows the "Util Update Available" file when an update is actually available.
+- Changed: Open Util Log tray option now opens full log.
+- Cleaned up the code a little.
+
 (2020-08-02) v2.5.2 Minor bug fixes and improvements
 - Fixed: Config GUI: Errors when changing Local IP
 - Fixed: Watchdog attempts before restart used wrong default value.

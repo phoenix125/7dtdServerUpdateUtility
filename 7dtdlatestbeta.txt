@@ -1,1 +1,1 @@
-v2.5.2^v2.5.2|Minor Bug Fixes||v2.5.1|- Minor bug fixes|- Minor improvements||v2.5.0|Config window. Backups.|More Discord options.|No more telnet popup windows.|Several bug fixes, including SteamCMD improvements.|
+v2.5.3^v2.5.3|Bug Fixes|- Line Errors when Discord or downloads fail.||v2.5.2|Minor Bug Fixes||v2.5.1|- Minor bug fixes|- Minor improvements||v2.5.0|Config window. Backups.|More Discord options.|No more telnet popup windows.|Several bug fixes, including SteamCMD improvements.|
