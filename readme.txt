@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.5.3 (2020-08-04) (Beta and Stable are the same version)
+- Latest version: 7dtdServerUpdateUtility_v2.5.4 (2020-08-16) (Beta and Stable are the same version)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -37,28 +37,20 @@ More detailed features:
 
 EXISTING SERVER:
 1) Run 7dtdServerUpdateUtility.exe
-- The file "7dtdServerUpdateUtility.ini" will be created and the program will exit.
-2) Modify the default values in "7dtdServerUpdateUtility.ini" to point to your "serverconfig.xml" (or comparable file), install folder, and any other desired values.
-3) Run 7dtdServerUpdateUtility.exe again.
-- It will validate your files, install any updates, and start the server.
-4) Your server should be up-to-date and running! 
+2) Adjust desired settings in the Config window. If config window doesn't show, click the tray icon and select "Util CONFIG" toward the top.
+- Required fields: Server Folder, Config File, and Local IP.
+3) Click "Restart Util"
+4) Your server should be up-to-date and running!
 
 FRESH SERVER: Use 7dtdServerUpdateUtility to download install a fresh dedicated server
 1) Run 7dtdServerUpdateUtility.exe
-- The file "7dtdServerUpdateUtility.ini" will be created and the program will exit.
-2) Open the "7dtdServerUpdateUtility.ini" with Notepad and modify the follow values:
-	"Serverdir=" 	[Enter your desired server folder]
-	"steamcmddir="	[Enter desired SteamCMD folder] (SteamCMD is Steam's utility to download and install the Steam programs)
-	"[Version: 0-Stable/1-Latest Experimental] ServerVer=0" [Select Stable or Experimental version]
-- No need to make any other changes at this time.
-3) Run 7dtdServerUpdateUtility.exe again.
-- All the required files will be downloaded and installed.
-- Once completed, your server will be running... Now it's time to config the server and utility.
-4) Shut down the server by rt-clicking on the 7dtdServerUpdateUtility icon on the lower right.
-5) Modify the remaining default values in "7dtdServerUpdateUtility.ini".
-6) Modify default values in "serverconfig.xml" (or comparable file) within the 7DTD server folder.
-7) Run 7dtdServerUpdateUtility.exe again.
-8) Congrats! Your new server is running.
+2) Adjust desired settings in the Config window. If config window doesn't show, click the tray icon and select "Util CONFIG" toward the top.
+- Required fields: Server Folder and Local IP. (The Config File will be created when the server is downloaded).
+3) Click "Restart Util"
+4) Your server files will be downloaded from Steam. Once done, your server will start.
+5) From the tray icon, click "Server Config" (toward the bottom). Make desired changes.
+6) Restart server and util.
+7) Congrats! Your new server is running.
 
 ------------
  KNOWN BUGS
@@ -149,6 +141,15 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2020-08-04) v2.5.4 Added Restart options window, added separate Global chat to Discord, other minor improvements
+- Added: Option to announce manual restart with or without countdown timer to Discord/in-game. (Thanks to @ًًً\ 𝓞𝓱𝓨𝓪 / for requesting)
+- Added: Discord: Separate webhook options for global chat (for public Discord) and all chat (for admin, if desired). (Thanks to @ًًً\ 𝓞𝓱𝓨𝓪 / for requesting)
+- Fixed: When restart minutes had only one number, restarts would fail.
+- Fixed: Discord: Server restarts would still show last player to leave.
+- Fixed: Util now updates the temp serverconfig.xml file with each server restart. Prior, any changes to the config file required restarting util.
+- Updated readme.txt instructions (Thanks to @arramus for reporting)
+- Added: When announcement time = 1 minute, substitutes "minute(s)" and "minutes" with "minute". When announcement time = 0, substitutes "in 0 minute(s)" and "in 0 minutes" with "now".
+
 (2020-08-04) v2.5.3 Bug fixes.
 - Fixed: Line error when Discord message fails to send.
 - Fixed: Line error when downloading files fails.

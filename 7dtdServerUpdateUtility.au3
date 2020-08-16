@@ -1,11 +1,11 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.5.3.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.5.4.exe
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.5.3.0
+#AutoIt3Wrapper_Res_Fileversion=2.5.4.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.5.3
+#AutoIt3Wrapper_Res_ProductVersion=2.5.4
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -45,14 +45,15 @@ Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
 
 ; *** End added by AutoIt3Wrapper ***
 
-$aUtilVerStable = "v2.5.3" ; (2020-08-04)
-$aUtilVerBeta = "v2.5.3" ; (2020-08-04)
+$aUtilVerStable = "v2.5.4" ; (2020-08-10)
+$aUtilVerBeta = "v2.5.4" ; (2020-08-10)
 $aUtilVersion = $aUtilVerStable
-Global $aUtilVerNumber = 4
+Global $aUtilVerNumber = 5
 ; 1 = v2.3.3
 ; 2 = v2.3.4
 ; 3 = v2.5.0
 ; 4 = v2.5.1/2/3
+; 5 = 2.5.4
 
 ;**** Directives created by AutoIt3Wrapper_GUI ****
 ;Originally written by Dateranoth for use and modified for 7DTD by Phoenix125.com
@@ -151,7 +152,14 @@ Global $wGUIMainWindow = -1
 Global $Config = -1
 Global $wGUIMainWindow = -1
 Global $hGUI_LoginLogo = -1
-
+Global $W2_RestartServer = 9999999
+Global $aRestartTime[1]
+$aRestartTime[0] = 1
+Global $aRestartMsg[1]
+$aRestartMsg[0] = "Admin has requested a server reboot. Server is rebooting in 1 minute."
+Global $aRestartCnt = 1
+Global $sUseDiscordBotRestartServer = "no"
+Global $sUseTwitchBotRestartServer = "no"
 Global $aServerRebootReason = ""
 Global $aRebootReason = ""
 Global $aRebootConfigUpdate = "no"
@@ -336,6 +344,16 @@ EndIf
 If $aCFGLastVerNumber < 4 Then
 	IniWrite($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Telnet: Monitor all traffic (Required for player chat and death announcements) (yes/no) ###", "yes")
 	IniWrite($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Telnet: Check traffic every _ seconds) (1-10) ###", 5)
+	$tUpdateINI = True
+EndIf
+If $aCFGLastVerNumber < 5 Then
+	Global $aServerDiscordWHSelChat = IniRead($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send CHAT Msg (ie 23) ###", "")
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send GLOBAL CHAT Msg (ie 23) ###", $aServerDiscordWHSelChat)
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send ALL CHAT Msg (ie 23) ###", "")
+	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for Player All Chat? (yes/no) ###", "no")
+	Global $sDiscordPlayerChatMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Chat (\p - Player Name, \m Message) ###", "'[\t] **\p**: \m'")
+	$sDiscordPlayerChatMsg = StringReplace($sDiscordPlayerChatMsg, "[Chat]", "[\t]")
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Chat (\p - Player Name, \m Message, \t Msg type (ex. Global,Friend)", $sDiscordPlayerChatMsg)
 	$tUpdateINI = True
 EndIf
 If $tUpdateINI Then
@@ -785,7 +803,7 @@ TrayItemSetOnEvent(-1, "TrayUpdateServUnPause")
 TrayCreateItem("") ; Create a separator line.
 Local $iTrayRemoteRestart = TrayCreateItem("Initiate Remote Restart")
 TrayItemSetOnEvent(-1, "TrayRemoteRestart")
-Local $iTrayRestartNow = TrayCreateItem("Restart Server Now")
+Local $iTrayRestartNow = TrayCreateItem("Restart Server (with Options Window)")
 TrayItemSetOnEvent(-1, "TrayRestartNow")
 TrayCreateItem("") ; Create a separator line.
 Local $iTrayExitCloseN = TrayCreateItem("Server CONFIG")
@@ -905,6 +923,7 @@ While True ;**** Loop Until Closed ****
 				IniWrite($aUtilCFGFile, "CFG", "Last Log Time Stamp", $LogTimeStamp)
 				Local $tRun = "" & $aServerDirLocal & "\" & $aServerEXE & ' -logfile "' & $LogTimeStamp & '" -quit -batchmode -nographics ' & $aServerExtraCMD & " -configfile=" & $aConfigFileTemp & " -dedicated"
 				PurgeLogFile()
+				_ImportServerConfig()
 				$aServerPID = Run($tRun, $aServerDirLocal, @SW_HIDE)
 				LogWrite(" [Server] **** Server Started **** PID(" & $aServerPID & ")", " [Server] **** Server Started **** PID(" & $aServerPID & ") [" & $tRun & "]")
 				$gWatchdogServerStartTimeCheck = _NowCalc()
@@ -1234,6 +1253,20 @@ While True ;**** Loop Until Closed ****
 						TwitchMsgLog($aUpdateMsgTwitch[$aAnnounceCount0])
 					EndIf
 				EndIf
+				If $aRebootReason = "restartserver" Then
+					$aAnnounceCount0 = $aRestartCnt
+					$aDelayShutdownTime = $aRestartTime[$aAnnounceCount0] - $aRestartTime[$aAnnounceCount1]
+					$aAnnounceCount1 = $aAnnounceCount0 - 1
+					If $aAnnounceCount1 = 0 Then
+						$aDelayShutdownTime = 0
+						$aBeginDelayedShutdown = 3
+					Else
+						$aDelayShutdownTime = $aRestartTime[$aAnnounceCount0] - $aRestartTime[$aAnnounceCount1]
+					EndIf
+					SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aRestartMsg[$aAnnounceCount0])
+					If $sUseDiscordBotRestartServer = "yes" Then _SendDiscordStatus($aRestartMsg[$aAnnounceCount0])
+					If $sUseTwitchBotRestartServer = "yes" Then TwitchMsgLog($aRestartMsg[$aAnnounceCount0])
+				EndIf
 				$aBeginDelayedShutdown = 2
 				$aTimeCheck0 = _NowCalc()
 
@@ -1251,9 +1284,10 @@ While True ;**** Loop Until Closed ****
 					IniWrite($aUtilCFGFile, "CFG", "Last Server Update", $gServerUpdatedTimeCheck0)
 				EndIf
 				If $aRebootReason = "remoterestart" Then
-					$aSplash = _Splash("Remote Restart request. Restarting server . . .", 0, 350, 50)
+					$aSplash = _Splash("Remote Restart requested. Restarting server . . .", 0, 350, 50)
 					RunExternalRemoteRestart()
 				EndIf
+				If $aRebootReason = "restartserver" Then $aSplash = _Splash("Restart server requested. Restarting server . . .", 0, 350, 50)
 				If $sInGameAnnounce = "yes" Then
 					SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, "FINAL WARNING! Rebooting server in 10 seconds...")
 					Sleep(10000)
@@ -1303,7 +1337,16 @@ While True ;**** Loop Until Closed ****
 						TwitchMsgLog($aUpdateMsgTwitch[$aAnnounceCount1])
 					EndIf
 				EndIf
-
+				If $aRebootReason = "restartserver" Then
+					If $aAnnounceCount1 > 1 Then
+						$aDelayShutdownTime = $aRestartTime[$aAnnounceCount1] - $aRestartTime[($aAnnounceCount1 - 1)]
+					Else
+						$aDelayShutdownTime = $aRestartTime[$aAnnounceCount1]
+					EndIf
+					SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aRestartMsg[$aAnnounceCount1])
+					If $sUseDiscordBotRestartServer = "yes" Then _SendDiscordStatus($aRestartMsg[$aAnnounceCount1])
+					If $sUseTwitchBotRestartServer = "yes" Then TwitchMsgLog($aRestartMsg[$aAnnounceCount1])
+				EndIf
 				$aAnnounceCount1 = $aAnnounceCount1 - 1
 				If $aAnnounceCount1 = 0 Then
 					$aBeginDelayedShutdown = 3
@@ -1604,6 +1647,7 @@ Func _DiscordPlayersJoined()
 	Local $tTxt2 = ""
 	If StringLen($aPlayersJoined) > 1 Then
 		$tTxt2 &= StringReplace($sDiscordPlayerJoinMsg, "\p", $aPlayersJoined)
+		$aPlayersJoined = ""
 	EndIf
 	Return $tTxt2
 EndFunc   ;==>_DiscordPlayersJoined
@@ -1611,6 +1655,7 @@ Func _DiscordPlayersLeft()
 	Local $tTxt2 = ""
 	If StringLen($aPlayersLeft) > 1 Then
 		$tTxt2 &= StringReplace($sDiscordPlayerLeftMsg, "\p", $aPlayersLeft)
+		$aPlayersLeft = ""
 	EndIf
 	Return $tTxt2
 EndFunc   ;==>_DiscordPlayersLeft
@@ -1629,6 +1674,9 @@ EndFunc   ;==>_SendDiscordStatus
 Func _SendDiscordChat($tMsg)
 	If $sUseDiscordBotPlayerChatYN = "yes" Then _SendDiscordMsg($tMsg, $aServerDiscordWHSelChat)
 EndFunc   ;==>_SendDiscordChat
+Func _SendDiscordAllChat($tMsg)
+	If $sUseDiscordBotPlayerChatYN = "yes" Then _SendDiscordMsg($tMsg, $aServerDiscordWHSelAllChat)
+EndFunc   ;==>_SendDiscordAllChat
 Func _SendDiscordDie($tMsg)
 	_SendDiscordMsg($tMsg, $aServerDiscordWHSelDie)
 EndFunc   ;==>_SendDiscordDie
@@ -1689,9 +1737,10 @@ Func _GetServerNameFromLog($tSplash = 0)
 EndFunc   ;==>_GetServerNameFromLog
 
 #Region 	 ;**** Close Server ****
-Func CloseServer($ip, $port, $pass)
+Func CloseServer($ip, $port, $pass, $tNoSplashOff = "no")
+	$aSplash = 0
 	If $aRebootConfigUpdate = "no" Then
-		$aSplash = _Splash("Shutting down 7 Days to Die server . . .", 0, 350, 110)
+		If $tNoSplashOff = "no" Then $aSplash = _Splash("Shutting down 7 Days to Die server . . .", 0, 350, 110)
 	EndIf
 	$aServerReadyOnce = True
 	$aServerReadyTF = False
@@ -1699,9 +1748,7 @@ Func CloseServer($ip, $port, $pass)
 	$aFPCount = 0
 	$tQueryLogReadDoneTF = False
 	For $i = 1 To 5
-		If $aRebootConfigUpdate = "no" Then
-			ControlSetText($aSplash, "", "Static1", "Sending shutdown command to server . . ." & @CRLF & @CRLF & "Countdown: " & (6 - $i))
-		EndIf
+		If $aRebootConfigUpdate = "no" Then ControlSetText($aSplash, "", "Static1", "Sending shutdown command to server . . ." & @CRLF & @CRLF & "Countdown: " & (6 - $i))
 		LogWrite(" [Server] Sending shutdown command to server. Countdown:" & (6 - $i))
 		$aReply = _PlinkSend("shutdown")
 		If StringInStr($aReply, "shutting server down") = 0 Then
@@ -1713,22 +1760,17 @@ Func CloseServer($ip, $port, $pass)
 	Next
 	For $i = 1 To 10
 		If ProcessExists($aServerPID) Then
-			If $aRebootConfigUpdate = "no" Then
-				ControlSetText($aSplash, "", "Static1", "Waiting for server to finish shutting down." & @CRLF & @CRLF & "Countdown: " & (11 - $i))
-			EndIf
-			;		LogWrite(" [" & $aServerName & " (PID: " & $aServerPID & ")] Server failed to shutdown. Killing process. Countdown:" & (11-$i))
+			If $aRebootConfigUpdate = "no" Then ControlSetText($aSplash, "", "Static1", "Waiting for server to finish shutting down." & @CRLF & @CRLF & "Countdown: " & (11 - $i))
 			Sleep(1000)
 		Else
-			SplashOff()
+			If $tNoSplashOff = "no" Then SplashOff()
 			ExitLoop
 		EndIf
 	Next
 	For $i = 1 To 10
 		If ProcessExists($aServerPID) Then
 			ProcessClose($aServerPID)
-			If $aRebootConfigUpdate = "no" Then
-				ControlSetText($aSplash, "", "Static1", "Server failed to shutdown. Killing process." & @CRLF & @CRLF & "Countdown: " & (11 - $i))
-			EndIf
+			If $aRebootConfigUpdate = "no" Then ControlSetText($aSplash, "", "Static1", "Server failed to shutdown. Killing process." & @CRLF & @CRLF & "Countdown: " & (11 - $i))
 			LogWrite(" [" & $aServerName & " (PID: " & $aServerPID & ")] Server failed to shutdown. Killing process. Countdown:" & (11 - $i))
 			Sleep(1000)
 		Else
@@ -1736,13 +1778,11 @@ Func CloseServer($ip, $port, $pass)
 		EndIf
 	Next
 	If $aRebootConfigUpdate = "no" Then
-		SplashOff()
+		If $tNoSplashOff = "no" Then SplashOff()
 	EndIf
 	IniWrite($aUtilCFGFile, "CFG", "PID", "0")
-	SplashOff()
-	If $aSteamUpdateNow Then
-		SteamUpdate()
-	EndIf
+	If $tNoSplashOff = "no" Then SplashOff()
+	If $aSteamUpdateNow Then SteamUpdate()
 	$aRebootConfigUpdate = "no"
 EndFunc   ;==>CloseServer
 #EndRegion 	 ;**** Close Server ****
@@ -1764,7 +1804,7 @@ Func _Discord_ErrFunc($oError)
 	LogWrite(" [" & $aServerName & " (PID: " & $aServerPID & ")] Error: 0x" & Hex($oError.number) & " While Sending Discord Bot Message.")
 EndFunc   ;==>_Discord_ErrFunc
 Func ReplaceCRLF($tMsg0)
-	Return StringRegExpReplace($tMsg0, '(*BSR_ANYCRLF)\R', "|")     ; Idea by Ascend4nt
+	Return StringRegExpReplace($tMsg0, '(*BSR_ANYCRLF)\R', "|") ; Idea by Ascend4nt
 EndFunc   ;==>ReplaceCRLF
 Func SendDiscordMsg($sHookURL, $sBotMessage, $sBotName = "", $sBotTTS = False, $sBotAvatar = "", $tWH = 1)
 	If $sHookURL <> "https://discordapp.com/api/webhooks/012345678901234567/abcdefghijklmnopqrstuvwxyz01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcde" Then
@@ -1852,7 +1892,7 @@ Func SendDiscordMsg($sHookURL, $sBotMessage, $sBotName = "", $sBotTTS = False, $
 					Local $sJsonMessage = '{"content" : "' & $sBotMessage & '", "username" : "' & $sBotName & '", "tts" : "' & $sBotTTS & '", "avatar_url" : "' & $sBotAvatar & '"}'
 					Local $oHTTPOST = ObjCreate("WinHttp.WinHttpRequest.5.1")
 					$oHTTPOST.Open("POST", StringStripWS($sHookURL, 3) & "?wait=True", False)
-					$oHTTPOST.Option(4) = 0x3300     ; ignore all SSL errors
+					$oHTTPOST.Option(4) = 0x3300 ; ignore all SSL errors
 					$oHTTPOST.SetRequestHeader("Content-Type", "multipart/form-data")
 					$oHTTPOST.Send($sJsonMessage)
 					Local $oStatusCode = $oHTTPOST.Status
@@ -2392,6 +2432,18 @@ Func AnnounceReplaceTime($tTime0, $tMsg0)
 		For $tTime2 = 1 To $tTime3[0]
 			$tTime1 = StringStripWS($tTime3[$tTime2], 8) - 1
 			$tMsg1[$tTime2] = StringReplace($tMsg0, "\m", $tTime3[$tTime2])
+			If $tTime3[$tTime2] = Number("1") Then
+				$tMsg1[$tTime2] = StringReplace($tMsg1[$tTime2], "minutes", "minute")
+				$tMsg1[$tTime2] = StringReplace($tMsg1[$tTime2], "minute(s)", "minute")
+			EndIf
+			If $tTime3[$tTime2] = Number("0") Then
+				$tMsg1[$tTime2] = StringReplace($tMsg1[$tTime2], "in 0 minutes", "now")
+				$tMsg1[$tTime2] = StringReplace($tMsg1[$tTime2], "in 0 minute(s)", "now")
+				$tMsg1[$tTime2] = StringReplace($tMsg1[$tTime2], "in 0 minute", "now")
+				$tMsg1[$tTime2] = StringReplace($tMsg1[$tTime2], "0 minutes", "now")
+				$tMsg1[$tTime2] = StringReplace($tMsg1[$tTime2], "0 minute(s)", "now")
+				$tMsg1[$tTime2] = StringReplace($tMsg1[$tTime2], "0 minute", "now")
+			EndIf
 		Next
 		Return $tMsg1
 	EndIf
@@ -2975,7 +3027,8 @@ Func ReadUini($aIniFile, $sLogFile)
 
 	Global $aServerDiscordWHSelStatus = IniRead($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send RESTART/STATUS Msg (ie 1) ###", $iniCheck)
 	Global $aServerDiscordWHSelPlayers = IniRead($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send PLAYERS ONLINE Msg (ie 2) ###", $iniCheck)
-	Global $aServerDiscordWHSelChat = IniRead($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send CHAT Msg (ie 23) ###", $iniCheck)
+	Global $aServerDiscordWHSelChat = IniRead($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send GLOBAL CHAT Msg (ie 23) ###", $iniCheck)
+	Global $aServerDiscordWHSelAllChat = IniRead($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send ALL CHAT Msg (ie 23) ###", $iniCheck)
 	Global $aServerDiscordWHSelDie = IniRead($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send PLAYERS DIE Msg (ie 1234) ###", $iniCheck)
 
 	Global $sUseDiscordBotDaily = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for DAILY reboot? (yes/no) ###", $iniCheck)
@@ -2996,7 +3049,7 @@ Func ReadUini($aIniFile, $sLogFile)
 	Global $sDiscordPlayerLeftMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Left Player Sub-Message (\p - Player Name(s) of player(s) that left server, \n Next Line) ###", $iniCheck)
 	Global $sDiscordPlayerOnlineMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Online Player Sub-Message (\p - Player Name(s) of player(s) online, \n Next Line) ###", $iniCheck)
 	Global $sDiscordPlayerDiedMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Died Message (\p - Player Name, \n Next Line) ###", $iniCheck)
-	Global $sDiscordPlayerChatMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Chat (\p - Player Name, \m Message) ###", $iniCheck)
+	Global $sDiscordPlayerChatMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Chat (\p - Player Name, \m Message, \t Msg type (ex. Global,Friend)", $iniCheck)
 
 	Global $sUseTwitchBotDaily = IniRead($aIniFile, " --------------- TWITCH INTEGRATION --------------- ", "Send Twitch message for DAILY reboot? (yes/no) ###", $iniCheck)
 	Global $sUseTwitchBotUpdate = IniRead($aIniFile, " --------------- TWITCH INTEGRATION --------------- ", "Send Twitch message for UPDATE reboot? (yes/no) ###", $iniCheck)
@@ -3522,6 +3575,11 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniFail += 1
 		$iIniError = $iIniError & "ServerDiscordWHSelChat, "
 	EndIf
+	If $iniCheck = $aServerDiscordWHSelAllChat Then
+		$aServerDiscordWHSelAllChat = ""
+		$iIniFail += 1
+		$iIniError = $iIniError & "ServerDiscordWHSelAllChat, "
+	EndIf
 	If $iniCheck = $aServerDiscordWHSelDie Then
 		$aServerDiscordWHSelDie = "3"
 		$iIniFail += 1
@@ -3633,7 +3691,7 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniError = $iIniError & "DiscordPlayerDiedMsg, "
 	EndIf
 	If $iniCheck = $sDiscordPlayerChatMsg Then
-		$sDiscordPlayerChatMsg = '[Chat] **\p**: \m'
+		$sDiscordPlayerChatMsg = '[\t] **\p**: \m'
 		$iIniFail += 1
 		$iIniError = $iIniError & "DiscordPlayerChatMsg, "
 	EndIf
@@ -3873,16 +3931,19 @@ Func ReadUini($aIniFile, $sLogFile)
 		Global $aDailyMsgInGame = AnnounceReplaceTime($sAnnounceNotifyTime1, $sInGameDailyMessage)
 		Global $aDailyMsgDiscord = AnnounceReplaceTime($sAnnounceNotifyTime1, $sDiscordDailyMessage)
 		Global $aDailyMsgTwitch = AnnounceReplaceTime($sAnnounceNotifyTime1, $sTwitchDailyMessage)
+		$sAnnounceNotifyTime1 = AddZero($sAnnounceNotifyTime1)
 		Global $aDailyTime = StringSplit($sAnnounceNotifyTime1, ",")
 		Global $aDailyCnt = Int($aDailyTime[0])
 		Global $aUpdateMsgInGame = AnnounceReplaceTime($sAnnounceNotifyTime2, $sInGameUpdateMessage)
 		Global $aUpdateMsgDiscord = AnnounceReplaceTime($sAnnounceNotifyTime2, $sDiscordUpdateMessage)
 		Global $aUpdateMsgTwitch = AnnounceReplaceTime($sAnnounceNotifyTime2, $sTwitchUpdateMessage)
+		$sAnnounceNotifyTime2 = AddZero($sAnnounceNotifyTime2)
 		Global $aUpdateTime = StringSplit($sAnnounceNotifyTime2, ",")
 		Global $aUpdateCnt = Int($aUpdateTime[0])
 		Global $aRemoteMsgInGame = AnnounceReplaceTime($sAnnounceNotifyTime3, $sInGameRemoteRestartMessage)
 		Global $aRemoteMsgDiscord = AnnounceReplaceTime($sAnnounceNotifyTime3, $sDiscordRemoteRestartMessage)
 		Global $aRemoteMsgTwitch = AnnounceReplaceTime($sAnnounceNotifyTime3, $sTwitchRemoteRestartMessage)
+		$sAnnounceNotifyTime3 = AddZero($sAnnounceNotifyTime3)
 		Global $aRemoteTime = StringSplit($sAnnounceNotifyTime3, ",")
 		Global $aRemoteCnt = Int($aRemoteTime[0])
 		Global $aDelayShutdownTime = Int($aDailyTime[$aDailyCnt])
@@ -3899,7 +3960,7 @@ Func ReadUini($aIniFile, $sLogFile)
 		iniFileCheck($aIniFile, $iIniFail, $iIniError)
 	EndIf
 EndFunc   ;==>ReadUini
-Func _RestartUtil($fQuickRebootTF = True, $tAdmin = False)     ; Thanks Yashied!  https://www.autoitscript.com/forum/topic/111215-restart-udf/
+Func _RestartUtil($fQuickRebootTF = True, $tAdmin = False) ; Thanks Yashied!  https://www.autoitscript.com/forum/topic/111215-restart-udf/
 	Local $Pid
 	Local $xArray[13]
 	$xArray[0] = '@echo off'
@@ -4071,7 +4132,8 @@ Func UpdateIni($aIniFile)
 	FileWriteLine($aIniFile, @CRLF)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send RESTART/STATUS Msg (ie 1) ###", $aServerDiscordWHSelStatus)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send PLAYERS ONLINE Msg (ie 2) ###", $aServerDiscordWHSelPlayers)
-	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send CHAT Msg (ie 23) ###", $aServerDiscordWHSelChat)
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send GLOBAL CHAT Msg (ie 23) ###", $aServerDiscordWHSelChat)
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send ALL CHAT Msg (ie 23) ###", $aServerDiscordWHSelAllChat)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send PLAYERS DIE Msg (ie 1234) ###", $aServerDiscordWHSelDie)
 	FileWriteLine($aIniFile, @CRLF)
 	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for DAILY reboot? (yes/no) ###", $sUseDiscordBotDaily)
@@ -4093,7 +4155,7 @@ Func UpdateIni($aIniFile)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Left Player Sub-Message (\p - Player Name(s) of player(s) that left server, \n Next Line) ###", $sDiscordPlayerLeftMsg)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Online Player Sub-Message (\p - Player Name(s) of player(s) online, \n Next Line) ###", $sDiscordPlayerOnlineMsg)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Died Message (\p - Player Name, \n Next Line) ###", $sDiscordPlayerDiedMsg)
-	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Chat (\p - Player Name, \m Message) ###", $sDiscordPlayerChatMsg)
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Chat (\p - Player Name, \m Message, \t Msg type (ex. Global,Friend)", $sDiscordPlayerChatMsg)
 	FileWriteLine($aIniFile, @CRLF)
 	IniWrite($aIniFile, " --------------- TWITCH INTEGRATION --------------- ", "Send Twitch message for DAILY reboot? (yes/no) ###", $sUseTwitchBotDaily)
 	IniWrite($aIniFile, " --------------- TWITCH INTEGRATION --------------- ", "Send Twitch message for UPDATE reboot? (yes/no) ###", $sUseTwitchBotUpdate)
@@ -4182,10 +4244,10 @@ Func AppendConfigSettings()
 	Global $aConfigFileTemp = "ServerConfig7dtdServerUtilTemp.xml"
 	Global $aConfigFileTempFull = $aServerDirLocal & "\" & $aConfigFileTemp
 	Local $tConfigPath = $aServerDirLocal & "\" & $aConfigFile
-	Local $sConfigFileTempExists = FileExists($aConfigFileTempFull)
-	If $sConfigFileTempExists = 1 Then
-		FileDelete($aConfigFileTempFull)
-	EndIf
+;~ 	Local $sConfigFileTempExists = FileExists($aConfigFileTempFull)
+;~ 	If $sConfigFileTempExists = 1 Then
+	FileDelete($aConfigFileTempFull)
+;~ 	EndIf
 	Local $tConfigPathOpen = FileOpen($tConfigPath, 0)
 	Local $tConfigRead2 = FileRead($tConfigPathOpen)
 	Local $tConfigRead1 = StringRegExpReplace($tConfigRead2, "</ServerSettings>", "<!-- BEGIN 7dtdtSEerverUtility Changes -->" & @CRLF)
@@ -4319,19 +4381,18 @@ Func TrayExitCloseY()
 EndFunc   ;==>TrayExitCloseY
 
 Func TrayRestartNow()
-	LogWrite(" [Server] Restart Server Now requested by user via tray icon (Restart Server Now).")
-	$tMB = MsgBox($MB_YESNOCANCEL, $aUtilName, "Do you wish to Restart Server Now?" & @CRLF & @CRLF & _
-			"Click (YES) to Restart Server Now." & @CRLF & _
-			"Click (NO) or (CANCEL) to cancel.", 15)
-	If $tMB = 6 Then ; (YES)
-;~ 		If $aBeginDelayedShutdown = 0 Then
-		LogWrite(" [Server] Restart Server Now request initiated by user.")
-		CloseServer($aTelnetIP, $aTelnetPort, $aTelnetPass)
-;~ 		EndIf
-	Else
-		LogWrite(" [Server] Restart Server Now request canceled by user.")
-		$aSplash = _Splash("Restart Server Now canceled. Resuming utility . . .", 2000)
-	EndIf
+	W2_RestartServer()
+;~ 	LogWrite(" [Server] Restart Server Now requested by user via tray icon (Restart Server Now).")
+;~ 	$tMB = MsgBox($MB_YESNOCANCEL, $aUtilName, "Do you wish to Restart Server Now?" & @CRLF & @CRLF & _
+;~ 			"Click (YES) to Restart Server Now." & @CRLF & _
+;~ 			"Click (NO) or (CANCEL) to cancel.", 15)
+;~ 	If $tMB = 6 Then ; (YES)
+;~ 		LogWrite(" [Server] Restart Server Now request initiated by user.")
+;~ 		CloseServer($aTelnetIP, $aTelnetPort, $aTelnetPass)
+;~ 	Else
+;~ 		LogWrite(" [Server] Restart Server Now request canceled by user.")
+;~ 		$aSplash = _Splash("Restart Server Now canceled. Resuming utility . . .", 2000)
+;~ 	EndIf
 EndFunc   ;==>TrayRestartNow
 
 Func TrayRemoteRestart()
@@ -4750,14 +4811,14 @@ Func _DownloadAndExtractFile($tFileName, $tURL1, $tURL2 = "", $tSplash = 0, $tFo
 		Else
 			_Splash("Downloading " & $tFileName & ".exe.", 0, 475)
 		EndIf
-		DirCreate($tFolder)     ; to extract to
+		DirCreate($tFolder) ; to extract to
 		InetGet($tURL1, $tFolder & "\" & $tFileName & ".zip", 1)
 		If Not FileExists($tFolder & "\" & $tFileName & ".zip") Then
-			SetError(1, 1)     ; Failed to download from source 1
+			SetError(1, 1) ; Failed to download from source 1
 			LogWrite(" [Util] Error downloading " & $tFileName & " from Source1: " & $tURL1)
 			InetGet($tURL2, $tFolder & "\" & $tFileName & ".zip", 1)
 			If Not FileExists($tFolder & "\" & $tFileName & ".zip") Then
-				SetError(1, 2)     ; Failed to download from source 2
+				SetError(1, 2) ; Failed to download from source 2
 				LogWrite(" [Util] Error downloading " & $tFileName & " from Source2: " & $tURL2)
 				SplashOff()
 				MsgBox($MB_OK, $aUtilName, "ERROR!!!  " & $tFileName & ".zip download failed.", 30)
@@ -4765,7 +4826,7 @@ Func _DownloadAndExtractFile($tFileName, $tURL1, $tURL2 = "", $tSplash = 0, $tFo
 				Return
 			EndIf
 		EndIf
-		DirCreate($tFolder)     ; to extract to
+		DirCreate($tFolder) ; to extract to
 		_ExtractZip($tFolder & "\" & $tFileName & ".zip", "", $tFileName & ".exe", $tFolder)
 		If $tFile2 <> 0 Then _ExtractZip($tFolder & "\" & $tFileName & ".zip", "", $tFile2, $tFolder)
 		If $tFile3 <> 0 Then _ExtractZip($tFolder & "\" & $tFileName & ".zip", "", $tFile3, $tFolder)
@@ -4775,7 +4836,7 @@ Func _DownloadAndExtractFile($tFileName, $tURL1, $tURL2 = "", $tSplash = 0, $tFo
 			LogWrite(" [Util] Downloaded and installed " & $tFileName & ".")
 		Else
 			LogWrite(" [Util] Error extracting " & $tFileName & ".exe from " & $tFileName & ".zip")
-			SetError(1, 3)     ; Failed to extract file
+			SetError(1, 3) ; Failed to extract file
 			SplashOff()
 			MsgBox($MB_OK, $aUtilName, "ERROR!!! Extracting " & $tFileName & ".exe from " & $tFileName & ".zip failed.", 30)
 			SplashOff()
@@ -4784,10 +4845,10 @@ Func _DownloadAndExtractFile($tFileName, $tURL1, $tURL2 = "", $tSplash = 0, $tFo
 		EndIf
 		FileDelete($tFolder & "\" & $tFileName & ".zip")
 		SplashOff()
-		Return True     ; Downloaded and installed file
+		Return True ; Downloaded and installed file
 	Else
 		SplashOff()
-		Return False     ; File existed
+		Return False ; File existed
 	EndIf
 EndFunc   ;==>_DownloadAndExtractFile
 
@@ -4985,10 +5046,13 @@ Func _TelnetLookForChat($tTxt4)
 		If StringInStr($tTxt4, " INF Chat (from") Then
 			Local $tName = _ArrayToString(_StringBetween($tTxt4, "'): '", "': "))
 			Local $tChat = StringMid($tTxt4, StringInStr($tTxt4, $tName & "': ") + StringLen($tName & "': "))
+			Local $tType = _ArrayToString(_StringBetween($tTxt4, "', to '", "'):"))
 			$tMsg4 = StringReplace($tMsg4, "\p", $tName)
 			$tMsg4 = StringReplace($tMsg4, "\m", $tChat)
 			$tMsg4 = StringReplace($tMsg4, "\n", @CRLF)
-			_SendDiscordChat($tMsg4)
+			$tMsg4 = StringReplace($tMsg4, "\t", $tType)
+			If $tType = "Global" Then _SendDiscordChat($tMsg4)
+			_SendDiscordAllChat($tMsg4)
 		EndIf
 	EndIf
 EndFunc   ;==>_TelnetLookForChat
@@ -5001,7 +5065,7 @@ EndFunc   ;==>_SendDiscordLeave
 Func _DisableCloseButton($tHwd)
 	$aSysMenu = DllCall("User32.dll", "hwnd", "GetSystemMenu", "hwnd", $tHwd, "int", 0)
 	$hSysMenu = $aSysMenu[0]
-	DllCall("User32.dll", "int", "RemoveMenu", "hwnd", $hSysMenu, "int", 0xF060, "int", 0)         ; 0=Disable, 1=Enable, CLOSE = 0xF060, MOVE = 0xF010, MAXIMIZE = 0xF030, MINIMIZE = 0xF020, SIZE = 0xF000, RESTORE = 0xF120
+	DllCall("User32.dll", "int", "RemoveMenu", "hwnd", $hSysMenu, "int", 0xF060, "int", 0) ; 0=Disable, 1=Enable, CLOSE = 0xF060, MOVE = 0xF010, MAXIMIZE = 0xF030, MINIMIZE = 0xF020, SIZE = 0xF000, RESTORE = 0xF120
 	DllCall("User32.dll", "int", "DrawMenuBar", "hwnd", $tHwd)
 EndFunc   ;==>_DisableCloseButton
 #Region ### START Koda GUI section ### Form=K:\AutoIT\_MyProgs\7dtdServerUpdateUtility\Koda GUIs\7DTD_W1(b3).kxf
@@ -5898,7 +5962,8 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetOnEvent(-1, "Label100Click")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		Global $Tab5 = GUICtrlCreateTabItem("5 Discord Webhooks")
-		Global $Group3 = GUICtrlCreateGroup("Discord Webhooks", 38, 65, 831, 355)
+		GUICtrlSetState(-1, $GUI_SHOW)
+		Global $Group3 = GUICtrlCreateGroup("Discord Webhooks", 38, 65, 831, 325)
 		GUICtrlSetFont(-1, 10, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		Global $Label14 = GUICtrlCreateLabel("Discord #1", 48, 88, 90, 24)
@@ -5933,186 +5998,206 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label17Click")
-		Global $Label18 = GUICtrlCreateLabel("Discord #2", 47, 177, 90, 24)
+		Global $Label18 = GUICtrlCreateLabel("Discord #2", 47, 167, 90, 24)
 		GUICtrlSetFont(-1, 12, 800, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label18Click")
-		Global $Label19 = GUICtrlCreateLabel("URL", 144, 179, 31, 20, $SS_RIGHT)
+		Global $Label19 = GUICtrlCreateLabel("URL", 144, 169, 31, 20, $SS_RIGHT)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label19Click")
-		Global $Label20 = GUICtrlCreateLabel("Bot Name", 112, 208, 64, 20, $SS_RIGHT)
+		Global $Label20 = GUICtrlCreateLabel("Bot Name", 112, 198, 64, 20, $SS_RIGHT)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label20Click")
-		Global $W1_T5_I_D2URL = GUICtrlCreateInput("Input1", 180, 176, 677, 22)
+		Global $W1_T5_I_D2URL = GUICtrlCreateInput("Input1", 180, 166, 677, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D2URLChange")
-		Global $W1_T5_I_D2Bot = GUICtrlCreateInput("Input1", 180, 205, 101, 22)
+		Global $W1_T5_I_D2Bot = GUICtrlCreateInput("Input1", 180, 195, 101, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D2BotChange")
-		Global $Label25 = GUICtrlCreateLabel("Avatar URL", 287, 209, 73, 20, $SS_RIGHT)
+		Global $Label25 = GUICtrlCreateLabel("Avatar URL", 287, 199, 73, 20, $SS_RIGHT)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label25Click")
-		Global $W1_T5_I_D2Avatar = GUICtrlCreateInput("Input1", 364, 206, 415, 22)
+		Global $W1_T5_I_D2Avatar = GUICtrlCreateInput("Input1", 364, 196, 415, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D2AvatarChange")
-		Global $W1_T5_C_D2TTS = GUICtrlCreateCheckbox("Use TTS", 785, 209, 79, 17)
+		Global $W1_T5_C_D2TTS = GUICtrlCreateCheckbox("Use TTS", 785, 199, 79, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_D2TTSClick")
-		Global $Label55 = GUICtrlCreateLabel("Discord #3", 47, 266, 90, 24)
+		Global $Label55 = GUICtrlCreateLabel("Discord #3", 47, 246, 90, 24)
 		GUICtrlSetFont(-1, 12, 800, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label55Click")
-		Global $Label56 = GUICtrlCreateLabel("URL", 142, 268, 31, 20, $SS_RIGHT)
+		Global $Label56 = GUICtrlCreateLabel("URL", 142, 248, 31, 20, $SS_RIGHT)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label56Click")
-		Global $Label57 = GUICtrlCreateLabel("Bot Name", 110, 297, 64, 20, $SS_RIGHT)
+		Global $Label57 = GUICtrlCreateLabel("Bot Name", 110, 277, 64, 20, $SS_RIGHT)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label57Click")
-		Global $W1_T5_I_D3URL = GUICtrlCreateInput("Input1", 178, 265, 677, 22)
+		Global $W1_T5_I_D3URL = GUICtrlCreateInput("Input1", 178, 245, 677, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D3URLChange")
-		Global $W1_T5_I_D3Bot = GUICtrlCreateInput("Input1", 178, 294, 101, 22)
+		Global $W1_T5_I_D3Bot = GUICtrlCreateInput("Input1", 178, 274, 101, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D3BotChange")
-		Global $Label58 = GUICtrlCreateLabel("Avatar URL", 285, 298, 73, 20, $SS_RIGHT)
+		Global $Label58 = GUICtrlCreateLabel("Avatar URL", 285, 278, 73, 20, $SS_RIGHT)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label58Click")
-		Global $W1_T5_I_D3Avatar = GUICtrlCreateInput("Input1", 362, 295, 415, 22)
+		Global $W1_T5_I_D3Avatar = GUICtrlCreateInput("Input1", 362, 275, 415, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D3AvatarChange")
-		Global $W1_T5_C_D3TTS = GUICtrlCreateCheckbox("Use TTS", 783, 298, 79, 17)
+		Global $W1_T5_C_D3TTS = GUICtrlCreateCheckbox("Use TTS", 783, 278, 79, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_D3TTSClick")
-		Global $Label59 = GUICtrlCreateLabel("Discord #4", 47, 351, 90, 24)
+		Global $Label59 = GUICtrlCreateLabel("Discord #4", 48, 321, 90, 24)
 		GUICtrlSetFont(-1, 12, 800, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label59Click")
-		Global $Label60 = GUICtrlCreateLabel("URL", 142, 354, 31, 20, $SS_RIGHT)
+		Global $Label60 = GUICtrlCreateLabel("URL", 142, 324, 31, 20, $SS_RIGHT)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label60Click")
-		Global $Label61 = GUICtrlCreateLabel("Bot Name", 110, 383, 64, 20, $SS_RIGHT)
+		Global $Label61 = GUICtrlCreateLabel("Bot Name", 110, 353, 64, 20, $SS_RIGHT)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label61Click")
-		Global $W1_T5_I_D4URL = GUICtrlCreateInput("Input1", 178, 351, 677, 22)
+		Global $W1_T5_I_D4URL = GUICtrlCreateInput("Input1", 178, 321, 677, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D4URLChange")
-		Global $W1_T5_I_D4Bot = GUICtrlCreateInput("Input1", 178, 380, 101, 22)
+		Global $W1_T5_I_D4Bot = GUICtrlCreateInput("Input1", 178, 350, 101, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D4BotChange")
-		Global $Label62 = GUICtrlCreateLabel("Avatar URL", 285, 384, 73, 20, $SS_RIGHT)
+		Global $Label62 = GUICtrlCreateLabel("Avatar URL", 285, 354, 73, 20, $SS_RIGHT)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label62Click")
-		Global $W1_T5_I_D4Avatar = GUICtrlCreateInput("Input1", 362, 381, 415, 22)
+		Global $W1_T5_I_D4Avatar = GUICtrlCreateInput("Input1", 362, 351, 415, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D4AvatarChange")
-		Global $W1_T5_C_D4TTS = GUICtrlCreateCheckbox("Use TTS", 783, 384, 79, 17)
+		Global $W1_T5_C_D4TTS = GUICtrlCreateCheckbox("Use TTS", 783, 354, 79, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_D4TTSClick")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		Global $Group11 = GUICtrlCreateGroup("Discord Webhook Select", 38, 431, 535, 117)
+		Global $Group11 = GUICtrlCreateGroup("Discord Webhook Select", 38, 397, 535, 145)
 		GUICtrlSetFont(-1, 10, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-		Global $Label63 = GUICtrlCreateLabel("Webhook(s) to send RESTART / STATUS Messages to:", 54, 453, 342, 20, $SS_RIGHT)
+		Global $Label63 = GUICtrlCreateLabel("Webhook(s) to send RESTART / STATUS Messages to:", 54, 419, 342, 20, $SS_RIGHT)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label63Click")
-		Global $W1_T5_C_WHRestart1 = GUICtrlCreateCheckbox("#1", 403, 454, 30, 17)
+		Global $W1_T5_C_WHRestart1 = GUICtrlCreateCheckbox("#1", 403, 420, 30, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHRestart1Click")
-		Global $W1_T5_C_WHRestart2 = GUICtrlCreateCheckbox("#2", 444, 454, 30, 17)
+		Global $W1_T5_C_WHRestart2 = GUICtrlCreateCheckbox("#2", 444, 420, 30, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHRestart2Click")
-		Global $W1_T5_C_WHRestart3 = GUICtrlCreateCheckbox("#3", 485, 454, 30, 17)
+		Global $W1_T5_C_WHRestart3 = GUICtrlCreateCheckbox("#3", 485, 420, 30, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHRestart3Click")
-		Global $W1_T5_C_WHRestart4 = GUICtrlCreateCheckbox("#4", 527, 454, 30, 17)
+		Global $W1_T5_C_WHRestart4 = GUICtrlCreateCheckbox("#4", 527, 420, 30, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHRestart4Click")
-		Global $Label64 = GUICtrlCreateLabel("Webhook(s) to send PLAYERS ONLINE Messages to:", 58, 475, 326, 20)
+		Global $Label64 = GUICtrlCreateLabel("Webhook(s) to send PLAYERS ONLINE Messages to:", 58, 441, 326, 20)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label64Click")
-		Global $W1_T5_C_WHOnline1 = GUICtrlCreateCheckbox("#1", 403, 476, 30, 17)
+		Global $W1_T5_C_WHOnline1 = GUICtrlCreateCheckbox("#1", 403, 442, 30, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHOnline1Click")
-		Global $W1_T5_C_WHOnline2 = GUICtrlCreateCheckbox("#2", 444, 476, 30, 17)
+		Global $W1_T5_C_WHOnline2 = GUICtrlCreateCheckbox("#2", 444, 442, 30, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHOnline2Click")
-		Global $W1_T5_C_WHOnline3 = GUICtrlCreateCheckbox("#3", 485, 476, 30, 17)
+		Global $W1_T5_C_WHOnline3 = GUICtrlCreateCheckbox("#3", 485, 442, 30, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHOnline3Click")
-		Global $W1_T5_C_WHOnline4 = GUICtrlCreateCheckbox("#4", 527, 476, 30, 17)
+		Global $W1_T5_C_WHOnline4 = GUICtrlCreateCheckbox("#4", 527, 442, 30, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHOnline4Click")
-		Global $Label65 = GUICtrlCreateLabel("Webhook(s) to send CHAT Messages to:", 58, 497, 249, 20)
+		Global $Label65 = GUICtrlCreateLabel("Webhook(s) to send GLOBAL CHAT Messages to:", 58, 463, 304, 20)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label65Click")
-		Global $W1_T5_C_WHChat1 = GUICtrlCreateCheckbox("#1", 403, 498, 30, 17)
+		Global $W1_T5_C_WHChat1 = GUICtrlCreateCheckbox("#1", 403, 464, 30, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHChat1Click")
-		Global $W1_T5_C_WHChat2 = GUICtrlCreateCheckbox("#2", 444, 498, 30, 17)
+		Global $W1_T5_C_WHChat2 = GUICtrlCreateCheckbox("#2", 444, 464, 30, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHChat2Click")
-		Global $W1_T5_C_WHChat3 = GUICtrlCreateCheckbox("#3", 485, 498, 30, 17)
+		Global $W1_T5_C_WHChat3 = GUICtrlCreateCheckbox("#3", 485, 464, 30, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHChat3Click")
-		Global $W1_T5_C_WHChat4 = GUICtrlCreateCheckbox("#4", 527, 498, 30, 17)
+		Global $W1_T5_C_WHChat4 = GUICtrlCreateCheckbox("#4", 527, 464, 30, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHChat4Click")
-		Global $Label66 = GUICtrlCreateLabel("Webhook(s) to send PLAYER DEATH Messages to:", 58, 519, 315, 20)
+		Global $Label66 = GUICtrlCreateLabel("Webhook(s) to send PLAYER DEATH Messages to:", 58, 485, 315, 20)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label66Click")
-		Global $W1_T5_C_WHDie1 = GUICtrlCreateCheckbox("#1", 403, 520, 30, 17)
+		Global $W1_T5_C_WHDie1 = GUICtrlCreateCheckbox("#1", 403, 486, 30, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHDie1Click")
-		Global $W1_T5_C_WHDie2 = GUICtrlCreateCheckbox("#2", 444, 520, 30, 17)
+		Global $W1_T5_C_WHDie2 = GUICtrlCreateCheckbox("#2", 444, 486, 30, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHDie2Click")
-		Global $W1_T5_C_WHDie3 = GUICtrlCreateCheckbox("#3", 485, 520, 30, 17)
+		Global $W1_T5_C_WHDie3 = GUICtrlCreateCheckbox("#3", 485, 486, 30, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHDie3Click")
-		Global $W1_T5_C_WHDie4 = GUICtrlCreateCheckbox("#4", 527, 520, 30, 17)
+		Global $W1_T5_C_WHDie4 = GUICtrlCreateCheckbox("#4", 527, 486, 30, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHDie4Click")
+		Global $Label102 = GUICtrlCreateLabel("Webhook(s) to send ALL CHAT Messages to:", 58, 507, 275, 20)
+		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "Label102Click")
+		Global $W1_T5_C_WHAllChat1 = GUICtrlCreateCheckbox("#1", 403, 508, 30, 17)
+		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T5_C_WHAllChat1Click")
+		Global $W1_T5_C_WHAllChat2 = GUICtrlCreateCheckbox("#2", 444, 508, 30, 17)
+		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T5_C_WHAllChat2Click")
+		Global $W1_T5_C_WHAllChat3 = GUICtrlCreateCheckbox("#3", 485, 508, 30, 17)
+		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T5_C_WHAllChat3Click")
+		Global $W1_T5_C_WHAllChat4 = GUICtrlCreateCheckbox("#4", 527, 508, 30, 17)
+		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T5_C_WHAllChat4Click")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		Global $Pic4 = GUICtrlCreatePic("" & $aFolderTemp & "zombie2.jpg", 722, 429, 53, 123)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
@@ -6194,11 +6279,11 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_I_PlayerDieChange")
-		Global $W1_T6_C_PlayerChat = GUICtrlCreateCheckbox("Player Chat (\p - Player Name, \m Message)", 30, 418, 277, 17)
+		Global $W1_T6_C_PlayerChat = GUICtrlCreateCheckbox("Player Chat (\p - Player Name, \m Message, \t Msg type (ex. Global,Friend)", 30, 418, 463, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_C_PlayerChatClick")
-		Global $W1_T6_I_PlayerChat = GUICtrlCreateInput("Input13", 312, 415, 562, 22)
+		Global $W1_T6_I_PlayerChat = GUICtrlCreateInput("Input13", 494, 415, 380, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_I_PlayerChatChange")
@@ -6468,12 +6553,12 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T10_B_RestartBothClick")
 		GUICtrlCreateTabItem("")
-		Global $W1_B_RestartServerAndUtil = GUICtrlCreateButton("RESTART Util && SERVER", 584, 4, 179, 25)
+		Global $W1_B_RestartServerAndUtil = GUICtrlCreateButton("RESTART SERVER", 628, 4, 135, 25)
 		GUICtrlSetFont(-1, 8, 800, 0, "MS Sans Serif")
 		GUICtrlSetBkColor(-1, 0xFF4A4A)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_B_RestartServerAndUtilClick")
-		Global $W1_B_RestartUtil = GUICtrlCreateButton("RESTART Util", 467, 4, 115, 25)
+		Global $W1_B_RestartUtil = GUICtrlCreateButton("RESTART Util", 509, 4, 115, 25)
 		GUICtrlSetFont(-1, 8, 800, 0, "MS Sans Serif")
 		GUICtrlSetBkColor(-1, 0xF3E747)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
@@ -6810,6 +6895,26 @@ Func _UpdateWindowConfig()
 		GUICtrlSetState($W1_T5_C_WHChat4, $GUI_CHECKED)
 	Else
 		GUICtrlSetState($W1_T5_C_WHChat4, $GUI_UNCHECKED)
+	EndIf
+	If StringInStr($aServerDiscordWHSelAllChat, "1") Then
+		GUICtrlSetState($W1_T5_C_WHAllChat1, $GUI_CHECKED)
+	Else
+		GUICtrlSetState($W1_T5_C_WHAllChat1, $GUI_UNCHECKED)
+	EndIf
+	If StringInStr($aServerDiscordWHSelAllChat, "2") Then
+		GUICtrlSetState($W1_T5_C_WHAllChat2, $GUI_CHECKED)
+	Else
+		GUICtrlSetState($W1_T5_C_WHAllChat2, $GUI_UNCHECKED)
+	EndIf
+	If StringInStr($aServerDiscordWHSelAllChat, "3") Then
+		GUICtrlSetState($W1_T5_C_WHAllChat3, $GUI_CHECKED)
+	Else
+		GUICtrlSetState($W1_T5_C_WHAllChat3, $GUI_UNCHECKED)
+	EndIf
+	If StringInStr($aServerDiscordWHSelAllChat, "4") Then
+		GUICtrlSetState($W1_T5_C_WHAllChat4, $GUI_CHECKED)
+	Else
+		GUICtrlSetState($W1_T5_C_WHAllChat4, $GUI_UNCHECKED)
 	EndIf
 	If StringInStr($aServerDiscordWHSelDie, "1") Then
 		GUICtrlSetState($W1_T5_C_WHDie1, $GUI_CHECKED)
@@ -7423,8 +7528,7 @@ Func W1_T10_B_RestartUtilClick()
 EndFunc   ;==>W1_T10_B_RestartUtilClick
 Func W1_T10_B_RestartBothClick()
 	ConfigClose()
-	TrayRestartNow()
-	_RestartUtil()
+	W2_RestartServer()
 EndFunc   ;==>W1_T10_B_RestartBothClick
 Func W1_T2_C_RestartExcessiveMemoryClick()
 	If GUICtrlRead($W1_T2_C_RestartExcessiveMemory) = $GUI_CHECKED Then
@@ -7948,19 +8052,19 @@ Func _ConfigWH($tCB, $tWH, $tPar) ; CheckBox ID, Webhook string, Value to add or
 EndFunc   ;==>_ConfigWH
 Func W1_T5_C_WHChat1Click()
 	$aServerDiscordWHSelChat = _ConfigWH($W1_T5_C_WHChat1, $aServerDiscordWHSelChat, "1")
-	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send CHAT Msg (ie 23) ###", $aServerDiscordWHSelChat)
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send GLOBAL CHAT Msg (ie 23) ###", $aServerDiscordWHSelChat)
 EndFunc   ;==>W1_T5_C_WHChat1Click
 Func W1_T5_C_WHChat2Click()
 	$aServerDiscordWHSelChat = _ConfigWH($W1_T5_C_WHChat2, $aServerDiscordWHSelChat, "2")
-	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send CHAT Msg (ie 23) ###", $aServerDiscordWHSelChat)
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send GLOBAL CHAT Msg (ie 23) ###", $aServerDiscordWHSelChat)
 EndFunc   ;==>W1_T5_C_WHChat2Click
 Func W1_T5_C_WHChat3Click()
 	$aServerDiscordWHSelChat = _ConfigWH($W1_T5_C_WHChat3, $aServerDiscordWHSelChat, "3")
-	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send CHAT Msg (ie 23) ###", $aServerDiscordWHSelChat)
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send GLOBAL CHAT Msg (ie 23) ###", $aServerDiscordWHSelChat)
 EndFunc   ;==>W1_T5_C_WHChat3Click
 Func W1_T5_C_WHChat4Click()
 	$aServerDiscordWHSelChat = _ConfigWH($W1_T5_C_WHChat4, $aServerDiscordWHSelChat, "4")
-	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send CHAT Msg (ie 23) ###", $aServerDiscordWHSelChat)
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send GLOBAL CHAT Msg (ie 23) ###", $aServerDiscordWHSelChat)
 EndFunc   ;==>W1_T5_C_WHChat4Click
 Func W1_T5_C_WHDie1Click()
 	$aServerDiscordWHSelDie = _ConfigWH($W1_T5_C_WHDie1, $aServerDiscordWHSelDie, "1")
@@ -7978,6 +8082,22 @@ Func W1_T5_C_WHDie4Click()
 	$aServerDiscordWHSelDie = _ConfigWH($W1_T5_C_WHDie4, $aServerDiscordWHSelDie, "4")
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send PLAYERS DIE Msg (ie 1234) ###", $aServerDiscordWHSelDie)
 EndFunc   ;==>W1_T5_C_WHDie4Click
+Func W1_T5_C_WHAllChat1Click()
+	$aServerDiscordWHSelAllChat = _ConfigWH($W1_T5_C_WHAllChat1, $aServerDiscordWHSelAllChat, "1")
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send ALL CHAT Msg (ie 23) ###", $aServerDiscordWHSelAllChat)
+EndFunc   ;==>W1_T5_C_WHAllChat1Click
+Func W1_T5_C_WHAllChat2Click()
+	$aServerDiscordWHSelAllChat = _ConfigWH($W1_T5_C_WHAllChat2, $aServerDiscordWHSelAllChat, "2")
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send ALL CHAT Msg (ie 23) ###", $aServerDiscordWHSelAllChat)
+EndFunc   ;==>W1_T5_C_WHAllChat2Click
+Func W1_T5_C_WHAllChat3Click()
+	$aServerDiscordWHSelAllChat = _ConfigWH($W1_T5_C_WHAllChat3, $aServerDiscordWHSelAllChat, "3")
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send ALL CHAT Msg (ie 23) ###", $aServerDiscordWHSelAllChat)
+EndFunc   ;==>W1_T5_C_WHAllChat3Click
+Func W1_T5_C_WHAllChat4Click()
+	$aServerDiscordWHSelAllChat = _ConfigWH($W1_T5_C_WHAllChat4, $aServerDiscordWHSelAllChat, "4")
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send ALL CHAT Msg (ie 23) ###", $aServerDiscordWHSelAllChat)
+EndFunc   ;==>W1_T5_C_WHAllChat4Click
 Func W1_T5_C_WHOnline1Click()
 	$aServerDiscordWHSelPlayers = _ConfigWH($W1_T5_C_WHOnline1, $aServerDiscordWHSelPlayers, "1")
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send PLAYERS ONLINE Msg (ie 2) ###", $aServerDiscordWHSelPlayers)
@@ -8104,7 +8224,7 @@ Func W1_T6_C_PlayerChatClick()
 	Else
 		$sUseDiscordBotPlayerChatYN = "no"
 	EndIf
-	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for Player Chat? (yes/no) ###", $sUseDiscordBotPlayerChatYN)
+	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for Player Global Chat? (yes/no) ###", $sUseDiscordBotPlayerChatYN)
 EndFunc   ;==>W1_T6_C_PlayerChatClick
 Func W1_T6_C_PlayerDieClick()
 	If GUICtrlRead($W1_T6_C_PlayerDie) = $GUI_CHECKED Then
@@ -8148,7 +8268,7 @@ Func W1_T6_I_PlayerChangeChange()
 EndFunc   ;==>W1_T6_I_PlayerChangeChange
 Func W1_T6_I_PlayerChatChange()
 	$sDiscordPlayerChatMsg = GUICtrlRead($W1_T6_I_PlayerChat)
-	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Chat (\p - Player Name, \m Message) ###", $sDiscordPlayerChatMsg)
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Chat (\p - Player Name, \m Message, \t Msg type (ex. Global,Friend)", $sDiscordPlayerChatMsg)
 EndFunc   ;==>W1_T6_I_PlayerChatChange
 Func W1_T6_I_PlayerDieChange()
 	$sDiscordPlayerDiedMsg = GUICtrlRead($W1_T6_I_PlayerDie)
@@ -8504,6 +8624,277 @@ Func W1_T9_C_RenameModFolderClick()
 	EndIf
 	IniWrite($aIniFile, " --------------- (ALMOST) FUTURE PROOF UPDATE OPTIONS --------------- ", "Rename the Mod Folder (therefore saving and disabling it) if Future Proof was needed (3 consecutive failed starts after an update)? (yes/no) ###", $aFPRenameModsYN)
 EndFunc   ;==>W1_T9_C_RenameModFolderClick
+Func W2_RestartServer()
+	If WinExists($W2_RestartServer) Then
+		_WinAPI_SetWindowPos($W2_RestartServer, $HWND_TOPMOST, 0, 0, 0, 0, BitOR($SWP_NOACTIVATE, $SWP_NOMOVE, $SWP_NOSIZE))
+		_WinAPI_SetWindowPos($W2_RestartServer, $HWND_NOTOPMOST, 0, 0, 0, 0, BitOR($SWP_NOACTIVATE, $SWP_NOMOVE, $SWP_NOSIZE))
+	Else
+		Global $cT1Background = "0x979A9A"
+		Global $cSWButtonStopServer = "0xB89B9B" ; Faded Red
+		Global $cButtonDefaultBackground = "0xDEDEDE" ; Light Gray
+;~ 		SetStatusBusy("Restart Serverserver. Waiting for User Input.", "Waiting for User Input")
+		Local $tGUIGapY = 28 ; Lower all but Stop Grids group by this amount
+		Local $tGUIGapStopY = 28 ; Lower Stop Grids group content by this amount
+		Global $W2_RestartServer = GUICreate("7dtdServerUpdateUtility", 906, 555, -1, -1, BitOR($GUI_SS_DEFAULT_GUI, $WS_SIZEBOX, $WS_THICKFRAME))
+		GUISetIcon($aIconFile, 99)
+		GUISetBkColor($cT1Background) ; $cMWBackground, $cT1Background, $cFWBackground
+		GUISetOnEvent($GUI_EVENT_CLOSE, "W2_RestartServerClose", $W2_RestartServer)
+		GUICtrlSetResizing(-1, $GUI_DOCKHCENTER + $GUI_DOCKVCENTER)
+		_DisableCloseButton($W2_RestartServer)
+		$Group2 = GUICtrlCreateGroup("Restart Server", 24, 24, 857, 505)
+		GUICtrlSetFont(-1, 12, 800, 0, "MS Sans Serif")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		$Group5 = GUICtrlCreateGroup("", 52, 56, 801, 265 + $tGUIGapStopY) ; 52, 56, 801, 265
+		Local $tGUI1x = 73
+		Local $tGUI1y = 80
+		Global $W2_R1_RestartLater = GUICtrlCreateRadio("Restart server in __ minutes with announcement  (\m - minutes)", $tGUI1x, $tGUI1y, 701, 17) ; 73, 91, 701, 17
+		GUICtrlSetOnEvent(-1, "W2_R1_RestartLater")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetState(-1, $GUI_CHECKED)
+		Global $W2_R1_RestartNow = GUICtrlCreateRadio("Restart server NOW with announcement", $tGUI1x, $tGUI1y + 100 + $tGUIGapStopY, 757, 17) ; 73, 203, 757, 17
+		GUICtrlSetOnEvent(-1, "W2_R1_RestartNow")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		Global $W2_R1_RestartNoAnnounce = GUICtrlCreateRadio("Restart server NOW with NO announcement", $tGUI1x, $tGUI1y + 200 + $tGUIGapStopY, 757, 17) ; 73, 203, 757, 17
+		GUICtrlSetOnEvent(-1, "W2_R1_RestartNoAnnounce")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUIStartGroup()
+		Global $W2_R3_MsgLaterDefault = GUICtrlCreateRadio("", 104, $tGUI1y + 28 + $tGUIGapStopY, 17, 17) ; 104, 123, 17, 17
+		GUICtrlSetOnEvent(-1, "W2_R3_MsgLaterDefault")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetState(-1, $GUI_CHECKED)
+		Global $W2_R3_MsgLaterCustom = GUICtrlCreateRadio("", 104, $tGUI1y + 56 + $tGUIGapStopY, 13, 17) ; 104, 151, 13, 17
+		GUICtrlSetOnEvent(-1, "W2_R3_MsgLaterCustom")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlCreateGroup("", -99, -99, 1, 1)
+		GUICtrlSetState(-1, $GUI_HIDE)
+		Local $tGapL1 = 372
+		Local $W2_L_AnnounceNotifyStopGrids = GUICtrlCreateLabel("Announcement __ minutes before restarting server (comma separated 0-60)", 121, $tGUI1y + 28 + 1, $tGapL1 - 5, 21) ; 121, 119, 713, 28
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		Global $W2_I3_AnnounceNotifyTime4 = GUICtrlCreateInput("", 121 + $tGapL1 + 5, $tGUI1y + 28 - 1, 713 - $tGapL1 - 5, 21) ; 121, 119, 713, 28
+		GUICtrlSetOnEvent(-1, "W2_I3_AnnounceNotifyTime4")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		Global $W2_I1_MsgLaterDefault = GUICtrlCreateInput($sDiscordRemoteRestartMessage, 121, $tGUI1y + 28 - 1 + $tGUIGapStopY, 713, 21) ; 121, 119, 713, 28
+		GUICtrlSetOnEvent(-1, "W2_I1_MsgLaterDefault")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetState(-1, $GUI_DISABLE)
+		Global $W2_I1_MsgLaterCustom = GUICtrlCreateInput("", 121, $tGUI1y + 56 - 1 + $tGUIGapStopY, 713, 21) ; 121, 147, 713, 28
+		GUICtrlSetOnEvent(-1, "W2_I1_MsgLaterCustom")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUIStartGroup()
+		Global $W2_R4_MsgNowDefault = GUICtrlCreateRadio("", 104, $tGUI1y + 100 + 28 + $tGUIGapStopY, 17, 17) ; 102, 240, 17, 17
+		GUICtrlSetOnEvent(-1, "W2_R4_MsgNowDefault")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetState(-1, $GUI_CHECKED)
+		Global $W2_R4_MsgNowCustom = GUICtrlCreateRadio("", 104, $tGUI1y + 100 + 56 + $tGUIGapStopY, 13, 17) ; 102, 268, 13, 17
+		GUICtrlSetOnEvent(-1, "W2_R4_MsgNowCustom")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlCreateGroup("", -99, -99, 1, 1)
+		GUICtrlSetState(-1, $GUI_HIDE)
+		Global $W2_I2_MsgNowDefault = GUICtrlCreateInput("Admin has requested a server reboot. Server will reboot now.", 121, $tGUI1y + 100 + 28 - 1 + $tGUIGapStopY, 713, 21) ; 122, 236, 713, 28
+		GUICtrlSetOnEvent(-1, "W2_I2_MsgNowDefault")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetState(-1, $GUI_DISABLE)
+		Global $W2_I2_MsgNowCustom = GUICtrlCreateInput("", 121, $tGUI1y + 100 + 56 - 1 + $tGUIGapStopY, 713, 21) ; 122, 264, 713, 28
+		GUICtrlSetOnEvent(-1, "W2_I2_MsgNowCustom")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlCreateGroup("", -99, -99, 1, 1)
+		GUICtrlSetState(-1, $GUI_HIDE)
+;~ 		Global $W2_R2_Group = GUICtrlCreateGroup("In Game Message", 48, 340 + $tGUIGapY, 341, 105)     ; 48, 340, 341, 105
+;~ 		Global $W2_R2_SendToAll = GUICtrlCreateRadio("Send to ALL local grids", 72, 372 + $tGUIGapY, 257, 17)     ; 72, 372, 257, 17
+;~ 		GUICtrlSetOnEvent(-1, "W2_R2_SendToAll")
+;~ 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+;~ 		Global $W2_R2_SendToAffected = GUICtrlCreateRadio("Send to affected grids only", 72, 404 + $tGUIGapY, 269, 17)     ; 72, 404, 269, 17
+;~ 		GUICtrlSetOnEvent(-1, "W2_R2_SendToAffected")
+;~ 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+;~ 		GUICtrlCreateGroup("", -99, -99, 1, 1)
+;~ 		Global $W2_C1_SkipAnnounce = GUICtrlCreateCheckbox("Skip announcement if no one is online.", 448, 364 + $tGUIGapY, 301, 17)     ; 448, 364, 301, 17
+;~ 		GUICtrlSetOnEvent(-1, "W2_C1_SkipAnnounce")
+;~ 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+;~ 		GUICtrlSetFont(-1, 11, 800, 0, "MS Sans Serif")
+		Global $W2_C2_SendDiscord = GUICtrlCreateCheckbox("Send message to Discord", 448, 340 + $tGUIGapY, 301, 17) ; 448, 392, 301, 17
+		GUICtrlSetOnEvent(-1, "W2_C2_SendDiscord")
+		GUICtrlSetFont(-1, 11, 800, 0, "MS Sans Serif")
+		Global $W2_C3_SendTwitch = GUICtrlCreateCheckbox("Send message to Twitch", 448, 372 + $tGUIGapY, 301, 17) ; 448, 420, 301, 17
+		GUICtrlSetOnEvent(-1, "W2_C3_SendTwitch")
+		GUICtrlSetFont(-1, 11, 800, 0, "MS Sans Serif")
+		Global $W2_B_RestartServer = GUICtrlCreateButton("Restart Server", 636, 480, 127, 25) ; 636, 480, 127, 25
+		GUICtrlSetOnEvent(-1, "W2_B_RestartServer")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetBkColor(-1, $cSWButtonStopServer)
+		Global $W2_B_Cancel = GUICtrlCreateButton("Cancel", 776, 480, 75, 25) ; 776, 480, 75, 25
+		GUICtrlSetOnEvent(-1, "W2_B_Cancel")
+		GUICtrlSetBkColor(-1, $cButtonDefaultBackground)
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlCreateGroup("", -99, -99, 1, 1)
+		W2_ReadUtilCFG()
+		GUISetState(@SW_SHOW)
+	EndIf
+EndFunc   ;==>W2_RestartServer
+Func W2_ReadUtilCFG()
+	Local $tR1_UserRadioSettings = IniRead($aUtilCFGFile, "CFG", "$tW2_RestartSettings", "")
+	If StringInStr($tR1_UserRadioSettings, "a") Then GUICtrlSetState($W2_R1_RestartLater, $GUI_CHECKED)
+	If StringInStr($tR1_UserRadioSettings, "b") Then GUICtrlSetState($W2_R1_RestartNow, $GUI_CHECKED)
+	If StringInStr($tR1_UserRadioSettings, "c") Then GUICtrlSetState($W2_R1_RestartNoAnnounce, $GUI_CHECKED)
+	If StringInStr($tR1_UserRadioSettings, "d") Then GUICtrlSetState($W2_R3_MsgLaterDefault, $GUI_CHECKED)
+	If StringInStr($tR1_UserRadioSettings, "e") Then GUICtrlSetState($W2_R3_MsgLaterCustom, $GUI_CHECKED)
+	If StringInStr($tR1_UserRadioSettings, "f") Then GUICtrlSetState($W2_R4_MsgNowDefault, $GUI_CHECKED)
+	If StringInStr($tR1_UserRadioSettings, "g") Then GUICtrlSetState($W2_R4_MsgNowCustom, $GUI_CHECKED)
+	If StringInStr($tR1_UserRadioSettings, "h") Then GUICtrlSetState($W2_C2_SendDiscord, $GUI_CHECKED)
+	If StringInStr($tR1_UserRadioSettings, "i") Then GUICtrlSetState($W2_C3_SendTwitch, $GUI_CHECKED)
+	$tW2_I3_AnnounceNotifyTime4 = IniRead($aUtilCFGFile, "CFG", "W2_I3_AnnounceNotifyTime4", $sAnnounceNotifyTime3)
+	GUICtrlSetData($W2_I3_AnnounceNotifyTime4, $tW2_I3_AnnounceNotifyTime4)
+	$tW2_I2_MsgNowCustom = IniRead($aUtilCFGFile, "CFG", "W2_I2_MsgNowCustom", "Admin has requested a server reboot. Server will reboot now.")
+	GUICtrlSetData($W2_I2_MsgNowCustom, $tW2_I2_MsgNowCustom)
+	$tW2_I1_MsgLaterCustom = IniRead($aUtilCFGFile, "CFG", "W2_I1_MsgLaterCustom", $sDiscordRemoteRestartMessage)
+	GUICtrlSetData($W2_I1_MsgLaterCustom, $tW2_I1_MsgLaterCustom)
+	If GUICtrlRead($W2_C2_SendDiscord) = $GUI_CHECKED Then
+		$sUseDiscordBotRestartServer = "yes"
+	Else
+		$sUseDiscordBotRestartServer = "no"
+	EndIf
+	If GUICtrlRead($W2_C3_SendTwitch) = $GUI_CHECKED Then
+		$sUseTwitchBotRestartServer = "yes"
+	Else
+		$sUseTwitchBotRestartServer = "no"
+	EndIf
+EndFunc   ;==>W2_ReadUtilCFG
+Func W2_WriteUtilCFG()
+	$tR1_UserRadioSettings = "!"
+	If GUICtrlRead($W2_R1_RestartLater) = $GUI_CHECKED Then $tR1_UserRadioSettings &= "a"
+	If GUICtrlRead($W2_R1_RestartNow) = $GUI_CHECKED Then $tR1_UserRadioSettings &= "b"
+	If GUICtrlRead($W2_R1_RestartNoAnnounce) = $GUI_CHECKED Then $tR1_UserRadioSettings &= "c"
+
+	If GUICtrlRead($W2_R3_MsgLaterDefault) = $GUI_CHECKED Then $tR1_UserRadioSettings &= "d"
+	If GUICtrlRead($W2_R3_MsgLaterCustom) = $GUI_CHECKED Then $tR1_UserRadioSettings &= "e"
+
+	If GUICtrlRead($W2_R4_MsgNowDefault) = $GUI_CHECKED Then $tR1_UserRadioSettings &= "f"
+	If GUICtrlRead($W2_R4_MsgNowCustom) = $GUI_CHECKED Then $tR1_UserRadioSettings &= "g"
+	$tW2_I3_AnnounceNotifyTime4 = GUICtrlRead($W2_I3_AnnounceNotifyTime4)
+	IniWrite($aUtilCFGFile, "CFG", "W2_I3_AnnounceNotifyTime4", $tW2_I3_AnnounceNotifyTime4)
+	$tW2_I2_MsgNowCustom = GUICtrlRead($W2_I2_MsgNowCustom)
+	IniWrite($aUtilCFGFile, "CFG", "W2_I2_MsgNowCustom", $tW2_I2_MsgNowCustom)
+	$tW2_I1_MsgLaterCustom = GUICtrlRead($W2_I1_MsgLaterCustom)
+	IniWrite($aUtilCFGFile, "CFG", "W2_I1_MsgLaterCustom", $tW2_I1_MsgLaterCustom)
+	If GUICtrlRead($W2_C2_SendDiscord) = $GUI_CHECKED Then
+		$sUseDiscordBotRestartServer = "yes"
+		$tR1_UserRadioSettings &= "h"
+	Else
+		$sUseDiscordBotRestartServer = "no"
+	EndIf
+	If GUICtrlRead($W2_C3_SendTwitch) = $GUI_CHECKED Then
+		$sUseTwitchBotRestartServer = "yes"
+		$tR1_UserRadioSettings &= "i"
+	Else
+		$sUseTwitchBotRestartServer = "no"
+	EndIf
+	IniWrite($aUtilCFGFile, "CFG", "$tW2_RestartSettings", $tR1_UserRadioSettings)
+EndFunc   ;==>W2_WriteUtilCFG
+Func W2_RestartServerClose()
+	W2_WriteUtilCFG()
+	Sleep(500)
+	GUIDelete($W2_RestartServer)
+EndFunc   ;==>W2_RestartServerClose
+Func W2_R1_RestartLater()
+	W2_WriteUtilCFG()
+EndFunc   ;==>W2_R1_RestartLater
+Func W2_R1_RestartNow()
+	W2_WriteUtilCFG()
+EndFunc   ;==>W2_R1_RestartNow
+Func W2_R1_RestartNoAnnounce()
+	W2_WriteUtilCFG()
+EndFunc   ;==>W2_R1_RestartNoAnnounce
+Func W2_R3_MsgLaterDefault()
+	GUICtrlSetState($W2_R1_RestartLater, $GUI_CHECKED)
+	W2_WriteUtilCFG()
+EndFunc   ;==>W2_R3_MsgLaterDefault
+Func W2_R3_MsgLaterCustom()
+	GUICtrlSetState($W2_R1_RestartLater, $GUI_CHECKED)
+	W2_WriteUtilCFG()
+EndFunc   ;==>W2_R3_MsgLaterCustom
+Func W2_I3_AnnounceNotifyTime4()
+	W2_WriteUtilCFG()
+	Local $tAnnounceNotifyTime4 = GUICtrlRead($W2_I3_AnnounceNotifyTime4)
+	If $tAnnounceNotifyTime4 = "" Then $tAnnounceNotifyTime4 = "1"
+	$tAnnounceNotifyTime4 = _SortString($tAnnounceNotifyTime4)
+	GUICtrlSetState($W2_R1_RestartLater, $GUI_CHECKED)
+	GUICtrlSetData($W2_I3_AnnounceNotifyTime4, $tAnnounceNotifyTime4)
+	W2_WriteUtilCFG()
+EndFunc   ;==>W2_I3_AnnounceNotifyTime4
+Func W2_I1_MsgLaterDefault()
+	GUICtrlSetState($W2_R1_RestartLater, $GUI_CHECKED)
+	W2_WriteUtilCFG()
+EndFunc   ;==>W2_I1_MsgLaterDefault
+Func W2_I1_MsgLaterCustom()
+	GUICtrlSetState($W2_R1_RestartLater, $GUI_CHECKED)
+	GUICtrlSetState($W2_R3_MsgLaterCustom, $GUI_CHECKED)
+	W2_WriteUtilCFG()
+EndFunc   ;==>W2_I1_MsgLaterCustom
+Func W2_R4_MsgNowDefault()
+	GUICtrlSetState($W2_R1_RestartNow, $GUI_CHECKED)
+	W2_WriteUtilCFG()
+EndFunc   ;==>W2_R4_MsgNowDefault
+Func W2_R4_MsgNowCustom()
+	GUICtrlSetState($W2_R1_RestartNow, $GUI_CHECKED)
+	W2_WriteUtilCFG()
+EndFunc   ;==>W2_R4_MsgNowCustom
+Func W2_I2_MsgNowDefault()
+	GUICtrlSetState($W2_R1_RestartNow, $GUI_CHECKED)
+	W2_WriteUtilCFG()
+EndFunc   ;==>W2_I2_MsgNowDefault
+Func W2_I2_MsgNowCustom()
+	GUICtrlSetState($W2_R1_RestartNow, $GUI_CHECKED)
+	GUICtrlSetState($W2_R4_MsgNowCustom, $GUI_CHECKED)
+	W2_WriteUtilCFG()
+EndFunc   ;==>W2_I2_MsgNowCustom
+Func W2_C2_SendDiscord()
+	W2_WriteUtilCFG()
+EndFunc   ;==>W2_C2_SendDiscord
+Func W2_C3_SendTwitch()
+	W2_WriteUtilCFG()
+EndFunc   ;==>W2_C3_SendTwitch
+Func W2_B_RestartServer()
+	W2_WriteUtilCFG()
+	W2_RestartServerClose()
+	Local $tR1_UserRadioSettings = IniRead($aUtilCFGFile, "CFG", "$tW2_RestartSettings", "")
+	Local $tTimer8 = TimerInit()
+	If StringInStr($tR1_UserRadioSettings, "a") Then
+		Local $sRestartMsg = $sDiscordRemoteRestartMessage
+		$tAnnounceNotifyTime4 = IniRead($aUtilCFGFile, "CFG", "W2_I3_AnnounceNotifyTime4", $sAnnounceNotifyTime3)
+		$sAnnounceNotifyTime4 = $tAnnounceNotifyTime4
+		If StringInStr($tR1_UserRadioSettings, "e") Then $sRestartMsg = IniRead($aUtilCFGFile, "CFG", "W2_I1_MsgLaterCustom", $sDiscordRemoteRestartMessage)
+		$tAnnounceNotifyTime4 = AddZero($tAnnounceNotifyTime4)
+		Global $aRestartMsg = AnnounceReplaceTime($tAnnounceNotifyTime4, $sRestartMsg)
+		Global $aRestartTime = StringSplit($tAnnounceNotifyTime4, ",")
+		$aRestartCnt = Int($aRestartTime[0])
+		LogWrite(" [Server] Restart server request initiated by user.")
+		$aRebootReason = "restartserver"
+		$aTimeCheck0 = _NowCalc()
+		$aBeginDelayedShutdown = 1
+		_Splash("Restart server with announcements initiated.")
+	ElseIf StringInStr($tR1_UserRadioSettings, "b") Then
+		_Splash("Restarting server with announcement(s) now.", 2500)
+		Local $sRestartMsg = "Admin has requested a server reboot. Server will reboot now."
+		If StringInStr($tR1_UserRadioSettings, "g") Then $sRestartMsg = IniRead($aUtilCFGFile, "CFG", "W2_I2_MsgNowCustom", $sDiscordRemoteRestartMessage)
+		SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $sRestartMsg)
+		If $sUseDiscordBotRestartServer = "yes" Then _SendDiscordStatus($sRestartMsg)
+		If $sUseTwitchBotRestartServer = "yes" Then TwitchMsgLog($sRestartMsg)
+		CloseServer($aTelnetIP, $aTelnetPort, $aTelnetPass, "yes")
+	Else
+		_Splash("Restarting server now.", 2500)
+		CloseServer($aTelnetIP, $aTelnetPort, $aTelnetPass, "yes")
+	EndIf
+	If TimerDiff($tTimer8) < 3000 Then Sleep(3000 - TimerDiff($tTimer8))
+	SplashOff()
+EndFunc   ;==>W2_B_RestartServer
+Func W2_B_Cancel()
+	W2_RestartServerClose()
+EndFunc   ;==>W2_B_Cancel
+Func AddZero($tString)
+	Local $tArray = StringSplit($tString, ",")
+	If Number($tArray[1]) > 0 Then $tString = "0," & $tString
+	Return $tString
+EndFunc   ;==>AddZero
+
 Func _ErrorCode($tError)
 	If IsDeclared("xErrorCodes") = 0 Then
 		Global $xErrorCodes[0][2]
