@@ -1,1 +1,0 @@
-v2.5.4^v2.5.4|Added Restart options window|Added separate Global chat to Discord|Other minor improvements
