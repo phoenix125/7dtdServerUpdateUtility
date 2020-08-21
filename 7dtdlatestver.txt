@@ -1,1 +1,1 @@
-v2.5.4^v2.5.4|Added Restart options window|Added separate Global chat to Discord|Other minor improvements
+v2.5.5^v2.5.5|Fixed: Line error when Steam branch (latest_experimental) no longer exists.

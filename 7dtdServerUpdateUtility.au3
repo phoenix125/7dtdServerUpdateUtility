@@ -1,11 +1,11 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.5.4.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.5.5.exe
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.5.4.0
+#AutoIt3Wrapper_Res_Fileversion=2.5.5.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.5.4
+#AutoIt3Wrapper_Res_ProductVersion=2.5.5
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -45,15 +45,16 @@ Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
 
 ; *** End added by AutoIt3Wrapper ***
 
-$aUtilVerStable = "v2.5.4" ; (2020-08-10)
-$aUtilVerBeta = "v2.5.4" ; (2020-08-10)
+$aUtilVerStable = "v2.5.5" ; (2020-08-21)
+$aUtilVerBeta = "v2.5.5" ; (2020-08-21)
 $aUtilVersion = $aUtilVerStable
-Global $aUtilVerNumber = 5
+Global $aUtilVerNumber = 6
 ; 1 = v2.3.3
 ; 2 = v2.3.4
 ; 3 = v2.5.0
 ; 4 = v2.5.1/2/3
 ; 5 = 2.5.4
+; 6 = 2.5.5
 
 ;**** Directives created by AutoIt3Wrapper_GUI ****
 ;Originally written by Dateranoth for use and modified for 7DTD by Phoenix125.com
@@ -356,6 +357,13 @@ If $aCFGLastVerNumber < 5 Then
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Chat (\p - Player Name, \m Message, \t Msg type (ex. Global,Friend)", $sDiscordPlayerChatMsg)
 	$tUpdateINI = True
 EndIf
+If $aCFGLastVerNumber < 6 Then
+	Local $tTxt = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Online Player Message (see above for substitutions) ###", 'Players Online: **\o / \m**  Game Time: **\t**  Next Horde: **\h days**\j\l\a')
+	$tTxt = StringReplace($tTxt, 'days**\j\l\a', 'days**   \j\l\a')
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Online Player Message (see above for substitutions) ###", $tTxt)
+	$tUpdateINI = True
+EndIf
+
 If $tUpdateINI Then
 	ReadUini($aIniFile, $aLogFile)
 	FileDelete($aIniFile)
@@ -2232,7 +2240,7 @@ Func GetLatestVersion($sCmdDir)
 				LogWrite(" [Update] ERROR!!! " & $aServerVer & " branch not found by SteamCMD")
 				SplashOff()
 				For $x1 = 0 To 5
-					$aSplash = _Splash("ERROR! " & $aServerVer & " branch not found by SteamCMD.", 0, 300, 75)
+					$tSplash = _Splash("ERROR! " & $aServerVer & " branch not found by SteamCMD.", 0, 300, 75)
 					Sleep(850)
 					ControlSetText($tSplash, "", "Static1", "")
 					Sleep(150)
@@ -3666,7 +3674,7 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniError = $iIniError & "UseDiscordBotFirstAnnouncement, "
 	EndIf
 	If $iniCheck = $sDiscordPlayersMsg Then
-		$sDiscordPlayersMsg = 'Players Online: **\o / \m**  Game Time: **\t**  Next Horde: **\h days**\j\l\a'
+		$sDiscordPlayersMsg = 'Players Online: **\o / \m**  Game Time: **\t**  Next Horde: **\h days**   \j\l\a'
 		$iIniFail += 1
 		$iIniError = $iIniError & "DiscordPlayersMsg, "
 	EndIf
@@ -6264,7 +6272,7 @@ Func GUI_Config($tNewInstallTF = False)
 		Global $Label67 = GUICtrlCreateLabel("Left Player Sub-Message ( \l )", 81, 330, 144, 17)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label67Click")
-		Global $Label68 = GUICtrlCreateLabel("Online Player Sub-Message ( \o )", 67, 357, 160, 17)
+		Global $Label68 = GUICtrlCreateLabel("Online Player Sub-Message ( \a )", 67, 357, 160, 17)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label68Click")
 		Global $W1_T6_I_SubOnlinePlayer = GUICtrlCreateInput("Input13", 230, 353, 644, 22)
