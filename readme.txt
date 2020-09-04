@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.5.6 (2020-09-03) (Beta and Stable are the same version)
+- Latest version: 7dtdServerUpdateUtility_v2.5.7 (2020-09-04) (Beta and Stable are the same version)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -141,6 +141,9 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2020-09-03) v2.5.7 Bug fix
+-Fixed: Line 19678 Error. (Thanks to @Timikana for reporting)
+
 (2020-09-03) v2.5.6 Bug fix and Discord announcement updates
 - Fixed: Line 21723 Error due to failed steamcmd update check. (Thanks to @Timikana for reporting)
 - Added: Discord: Added emotes to default player accouncements.

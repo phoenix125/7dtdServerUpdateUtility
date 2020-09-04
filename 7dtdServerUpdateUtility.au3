@@ -1,11 +1,11 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.5.6.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.5.7.exe
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.5.6.0
+#AutoIt3Wrapper_Res_Fileversion=2.5.7.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.5.6
+#AutoIt3Wrapper_Res_ProductVersion=2.5.7
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -45,8 +45,8 @@ Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
 
 ; *** End added by AutoIt3Wrapper ***
 
-$aUtilVerStable = "v2.5.6" ; (2020-09-03)
-$aUtilVerBeta = "v2.5.6" ; (2020-09-03)
+$aUtilVerStable = "v2.5.7" ; (2020-09-04)
+$aUtilVerBeta = "v2.5.7" ; (2020-09-04)
 $aUtilVersion = $aUtilVerStable
 Global $aUtilVerNumber = 7
 ; 1 = v2.3.3
@@ -55,7 +55,7 @@ Global $aUtilVerNumber = 7
 ; 4 = v2.5.1/2/3
 ; 5 = 2.5.4
 ; 6 = 2.5.5
-; 7 = 2.5.6
+; 7 = 2.5.6/7
 
 ;**** Directives created by AutoIt3Wrapper_GUI ****
 ;Originally written by Dateranoth for use and modified for 7DTD by Phoenix125.com
@@ -373,7 +373,7 @@ If $aCFGLastVerNumber < 7 Then
 	Global $sDiscordPlayerDiedMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Died Message (\p - Player Name, \n Next Line) ###", '*:pirate_flag: \p died.*')
 	Global $sDiscordPlayerChatMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Chat (\p - Player Name, \m Message, \t Msg type (ex. Global,Friend)", '[\t] **\p**: \m')
 	If $sDiscordPlayersMsg = 'Players Online: **\o / \m**  Game Time: **\t**  Next Horde: **\h days**   \j\l\a' Then
-		$sDiscordPlayersMsg = 'Players Online: **\o / \m**  Game Time: **\t**  Next Horde: **\h days**\n\j\l   :hammer_pick:   \a')
+		$sDiscordPlayersMsg = 'Players Online: **\o / \m**  Game Time: **\t**  Next Horde: **\h days**\n\j\l   :hammer_pick:   \a'
 		IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Online Player Message (see above for substitutions) ###", $sDiscordPlayersMsg)
 	EndIf
 	If $sDiscordPlayerJoinMsg = 'Joined: *\p*' Then
