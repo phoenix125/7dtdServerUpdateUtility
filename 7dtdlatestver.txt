@@ -1,1 +1,1 @@
-v2.5.5^v2.5.5|Fixed: Line error when Steam branch (latest_experimental) no longer exists.
+v2.5.6^v2.5.6|Bug fix and Discord announcement updates|-Fixed: Line 21723 Error due to failed steamcmd update check.|-Added: Discord: Added emotes to default player accouncements.|-Fixed: Start logo now shows again.|-Added: Discord: Added default 7DTD logo URL for Discord webhooks

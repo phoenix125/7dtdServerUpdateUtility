@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.5.5 (2020-08-21) (Beta and Stable are the same version)
+- Latest version: 7dtdServerUpdateUtility_v2.5.6 (2020-09-03) (Beta and Stable are the same version)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -141,12 +141,18 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2020-09-03) v2.5.6 Bug fix and Discord announcement updates
+- Fixed: Line 21723 Error due to failed steamcmd update check. (Thanks to @Timikana for reporting)
+- Added: Discord: Added emotes to default player accouncements.
+- Added: Discord: Added default 7DTD logo URL for Discord webhooks.
+- Fixed: Start logo now shows again.
+
 (2020-08-21) v2.5.5 Fixed Error when Steam branch does not exist
 - Fixed: Line 20431 Error when using Steam branch does not exist (Thanks to @arramus & @Majesticwalker for reporting)
 - Fixed: Discord: Change default Online Player message: Add spaces between "Next Horde: x days" and "Player left/joined" (Thanks to @ ًًً\ 𝓞𝓱𝓨𝓪 / for reporting)
 - Fixed: "Online Player submessage ( \o )" changed to "Online Player Sub-Message ( \a )" in Config window.
 
-(2020-08-10) v2.5.4 Added Restart options window, added separate Global chat to Discord, other minor improvements
+(2020-08-16) v2.5.4 Added Restart options window, added separate Global chat to Discord, other minor improvements
 - Added: Option to announce manual restart with or without countdown timer to Discord/in-game. (Thanks to @ًًً\ 𝓞𝓱𝓨𝓪 / for requesting)
 - Added: Discord: Separate webhook options for global chat (for public Discord) and all chat (for admin, if desired). (Thanks to @ًًً\ 𝓞𝓱𝓨𝓪 / for requesting)
 - Fixed: When restart minutes had only one number, restarts would fail.

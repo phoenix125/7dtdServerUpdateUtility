@@ -1,11 +1,11 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.5.5.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.5.6.exe
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.5.5.0
+#AutoIt3Wrapper_Res_Fileversion=2.5.6.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.5.5
+#AutoIt3Wrapper_Res_ProductVersion=2.5.6
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -45,16 +45,17 @@ Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
 
 ; *** End added by AutoIt3Wrapper ***
 
-$aUtilVerStable = "v2.5.5" ; (2020-08-21)
-$aUtilVerBeta = "v2.5.5" ; (2020-08-21)
+$aUtilVerStable = "v2.5.6" ; (2020-09-03)
+$aUtilVerBeta = "v2.5.6" ; (2020-09-03)
 $aUtilVersion = $aUtilVerStable
-Global $aUtilVerNumber = 6
+Global $aUtilVerNumber = 7
 ; 1 = v2.3.3
 ; 2 = v2.3.4
 ; 3 = v2.5.0
 ; 4 = v2.5.1/2/3
 ; 5 = 2.5.4
 ; 6 = 2.5.5
+; 7 = 2.5.6
 
 ;**** Directives created by AutoIt3Wrapper_GUI ****
 ;Originally written by Dateranoth for use and modified for 7DTD by Phoenix125.com
@@ -363,6 +364,56 @@ If $aCFGLastVerNumber < 6 Then
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Online Player Message (see above for substitutions) ###", $tTxt)
 	$tUpdateINI = True
 EndIf
+If $aCFGLastVerNumber < 7 Then
+	Global $sDiscordPlayersMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Online Player Message (see above for substitutions) ###", _
+			'Players Online: **\o / \m**  Game Time: **\t**  Next Horde: **\h days**\n\j\l   :hammer_pick:   \a')
+	Global $sDiscordPlayerJoinMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Join Player Sub-Message (\p - Player Name(s) of player(s) that joined server, \n Next Line) ###", ':white_check_mark: Joined: ***\p***')
+	Global $sDiscordPlayerLeftMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Left Player Sub-Message (\p - Player Name(s) of player(s) that left server, \n Next Line) ###", ':x: Left: ***\p***')
+	Global $sDiscordPlayerOnlineMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Online Player Sub-Message (\p - Player Name(s) of player(s) online, \n Next Line) ###", '\nOnline Players: **\p**')
+	Global $sDiscordPlayerDiedMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Died Message (\p - Player Name, \n Next Line) ###", '*:pirate_flag: \p died.*')
+	Global $sDiscordPlayerChatMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Chat (\p - Player Name, \m Message, \t Msg type (ex. Global,Friend)", '[\t] **\p**: \m')
+	If $sDiscordPlayersMsg = 'Players Online: **\o / \m**  Game Time: **\t**  Next Horde: **\h days**   \j\l\a' Then
+		$sDiscordPlayersMsg = 'Players Online: **\o / \m**  Game Time: **\t**  Next Horde: **\h days**\n\j\l   :hammer_pick:   \a')
+		IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Online Player Message (see above for substitutions) ###", $sDiscordPlayersMsg)
+	EndIf
+	If $sDiscordPlayerJoinMsg = 'Joined: *\p*' Then
+		$sDiscordPlayerJoinMsg = ':white_check_mark: Joined: ***\p***'
+		IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Join Player Sub-Message (\p - Player Name(s) of player(s) that joined server, \n Next Line) ###", $sDiscordPlayerJoinMsg)
+	EndIf
+	If $sDiscordPlayerLeftMsg = 'Left: *\p*' Then
+		$sDiscordPlayerLeftMsg = ':x: Left: ***\p***'
+		IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Left Player Sub-Message (\p - Player Name(s) of player(s) that left server, \n Next Line) ###", $sDiscordPlayerLeftMsg)
+	EndIf
+	If $sDiscordPlayerOnlineMsg = '\nOnline Players: **\p**' Then
+		$sDiscordPlayerOnlineMsg = '\nOnline Players: **\p**'
+		IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Online Player Sub-Message (\p - Player Name(s) of player(s) online, \n Next Line) ###", $sDiscordPlayerOnlineMsg)
+	EndIf
+	If $sDiscordPlayerDiedMsg = '*\p died.*' Then
+		$sDiscordPlayerDiedMsg = '*:pirate_flag: \p died.*'
+		IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Died Message (\p - Player Name, \n Next Line) ###", $sDiscordPlayerDiedMsg)
+	EndIf
+	Global $aServerDiscord1Avatar = IniRead($aIniFile, " --------------- DISCORD WEBHOOK --------------- ", "Discord #1 Avatar URL (optional) ###", "http://www.phoenix125.com/share/Discord/DiscordAvatar7DTD.jpg")
+	Global $aServerDiscord2Avatar = IniRead($aIniFile, " --------------- DISCORD WEBHOOK --------------- ", "Discord #2 Avatar URL (optional) ###", "http://www.phoenix125.com/share/Discord/DiscordAvatar7DTD.jpg")
+	Global $aServerDiscord3Avatar = IniRead($aIniFile, " --------------- DISCORD WEBHOOK --------------- ", "Discord #3 Avatar URL (optional) ###", "http://www.phoenix125.com/share/Discord/DiscordAvatar7DTD.jpg")
+	Global $aServerDiscord4Avatar = IniRead($aIniFile, " --------------- DISCORD WEBHOOK --------------- ", "Discord #4 Avatar URL (optional) ###", "http://www.phoenix125.com/share/Discord/DiscordAvatar7DTD.jpg")
+	If $aServerDiscord1Avatar = "" Then
+		$aServerDiscord1Avatar = "http://www.phoenix125.com/share/Discord/DiscordAvatar7DTD.jpg"
+		IniWrite($aIniFile, " --------------- DISCORD WEBHOOK --------------- ", "Discord #1 Avatar URL (optional) ###", $aServerDiscord1Avatar)
+	EndIf
+	If $aServerDiscord2Avatar = "" Then
+		$aServerDiscord2Avatar = "http://www.phoenix125.com/share/Discord/DiscordAvatar7DTD.jpg"
+		IniWrite($aIniFile, " --------------- DISCORD WEBHOOK --------------- ", "Discord #2 Avatar URL (optional) ###", $aServerDiscord2Avatar)
+	EndIf
+	If $aServerDiscord3Avatar = "" Then
+		$aServerDiscord3Avatar = "http://www.phoenix125.com/share/Discord/DiscordAvatar7DTD.jpg"
+		IniWrite($aIniFile, " --------------- DISCORD WEBHOOK --------------- ", "Discord #3 Avatar URL (optional) ###", $aServerDiscord3Avatar)
+	EndIf
+	If $aServerDiscord4Avatar = "" Then
+		$aServerDiscord4Avatar = "http://www.phoenix125.com/share/Discord/DiscordAvatar7DTD.jpg"
+		IniWrite($aIniFile, " --------------- DISCORD WEBHOOK --------------- ", "Discord #4 Avatar URL (optional) ###", $aServerDiscord4Avatar)
+	EndIf
+	$tUpdateINI = True
+EndIf
 
 If $tUpdateINI Then
 	ReadUini($aIniFile, $aLogFile)
@@ -385,7 +436,9 @@ If $gWatchdogServerStartTimeCheck = "no" Then
 EndIf
 
 ControlSetText($aSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Importing settings from " & $aIniFile & ".")
+Global $aShowConfigSplash = True
 ReadUini($aIniFile, $aLogFile)
+Global $aShowConfigSplash = False
 If FileExists($aBackupOutputFolder) = 0 Then DirCreate($aBackupOutputFolder)
 
 If $aTelnetIP = "" Then
@@ -2561,37 +2614,16 @@ EndFunc   ;==>_ExtractZip
 
 ; -----------------------------------------------------------------------------------------------------------------------
 
-;===============================================================================
-;
-; Name...........: _RemoteRestart
-; Description ...: Receives TCP string from GET request and checks against list of known passwords.
-;				   Expects GET /?restart=user_pass HTTP/x.x
-; Syntax.........: RemoteRestart($vMSocket, $sCodes, [$sKey = "restart", $sHideCodes = "no", [$sServIP = "0.0.0.0", [$sName = "Server", [$bDebug = False]]]]])
-; Parameters ....: $vMSocket - Main Socket to Accept TCP Requests on. Should already be open from TCPListen
-;                  $sCodes - Comma Seperated list of user1_password1,user2_password2,password3
-;							 Allowed Characters: abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@$%^&*()+=-{}[]\|:;./?
-;				   $sKey - Key to match before matching password. http://IP:Pass?KEY=user_pass
-;                  $sHideCodes - Obfuscate codes or not, (yes/no) string
-;                  $sServIP - IP  to send back in Header Response.
-;				   $sName - Server Name to use in HTML Response.
-;				   $sDebug - True to return Full TCP Request when Request is invalid
-; Return values .: Success - Returns String
-;                          - Sets @error to 0
-;				   No Connection - Sets @ error to -1
-;                  Failure - Returns Descriptive String sets @error:
-;                  |1 - Password doesn't match
-;                  |2 - Invalid Request
-;                  |3 - CheckHTTPReq Failed - Returns error in string
-;                  |4 - TCPRecv Failed - Returns error in string
-; Author ........: Dateranoth
-;
-;==========================================================================================
 #Region ;**** Check for Server Utility Update ****
 Func UtilUpdate($tLink, $tDL, $tUtil, $tUtilName)
 	$aSplash = _Splash($aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Checking for " & $tUtilName & " updates.")
 	Local $tVer[2]
+	Local $tErr = False
 	$hFileRead = _INetGetSource($tLink)
-	If @error Then
+	If @error Then $tErr = True
+	$tVer = StringSplit($hFileRead, "^", 2)
+	If UBound($tVer) < 2 Then $tErr = True
+	If $tErr Then
 		LogWrite(" [UTIL] " & $tUtilName & " update check failed to download latest version: " & $tLink)
 		If $aShowUpdate Then
 			ControlSetText($aSplash, "", "Static1", $aUtilName & " update check failed." & @CRLF & "Please try again later.")
@@ -2599,7 +2631,7 @@ Func UtilUpdate($tLink, $tDL, $tUtil, $tUtilName)
 			$aShowUpdate = False
 		EndIf
 	Else
-		$tVer = StringSplit($hFileRead, "^", 2)
+		If UBound($tVer) < 2 Then ReDim $tVer[2]
 		If $tVer[0] = $tUtil Then
 			LogWrite(" [UTIL] " & $tUtilName & " up to date.", " [UTIL] " & $tUtilName & " up to date. Version: " & $tVer[0] & " , Notes: " & $tVer[1])
 			If $aShowUpdate Then
@@ -2635,9 +2667,9 @@ Func UtilUpdate($tLink, $tDL, $tUtil, $tUtilName)
 				_ExtractZip($tZIP, "", "readme.txt", @ScriptDir)
 				;				FileDelete(@ScriptDir & "\" & $tUtilName & "_" & $tVer[1] & ".zip")
 				If Not FileExists(@ScriptDir & "\" & $tUtilName & "_" & $tVer[0] & ".exe") Then
-					LogWrite(" [UTIL] ERROR! " & $tUtilName & ".exe download failed.")
+					LogWrite(" [UTIL] ERROR! " & $tUtilName & ".exe download failed. [" & $tDL & "]")
 					SplashOff()
-					$tMB = MsgBox($MB_OKCANCEL, $aUtilityVer, "Download failed . . . " & @CRLF & "Go to """ & $tLink & """ to download latest version." & @CRLF & @CRLF & "Click (OK), (CANCEL), or wait 15 seconds, to resume current version.", 15)
+					$tMB = MsgBox($MB_OKCANCEL, $aUtilityVer, "Download failed . . . " & @CRLF & "Go to """ & $tDL & """ to download latest version." & @CRLF & @CRLF & "Click (OK), (CANCEL), or wait 15 seconds, to resume current version.", 15)
 				Else
 					SplashOff()
 					$tMB = MsgBox($MB_OKCANCEL, $aUtilityVer, "Download complete. . . " & @CRLF & @CRLF & "Click (OK) to run new version (server will remain running) OR" & @CRLF & "Click (CANCEL), or wait 15 seconds, to resume current version.", 15)
@@ -2660,7 +2692,6 @@ Func UtilUpdate($tLink, $tDL, $tUtil, $tUtilName)
 				LogWrite(" [UTIL] Utility update check canceled by user. Resuming utility . . .")
 				$aSplash = _Splash("Utility update check canceled by user." & @CRLF & "Resuming utility . . .", 2000)
 			EndIf
-			SplashOff()
 		EndIf
 		;	Local $tVer[2]
 	EndIf
@@ -2801,7 +2832,7 @@ Func _ShowLoginLogo()
 		$hGUI_LoginLogo = GUICreate("7DTD Logo", $iW, $iH, -1, -1, $WS_POPUP, $WS_EX_LAYERED)
 		GUISetBkColor(0xFFFFFF)
 		GUISetState()
-		$Pic = GUICtrlCreatePic("" & $aFolderTemp & "", 0, 0, 0, 0)
+		$Pic = GUICtrlCreatePic("", 0, 0, 0, 0)
 		GUICtrlSendMsg($Pic, $STM_SETIMAGE, 0, $hBmp)
 		_WinAPI_DeleteObject($hBmp)
 		_WinAPI_SetLayeredWindowAttributes($hGUI_LoginLogo, 0xFFFFFF)
@@ -3499,7 +3530,7 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniError = $iIniError & "ServerDiscord1BotName, "
 	EndIf
 	If $iniCheck = $aServerDiscord1Avatar Then
-		$aServerDiscord1Avatar = ""
+		$aServerDiscord1Avatar = "http://www.phoenix125.com/share/Discord/DiscordAvatar7DTD.jpg"
 		$iIniFail += 1
 		$iIniError = $iIniError & "ServerDiscord1Avatar, "
 	EndIf
@@ -3519,7 +3550,7 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniError = $iIniError & "ServerDiscord2BotName, "
 	EndIf
 	If $iniCheck = $aServerDiscord2Avatar Then
-		$aServerDiscord2Avatar = ""
+		$aServerDiscord2Avatar = "http://www.phoenix125.com/share/Discord/DiscordAvatar7DTD.jpg"
 		$iIniFail += 1
 		$iIniError = $iIniError & "ServerDiscord2Avatar, "
 	EndIf
@@ -3539,7 +3570,7 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniError = $iIniError & "ServerDiscord3BotName, "
 	EndIf
 	If $iniCheck = $aServerDiscord3Avatar Then
-		$aServerDiscord3Avatar = ""
+		$aServerDiscord3Avatar = "http://www.phoenix125.com/share/Discord/DiscordAvatar7DTD.jpg"
 		$iIniFail += 1
 		$iIniError = $iIniError & "ServerDiscord3Avatar, "
 	EndIf
@@ -3559,7 +3590,7 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniError = $iIniError & "ServerDiscord4BotName, "
 	EndIf
 	If $iniCheck = $aServerDiscord4Avatar Then
-		$aServerDiscord4Avatar = ""
+		$aServerDiscord4Avatar = "http://www.phoenix125.com/share/Discord/DiscordAvatar7DTD.jpg"
 		$iIniFail += 1
 		$iIniError = $iIniError & "ServerDiscord4Avatar, "
 	EndIf
@@ -3674,17 +3705,17 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniError = $iIniError & "UseDiscordBotFirstAnnouncement, "
 	EndIf
 	If $iniCheck = $sDiscordPlayersMsg Then
-		$sDiscordPlayersMsg = 'Players Online: **\o / \m**  Game Time: **\t**  Next Horde: **\h days**   \j\l\a'
+		$sDiscordPlayersMsg = 'Players Online: **\o / \m**  Game Time: **\t**  Next Horde: **\h days**\n\j\l   :hammer_pick:   \a'
 		$iIniFail += 1
 		$iIniError = $iIniError & "DiscordPlayersMsg, "
 	EndIf
 	If $iniCheck = $sDiscordPlayerJoinMsg Then
-		$sDiscordPlayerJoinMsg = 'Joined: *\p*'
+		$sDiscordPlayerJoinMsg = ':white_check_mark: Joined: ***\p***'
 		$iIniFail += 1
 		$iIniError = $iIniError & "DiscordPlayerJoinedMsg, "
 	EndIf
 	If $iniCheck = $sDiscordPlayerLeftMsg Then
-		$sDiscordPlayerLeftMsg = 'Left: *\p*'
+		$sDiscordPlayerLeftMsg = ':x: Left: ***\p***'
 		$iIniFail += 1
 		$iIniError = $iIniError & "DiscordPlayerLeftMsg, "
 	EndIf
@@ -3694,7 +3725,7 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniError = $iIniError & "DiscordPlayerOnlineMsg, "
 	EndIf
 	If $iniCheck = $sDiscordPlayerDiedMsg Then
-		$sDiscordPlayerDiedMsg = '*\p died.*'
+		$sDiscordPlayerDiedMsg = '*:pirate_flag: \p died.*'
 		$iIniFail += 1
 		$iIniError = $iIniError & "DiscordPlayerDiedMsg, "
 	EndIf
@@ -7192,6 +7223,7 @@ EndFunc   ;==>_BackupDayCB
 Func ConfigClose()
 	If WinExists($wGUIMainWindow) Then
 		GUIDelete($Config)
+		If $aShowConfigSplash Then $aSplash = _Splash($aUtilName & " started.")
 	Else
 		$aConfigWindowClose = True
 	EndIf
