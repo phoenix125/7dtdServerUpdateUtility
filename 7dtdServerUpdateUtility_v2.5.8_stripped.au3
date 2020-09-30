@@ -1,11 +1,11 @@
 #Region
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.5.7.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.5.8.exe
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.5.7.0
+#AutoIt3Wrapper_Res_Fileversion=2.5.8.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.5.7
+#AutoIt3Wrapper_Res_ProductVersion=2.5.8
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -19388,8 +19388,8 @@ Return $tPalette
 EndFunc
 Opt("GUIOnEventMode", 1)
 Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
-$aUtilVerStable = "v2.5.7"
-$aUtilVerBeta = "v2.5.7"
+$aUtilVerStable = "v2.5.8"
+$aUtilVerBeta = "v2.5.8"
 $aUtilVersion = $aUtilVerStable
 Global $aUtilVerNumber = 7
 Global Const $aUtilName = "7dtdServerUpdateUtility"
@@ -19794,6 +19794,7 @@ Local $kFPAdminFileName = "}AdminFileName}value=}"
 Local $kFPDropOnDeath = "}DropOnDeath}value=}"
 Local $kMaxPlayers = "}ServerMaxPlayerCount}value=}"
 Local $kFPServerLoginConfirmationText = "}ServerLoginConfirmationText}value=}"
+Local $kHordeFreq = "}BloodMoonFrequency}value=}"
 Local $sConfigPathOpen = FileOpen($sConfigPath, 0)
 Local $sConfigRead4 = FileRead($sConfigPathOpen)
 Local $sConfigRead3 = StringRegExpReplace($sConfigRead4, """", "}")
@@ -19842,6 +19843,9 @@ Local $xMaxPlayers = _StringBetween($sConfigRead, $kMaxPlayers, "}")
 Global $aMaxPlayers = _ArrayToString($xMaxPlayers)
 Local $xFPServerLoginConfirmationText = _StringBetween($sConfigRead, $kFPServerLoginConfirmationText, "}")
 Global $aFPServerLoginConfirmationText = _ArrayToString($xFPServerLoginConfirmationText)
+Local $xHordeFreq = _StringBetween($sConfigRead, $kHordeFreq, "}")
+Global $aHordeFreq = _ArrayToString($xHordeFreq)
+If $aHordeFreq < 1 Or $aHordeFreq > 99 Then $aHordeFreq = 7
 $aServerQueryName = $aServerName
 If $aServerSaveGame = "absolute path" Then
 Global $aServerSaveGame = _PathFull("7DaysToDieFolder", @AppDataDir)
@@ -19953,7 +19957,7 @@ FileDelete($aSteamUpdateCMDValN)
 If StringInStr($aSteamUpdateCommandline, "validate") Then
 FileWrite($aSteamUpdateCMDValY, $aSteamUpdateCommandline)
 Else
-FileWrite($aSteamUpdateCMDValY, StringReplace($aSteamUpdateCommandline, "+quit", "vaidate +quit"))
+FileWrite($aSteamUpdateCMDValY, StringReplace($aSteamUpdateCommandline, "+quit", "validate +quit"))
 EndIf
 If StringInStr($aSteamUpdateCommandline, "validate") Then
 FileWrite($aSteamUpdateCMDValN, StringReplace($aSteamUpdateCommandline, " validate", ""))
@@ -20047,9 +20051,9 @@ $xArray[82] = 'pause'
 FileDelete($aServerDirLocal & "\Start_7DTD_Dedicated_Server.bat")
 _FileWriteFromArray($aServerDirLocal & "\Start_7DTD_Dedicated_Server.bat", $xArray)
 FileDelete($aBatchDIR & "\Start_7DTD_Dedicated_Server.bat")
-Local $xArray[2]
-$xArray[0] = '@echo off'
-$xArray[1] = 'start "7 Days To Die Dedicated Server" /D "' & $aServerDirLocal & '" Start_7DTD_Dedicated_Server.bat"'
+Local $xFileName = _PathSplit($aServerDirLocal, "", "", "", "")
+_ArrayInsert($xArray, 1, $xFileName[1])
+_ArrayInsert($xArray, 2, "CD " & $xFileName[2] & $xFileName[3])
 _FileWriteFromArray($aBatchDIR & "\Start_7DTD_Dedicated_Server.bat", $xArray)
 #EndRegion
 Global $aUtilExe = @ScriptName
@@ -20459,7 +20463,7 @@ If $i = 6 Then
 $tFailedCountTelnet += 1
 If $tFailedCountTelnet > $aWatchdogAttemptsBeforeRestart Then
 LogWrite(" [Telnet] KeepAlive check FAILED " & $aWatchdogAttemptsBeforeRestart & " attempts. Restarting server.")
-CloseServer($ip, $port, $pass)
+CloseServer($aTelnetIP, $aTelnetPort, $aTelnetPass)
 ExitLoop
 Else
 LogWrite(" [Telnet] KeepAlive check FAILED. Attempt " & $tFailedCountTelnet & " of " & $aWatchdogAttemptsBeforeRestart & ".")
@@ -20521,11 +20525,13 @@ Else
 $aDelayShutdownTime = $aDailyTime[$aAnnounceCount0] - $aDailyTime[$aAnnounceCount1]
 EndIf
 If $sInGameAnnounce = "yes" Then
-SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aDailyMsgInGame[$aAnnounceCount0])
+If UBound($aDailyMsgInGame) > $aAnnounceCount0 Then SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aDailyMsgInGame[$aAnnounceCount0])
 EndIf
-If $sUseDiscordBotDaily = "yes" Then _SendDiscordStatus($aDailyMsgDiscord[$aAnnounceCount0])
+If $sUseDiscordBotDaily = "yes" Then
+If UBound($aDailyMsgDiscord) > $aAnnounceCount0 Then _SendDiscordStatus($aDailyMsgDiscord[$aAnnounceCount0])
+EndIf
 If $sUseTwitchBotDaily = "yes" Then
-TwitchMsgLog($aDailyMsgTwitch[$aAnnounceCount0])
+If UBound($aDailyMsgTwitch) > $aAnnounceCount0 Then TwitchMsgLog($aDailyMsgTwitch[$aAnnounceCount0])
 EndIf
 EndIf
 If $aRebootReason = "remoterestart" Then
@@ -20539,11 +20545,13 @@ Else
 $aDelayShutdownTime = $aRemoteTime[$aAnnounceCount0] - $aRemoteTime[$aAnnounceCount1]
 EndIf
 If $sInGameAnnounce = "yes" Then
-SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aRemoteMsgInGame[$aAnnounceCount0])
+If UBound($aRemoteMsgInGame) > $aAnnounceCount0 Then SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aRemoteMsgInGame[$aAnnounceCount0])
 EndIf
-If $sUseDiscordBotRemoteRestart = "yes" Then _SendDiscordStatus($aRemoteMsgDiscord[$aAnnounceCount0])
+If $sUseDiscordBotRemoteRestart = "yes" Then
+If UBound($aRemoteMsgDiscord) > $aAnnounceCount0 Then _SendDiscordStatus($aRemoteMsgDiscord[$aAnnounceCount0])
+EndIf
 If $sUseTwitchBotRemoteRestart = "yes" Then
-TwitchMsgLog($aRemoteMsgTwitch[$aAnnounceCount0])
+If UBound($aRemoteMsgTwitch) > $aAnnounceCount0 Then TwitchMsgLog($aRemoteMsgTwitch[$aAnnounceCount0])
 EndIf
 EndIf
 If $aRebootReason = "update" Then
@@ -20557,11 +20565,13 @@ Else
 $aDelayShutdownTime = $aUpdateTime[$aAnnounceCount0] - $aUpdateTime[$aAnnounceCount1]
 EndIf
 If $sInGameAnnounce = "yes" Then
-SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aUpdateMsgInGame[$aAnnounceCount0])
+If UBound($aUpdateMsgInGame) > $aAnnounceCount0 Then SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aUpdateMsgInGame[$aAnnounceCount0])
 EndIf
-If $sUseDiscordBotUpdate = "yes" Then _SendDiscordStatus($aUpdateMsgDiscord[$aAnnounceCount0])
+If $sUseDiscordBotUpdate = "yes" Then
+If UBound($aUpdateMsgDiscord) > $aAnnounceCount0 Then _SendDiscordStatus($aUpdateMsgDiscord[$aAnnounceCount0])
+EndIf
 If $sUseTwitchBotUpdate = "yes" Then
-TwitchMsgLog($aUpdateMsgTwitch[$aAnnounceCount0])
+If UBound($aUpdateMsgTwitch) > $aAnnounceCount0 Then TwitchMsgLog($aUpdateMsgTwitch[$aAnnounceCount0])
 EndIf
 EndIf
 If $aRebootReason = "restartserver" Then
@@ -20574,9 +20584,11 @@ $aBeginDelayedShutdown = 3
 Else
 $aDelayShutdownTime = $aRestartTime[$aAnnounceCount0] - $aRestartTime[$aAnnounceCount1]
 EndIf
+If UBound($aRestartMsg) > $aAnnounceCount0 Then
 SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aRestartMsg[$aAnnounceCount0])
 If $sUseDiscordBotRestartServer = "yes" Then _SendDiscordStatus($aRestartMsg[$aAnnounceCount0])
 If $sUseTwitchBotRestartServer = "yes" Then TwitchMsgLog($aRestartMsg[$aAnnounceCount0])
+EndIf
 EndIf
 $aBeginDelayedShutdown = 2
 $aTimeCheck0 = _NowCalc()
@@ -20611,11 +20623,13 @@ Else
 $aDelayShutdownTime = $aDailyTime[$aAnnounceCount1]
 EndIf
 If $sInGameAnnounce = "yes" Then
-SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aDailyMsgInGame[$aAnnounceCount1])
+If UBound($aDailyMsgInGame) > $aAnnounceCount1 Then SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aDailyMsgInGame[$aAnnounceCount1])
 EndIf
-If $sUseDiscordBotDaily = "yes" And ($sUseDiscordBotFirstAnnouncement = "no") Then _SendDiscordStatus($aDailyMsgDiscord[$aAnnounceCount1])
+If $sUseDiscordBotDaily = "yes" And ($sUseDiscordBotFirstAnnouncement = "no") Then
+If UBound($aDailyMsgDiscord) > $aAnnounceCount1 Then _SendDiscordStatus($aDailyMsgDiscord[$aAnnounceCount1])
+EndIf
 If $sUseTwitchBotDaily = "yes" And ($sUseTwitchFirstAnnouncement = "no") Then
-TwitchMsgLog($aDailyMsgTwitch[$aAnnounceCount1])
+If UBound($aDailyMsgTwitch) > $aAnnounceCount1 Then TwitchMsgLog($aDailyMsgTwitch[$aAnnounceCount1])
 EndIf
 EndIf
 If $aRebootReason = "remoterestart" Then
@@ -20625,11 +20639,13 @@ Else
 $aDelayShutdownTime = $aRemoteTime[$aAnnounceCount1]
 EndIf
 If $sInGameAnnounce = "yes" Then
-SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aRemoteMsgInGame[$aAnnounceCount1])
+If UBound($aRemoteMsgInGame) > $aAnnounceCount1 Then SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aRemoteMsgInGame[$aAnnounceCount1])
 EndIf
-If ($sUseDiscordBotRemoteRestart = "yes") And ($sUseDiscordBotFirstAnnouncement = "no") Then _SendDiscordStatus($aRemoteMsgDiscord[$aAnnounceCount1])
+If ($sUseDiscordBotRemoteRestart = "yes") And ($sUseDiscordBotFirstAnnouncement = "no") Then
+If UBound($aRemoteMsgDiscord) > $aAnnounceCount1 Then _SendDiscordStatus($aRemoteMsgDiscord[$aAnnounceCount1])
+EndIf
 If $sUseTwitchBotRemoteRestart = "yes" And ($sUseTwitchFirstAnnouncement = "no") Then
-TwitchMsgLog($aRemoteMsgTwitch[$aAnnounceCount1])
+If UBound($aRemoteMsgTwitch) > $aAnnounceCount1 Then TwitchMsgLog($aRemoteMsgTwitch[$aAnnounceCount1])
 EndIf
 EndIf
 If $aRebootReason = "update" Then
@@ -20639,11 +20655,13 @@ Else
 $aDelayShutdownTime = $aUpdateTime[$aAnnounceCount1]
 EndIf
 If $sInGameAnnounce = "yes" Then
-SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aUpdateMsgInGame[$aAnnounceCount1])
+If UBound($aUpdateMsgInGame) > $aAnnounceCount1 Then SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aUpdateMsgInGame[$aAnnounceCount1])
 EndIf
-If $sUseDiscordBotUpdate = "yes" And ($sUseDiscordBotFirstAnnouncement = "no") Then _SendDiscordStatus($aUpdateMsgDiscord[$aAnnounceCount1])
+If $sUseDiscordBotUpdate = "yes" And ($sUseDiscordBotFirstAnnouncement = "no") Then
+If UBound($aUpdateMsgDiscord) > $aAnnounceCount1 Then _SendDiscordStatus($aUpdateMsgDiscord[$aAnnounceCount1])
+EndIf
 If $sUseTwitchBotUpdate = "yes" And ($sUseTwitchFirstAnnouncement = "no") Then
-TwitchMsgLog($aUpdateMsgTwitch[$aAnnounceCount1])
+If UBound($aUpdateMsgTwitch) > $aAnnounceCount1 Then TwitchMsgLog($aUpdateMsgTwitch[$aAnnounceCount1])
 EndIf
 EndIf
 If $aRebootReason = "restartserver" Then
@@ -20652,9 +20670,11 @@ $aDelayShutdownTime = $aRestartTime[$aAnnounceCount1] - $aRestartTime[($aAnnounc
 Else
 $aDelayShutdownTime = $aRestartTime[$aAnnounceCount1]
 EndIf
+If UBound($aRestartMsg) > $aAnnounceCount1 Then
 SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aRestartMsg[$aAnnounceCount1])
 If $sUseDiscordBotRestartServer = "yes" Then _SendDiscordStatus($aRestartMsg[$aAnnounceCount1])
 If $sUseTwitchBotRestartServer = "yes" Then TwitchMsgLog($aRestartMsg[$aAnnounceCount1])
+EndIf
 EndIf
 $aAnnounceCount1 = $aAnnounceCount1 - 1
 If $aAnnounceCount1 = 0 Then
@@ -20929,6 +20949,8 @@ $tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\j", _DiscordPlayersJo
 $tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\l", _DiscordPlayersLeft())
 $tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\a", _DiscordPlayersOnline())
 $tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\n", @CRLF)
+$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "0 days", "TODAY!")
+$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "0 day", "TODAY!")
 _SendDiscordMsg($tDiscordPlayersMsg, $aServerDiscordWHSelPlayers)
 EndIf
 EndIf
@@ -22803,7 +22825,7 @@ $iIniFail += 1
 $iIniError = $iIniError & "DiscordPlayerLeftMsg, "
 EndIf
 If $iniCheck = $sDiscordPlayerOnlineMsg Then
-$sDiscordPlayerOnlineMsg = '\nOnline Players: **\p**'
+$sDiscordPlayerOnlineMsg = 'Online Players: **\p**'
 $iIniFail += 1
 $iIniError = $iIniError & "DiscordPlayerOnlineMsg, "
 EndIf
@@ -22958,12 +22980,12 @@ $iIniFail += 1
 $iIniError = $iIniError & "UtilBetaYN, "
 EndIf
 If $iniCheck = $aFPAutoUpdateYN Then
-$aFPAutoUpdateYN = "yes"
+$aFPAutoUpdateYN = "no"
 $iIniFail += 1
 $iIniError = $iIniError & "FPAutoUpdateYN, "
 EndIf
 If $iniCheck = $aFPRenameModsYN Then
-$aFPRenameModsYN = "yes"
+$aFPRenameModsYN = "no"
 $iIniFail += 1
 $iIniError = $iIniError & "FPRenameModsYN, "
 EndIf
@@ -23520,8 +23542,8 @@ Local $tDay = Int($tTxt1[0])
 EndIf
 $aGameTime = "Day " & $tDay & ", " & $tTime9
 EndIf
-Local $t2 = (Int($tDay / 7) * 7)
-$aNextHorde = 7 - ($tDay - $t2)
+Local $t2 = (Int($tDay / $aHordeFreq) * $aHordeFreq)
+$aNextHorde = $aHordeFreq - ($tDay - $t2) - 1
 $tOnlinePlayers[1] = "Game Time: " & $aGameTime & @CRLF & "Total Players "
 $tOnlinePlayers[2] = "Game Time(" & $aGameTime & ") Total Players "
 If StringInStr($sMsg[1], "Total of 0 in the game") <> 0 Then

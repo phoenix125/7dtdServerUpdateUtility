@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.5.7 (2020-09-04) (Beta and Stable are the same version)
+- Latest version: 7dtdServerUpdateUtility_v2.5.8 (2020-09-30) (Beta and Stable are the same version)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -141,6 +141,16 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2020-09-30) v2.5.8 Bug fixes
+- Fixed: Line 20461 Variable used without being declared error (Thanks to @AceMan for reporting)
+- Fixed: Line 20523 error related to the "announcement minutes before DAILY announcement times" (Thanks to @Cameron for reporting)
+- Fixed: Batch File: Update_7DTD_Validate_YES: Validate was mispelled (no 'l' in it) (Thanks to @AceMan for reporting)
+- Fixed: \BatchFiles\Start_7DTD_Dedicated_Server.bat file was messed up. (Thanks to @AceMan for reporting)
+- Fixed: Discord's "Next Horde" was off by one day.
+- Changed: Next Horde now uses "BloodMoonFrequency" from config instead of default 7 days.
+- Changed: Discord: Removed \n from default online player announcement.
+- Changed: FutureProof is disabled by default.
+
 (2020-09-03) v2.5.7 Bug fix
 -Fixed: Line 19678 Error. (Thanks to @Timikana for reporting)
 
