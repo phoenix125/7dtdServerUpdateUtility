@@ -1,11 +1,11 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.5.8.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.5.9.exe
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.5.8.0
+#AutoIt3Wrapper_Res_Fileversion=2.5.9.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.5.8
+#AutoIt3Wrapper_Res_ProductVersion=2.5.9
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -45,10 +45,10 @@ Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
 
 ; *** End added by AutoIt3Wrapper ***
 
-$aUtilVerStable = "v2.5.8" ; (2020-09-30)
-$aUtilVerBeta = "v2.5.8" ; (2020-09-30)
+$aUtilVerStable = "v2.5.9" ; (2020-10-02)
+$aUtilVerBeta = "v2.5.9" ; (2020-10-02)
 $aUtilVersion = $aUtilVerStable
-Global $aUtilVerNumber = 7
+Global $aUtilVerNumber = 8
 ; 1 = v2.3.3
 ; 2 = v2.3.4
 ; 3 = v2.5.0
@@ -56,6 +56,7 @@ Global $aUtilVerNumber = 7
 ; 5 = 2.5.4
 ; 6 = 2.5.5
 ; 7 = 2.5.6/7/8
+; 8 = 2.5.9
 
 ;**** Directives created by AutoIt3Wrapper_GUI ****
 ;Originally written by Dateranoth for use and modified for 7DTD by Phoenix125.com
@@ -414,6 +415,14 @@ If $aCFGLastVerNumber < 7 Then
 	EndIf
 	$tUpdateINI = True
 EndIf
+If $aCFGLastVerNumber < 7 Then
+	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message every blood moon? (yes/no) ###", "yes")
+	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message every new day at midnight? (yes/no) ###", "yes")
+	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Blood Moon time (hour) to send Discord Msg (00-23) ###", "7")
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every blood moon (Uses online players substitutes. \p All Online Players)", 'Game Time: **\t**  :full_moon: HORDE DAY! :man_zombie:')
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every new day (Uses online players substitutes. \p All Online Players)", 'Game Time: **\t**  Next Horde: **\h days**')
+	$tUpdateINI = True
+EndIf
 
 If $tUpdateINI Then
 	ReadUini($aIniFile, $aLogFile)
@@ -483,130 +492,6 @@ If $sFileExists = 0 Then
 EndIf
 Global $aServerTelnetReboot = "no"
 _ImportServerConfig()
-Func _ImportServerConfig()
-	Local $kServerPort = "}ServerPort}value=}"
-	Local $kServerName = "}ServerName}value=}"
-	Local $kServerTelnetEnable = "}TelnetEnabled}value=}"
-	Local $kServerTelnetPort = "}TelnetPort}value=}"
-	Local $kServerTelnetPass = "}TelnetPassword}value=}"
-	Local $kServerDataFolder = "}UserDataFolder}value=}"
-	Local $kServerSaveGame = "}SaveGameFolder}value=}"
-	Local $kServerTerminalWindow = "}TerminalWindowEnabled}value=}"
-	Local $kFPServerPass = "}ServerPass}value=}"
-	Local $kFPServerMaxPlayerCount = "}ServerMaxPlayerCount}value=}"
-	Local $kFPServerDescription = "}ServerDescription}value=}"
-	Local $kFPServerWebsiteURL = "}ServerWebsiteURL}value=}"
-	Local $kFPGameWorld = "}GameWorld}value=}"
-	Local $kFPWorldGenSeed = "}WorldGenSeed}value=}"
-	Local $kFPWorldGenSize = "}WorldGenSize}value=}"
-	Local $kFPGameName = "}GameName}value=}"
-	Local $kFPGameDifficulty = "}GameDifficulty}value=}"
-	Local $kFPAdminFileName = "}AdminFileName}value=}"
-	Local $kFPDropOnDeath = "}DropOnDeath}value=}"
-	Local $kMaxPlayers = "}ServerMaxPlayerCount}value=}"
-	Local $kFPServerLoginConfirmationText = "}ServerLoginConfirmationText}value=}"
-	Local $kHordeFreq = "}BloodMoonFrequency}value=}"
-	Local $sConfigPathOpen = FileOpen($sConfigPath, 0)
-	Local $sConfigRead4 = FileRead($sConfigPathOpen)
-	Local $sConfigRead3 = StringRegExpReplace($sConfigRead4, """", "}")
-	Local $sConfigRead2 = StringRegExpReplace($sConfigRead3, "\t", "")
-	Local $sConfigRead1 = StringRegExpReplace($sConfigRead2, "  ", "")
-	Local $sConfigRead = StringRegExpReplace($sConfigRead1, " value=", "value=")
-	Local $xServerPort = _StringBetween($sConfigRead, $kServerPort, "}")
-	Global $aServerPort = _ArrayToString($xServerPort)
-	Local $xServerName = _StringBetween($sConfigRead, $kServerName, "}")
-	Global $aServerName = _ArrayToString($xServerName)
-	Local $xServerTelnetEnable = _StringBetween($sConfigRead, $kServerTelnetEnable, "}")
-	Global $aServerTelnetEnable = _ArrayToString($xServerTelnetEnable)
-	Local $xServerTelnetPort = _StringBetween($sConfigRead, $kServerTelnetPort, "}")
-	Global $aTelnetPort = _ArrayToString($xServerTelnetPort)
-	Local $xServerTelnetPass = _StringBetween($sConfigRead, $kServerTelnetPass, "}")
-	Global $aTelnetPass = _ArrayToString($xServerTelnetPass)
-	Local $xServerDataFolder = _StringBetween($sConfigRead, $kServerDataFolder, "}")
-	Global $aServerDataFolder = _ArrayToString($xServerDataFolder)
-	Local $xServerSaveGame = _StringBetween($sConfigRead, $kServerSaveGame, "}")
-	Global $aServerSaveGame = _ArrayToString($xServerSaveGame)
-	Local $xServerTerminalWindow = _StringBetween($sConfigRead, $kServerTerminalWindow, "}")
-	Global $aServerTerminalWindow = _ArrayToString($xServerTerminalWindow)
-	Local $xFPServerPass = _StringBetween($sConfigRead, $kFPServerPass, "}")
-	Global $aFPServerPass = _ArrayToString($xFPServerPass)
-	Local $xFPServerMaxPlayerCount = _StringBetween($sConfigRead, $kFPServerMaxPlayerCount, "}")
-	Global $aFPServerMaxPlayerCount = _ArrayToString($xFPServerMaxPlayerCount)
-	Local $xFPServerDescription = _StringBetween($sConfigRead, $kFPServerDescription, "}")
-	Global $aFPServerDescription = _ArrayToString($xFPServerDescription)
-	Local $xFPServerWebsiteURL = _StringBetween($sConfigRead, $kFPServerWebsiteURL, "}")
-	Global $aFPServerWebsiteURL = _ArrayToString($xFPServerWebsiteURL)
-	Local $xFPGameWorld = _StringBetween($sConfigRead, $kFPGameWorld, "}")
-	Global $aFPGameWorld = _ArrayToString($xFPGameWorld)
-	Local $xFPWorldGenSeed = _StringBetween($sConfigRead, $kFPWorldGenSeed, "}")
-	Global $aFPWorldGenSeed = _ArrayToString($xFPWorldGenSeed)
-	Local $xFPWorldGenSize = _StringBetween($sConfigRead, $kFPWorldGenSize, "}")
-	Global $aFPWorldGenSize = _ArrayToString($xFPWorldGenSize)
-	Local $xFPGameName = _StringBetween($sConfigRead, $kFPGameName, "}")
-	Global $aFPGameName = _ArrayToString($xFPGameName)
-	Local $xFPGameDifficulty = _StringBetween($sConfigRead, $kFPGameDifficulty, "}")
-	Global $aFPGameDifficulty = _ArrayToString($xFPGameDifficulty)
-	Local $xFPAdminFileName = _StringBetween($sConfigRead, $kFPAdminFileName, "}")
-	Global $aFPAdminFileName = _ArrayToString($xFPAdminFileName)
-	Local $xFPDropOnDeath = _StringBetween($sConfigRead, $kFPDropOnDeath, "}")
-	Global $aFPDropOnDeath = _ArrayToString($xFPDropOnDeath)
-	Local $xMaxPlayers = _StringBetween($sConfigRead, $kMaxPlayers, "}")
-	Global $aMaxPlayers = _ArrayToString($xMaxPlayers)
-	Local $xFPServerLoginConfirmationText = _StringBetween($sConfigRead, $kFPServerLoginConfirmationText, "}")
-	Global $aFPServerLoginConfirmationText = _ArrayToString($xFPServerLoginConfirmationText)
-	Local $xHordeFreq = _StringBetween($sConfigRead, $kHordeFreq, "}")
-	Global $aHordeFreq = _ArrayToString($xHordeFreq)
-	If $aHordeFreq < 1 Or $aHordeFreq > 99 Then $aHordeFreq = 7
-	$aServerQueryName = $aServerName
-	If $aServerSaveGame = "absolute path" Then
-		Global $aServerSaveGame = _PathFull("7DaysToDieFolder", @AppDataDir)
-	EndIf
-	If $aServerDataFolder = "absolute path" Then
-		Global $aServerDataFolder = $aServerDirLocal & "\UserData"
-	EndIf
-	If $aServerTelnetEnable = "no" Or $aServerTelnetEnable = "false" Then
-		LogWrite(" . . . Server telnet was disabled. Telnet required for this utility. TelnetEnabled set to: true")
-		;	Global $aServerTelnetEnable = "true"
-		$aServerTelnetReboot = "yes"
-		$aServerRebootReason = $aServerRebootReason & "Telnet was disabled." & @CRLF
-	EndIf
-	Global $aServerTelnetEnable = "true"
-	If $aTelnetPort = "" Then
-		LogWrite(" . . . Server telnet port was blank. Port CHANGED to default value: 8081")
-		$aTelnetPort = "8081"
-		$aServerTelnetReboot = "yes"
-		$aServerRebootReason = $aServerRebootReason & "Telnet port was blank." & @CRLF
-	EndIf
-	If $aTelnetPass = "CHANGEME" Or $aTelnetPass = "" Then
-		If $sObfuscatePass = "yes" Then
-			LogWrite(" . . . Server telnet password was " & $aTelnetPass & ". Password CHANGED to: [hidden]. Recommend change telnet password in " & $aConfigFile)
-		Else
-			LogWrite(" . . . Server telnet password was " & $aTelnetPass & ". Password CHANGED to: 7dtdServerUpdateUtility. Recommend change telnet password in " & $aConfigFile)
-		EndIf
-		Global $aTelnetPass = "7dtdServerUpdateUtility"
-		$aServerTelnetReboot = "yes"
-		$aServerRebootReason = $aServerRebootReason & "Telnet password was blank or CHANGEME." & @CRLF
-	EndIf
-	If $aServerTerminalWindow = "false" Then
-	Else
-		LogWrite(" . . . Terminal window was enabled. Utility cannot function with it enabled. Terminal window set to: false")
-		$aServerTelnetReboot = "yes"
-		$aServerRebootReason = $aServerRebootReason & "Terminal window was enabled." & @CRLF
-	EndIf
-	LogWrite(" [Config] Retrieving data from " & $aConfigFile & ".")
-	LogWrite("", " . . . Server Port = " & $aServerPort)
-	LogWrite("", " . . . Server Name = " & $aServerName)
-	LogWrite("", " . . . Server Telnet Port = " & $aTelnetPort)
-	If $sObfuscatePass = "no" Then
-		LogWrite("", " . . . Server Telnet Password = " & $aTelnetPass)
-	Else
-		LogWrite("", " . . . Server Telnet Password = [hidden]" & $aTelnetPass)
-	EndIf
-	LogWrite("", " . . . Server Save Game Folder = " & $aServerSaveGame)
-	LogWrite("", " . . . Server UserData Folder = " & $aServerDataFolder)
-	FileClose($sConfigRead)
-	AppendConfigSettings()
-EndFunc   ;==>_ImportServerConfig
 ;EndFunc
 #EndRegion ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 
@@ -637,157 +522,7 @@ If $aSteamUpdateCommandline = "" Then
 	_SteamCMDCreate()
 	_SteamCMDCommandlineWrite()
 EndIf
-Func _SteamCMDCommandlineWrite()
-	UpdateIni($aIniFile)
-EndFunc   ;==>_SteamCMDCommandlineWrite
-Func _SteamCMDCommandlineRead()
-	$tRead = FileRead($aIniFile)
-	$aSteamUpdateCommandline = _ArrayToString(_StringBetween($tRead, '<--- BEGIN SteamCMD CODE --->' & @CRLF, '<--- END SteamCMD CODE --->'))
-EndFunc   ;==>_SteamCMDCommandlineRead
-Func _SteamCMDCreate()
-	Local $ServExp = ""
-	If $aServerVer = "public" Then
-	Else
-		$ServExp = " -beta " & $aServerVer
-	EndIf
-;~ 	Global $aBatchDIR = @ScriptDir & "\BatchFiles"
-;~ 	DirCreate($aBatchDIR)
-;~ 	Global $aSteamUpdateCMDValY = $aBatchDIR & "\Update_7DTD_Validate_YES.bat"
-;~ 	Global $aSteamUpdateCMDValN = $aBatchDIR & "\Update_7DTD_Validate_NO.bat"
-	If $aSteamCMDUserName = "" Then
-		Local $tLogin = "anonymous"
-	Else
-		Local $tLogin = $aSteamCMDUserName
-	EndIf
-	Local $tCmd = 'SET steampath=' & $aSteamCMDDir & @CRLF & _
-			'SET gamepath=' & $aServerDirLocal & @CRLF & _
-			'"%steampath%\steamcmd.exe" +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login ' & $tLogin & ' ' & $aSteamCMDPassword & _
-			' +force_install_dir "%gamepath%" +app_update ' & $aSteamAppID & ' ' & $ServExp
-	If $aValidate = "yes" Then
-		$tCmd &= " validate +quit"
-	Else
-		$tCmd &= " +quit"
-	EndIf
-	$aSteamUpdateCommandline = $tCmd
-	_SteamCMDCommandlineWrite()
-	_SteamCMDBatchFilesCreate()
-EndFunc   ;==>_SteamCMDCreate
 _SteamCMDBatchFilesCreate()
-Func _SteamCMDBatchFilesCreate()
-	#Region ; SteamCMD Update Files Creation
-	FileDelete($aSteamUpdateCMDValY)
-	FileDelete($aSteamUpdateCMDValN)
-	If StringInStr($aSteamUpdateCommandline, "validate") Then
-		FileWrite($aSteamUpdateCMDValY, $aSteamUpdateCommandline)
-	Else
-		FileWrite($aSteamUpdateCMDValY, StringReplace($aSteamUpdateCommandline, "+quit", "validate +quit"))
-	EndIf
-	If StringInStr($aSteamUpdateCommandline, "validate") Then
-		FileWrite($aSteamUpdateCMDValN, StringReplace($aSteamUpdateCommandline, " validate", ""))
-	Else
-		FileWrite($aSteamUpdateCMDValN, $aSteamUpdateCommandline)
-	EndIf
-	Local $xArray[85]
-	$xArray[0] = '@echo off'
-	$xArray[1] = 'rem Starts a dedicated server'
-	$xArray[2] = 'rem'
-	$xArray[3] = 'rem -quit, -batchmode, -nographics: Unity commands'
-	$xArray[4] = 'rem -configfile			  : Allows server settings to be set up in an xml config file. Use no path if in same dir or full path.'
-	$xArray[5] = 'rem -dedicated                    : Has to be the last option to start the dedicated server.'
-	$xArray[6] = ''
-	$xArray[7] = 'set LOGTIMESTAMP='
-	$xArray[8] = ''
-	$xArray[9] = ''
-	$xArray[10] = 'IF EXIST 7DaysToDieServer.exe ('
-	$xArray[11] = '	set GAMENAME=7DaysToDieServer'
-	$xArray[12] = '	set LOGNAME=output_log_dedi'
-	$xArray[13] = ') ELSE ('
-	$xArray[14] = '	set GAMENAME=7DaysToDie'
-	$xArray[15] = '	set LOGNAME=output_log'
-	$xArray[16] = ')'
-	$xArray[17] = ''
-	$xArray[18] = ':: --------------------------------------------'
-	$xArray[19] = ':: REMOVE OLD LOGS (only keep latest 20)'
-	$xArray[20] = ''
-	$xArray[21] = 'for /f "tokens=* skip=19" %%F in (' & "'dir %GAMENAME%_Data\%LOGNAME%*.txt /o-d /tc /b'" & ") do del %GAMENAME%_Data\%%F"
-	$xArray[22] = ''
-	$xArray[23] = ''
-	$xArray[24] = ''
-	$xArray[25] = ':: --------------------------------------------'
-	$xArray[26] = ':: BUILDING TIMESTAMP FOR LOGFILE'
-	$xArray[27] = ''
-	$xArray[28] = ':: Check WMIC is available'
-	$xArray[29] = 'WMIC.EXE Alias /? >NUL 2>&1 || GOTO s_start'
-	$xArray[30] = ''
-	$xArray[31] = ':: Use WMIC to retrieve date and time'
-	$xArray[32] = 'FOR /F "skip=1 tokens=1-6" %%G IN (' & "'WMIC Path Win32_LocalTime Get Day^,Hour^,Minute^,Month^,Second^,Year /Format:table'" & ") DO ("
-	$xArray[33] = '	IF "%%~L"=="" goto s_done'
-	$xArray[34] = '	Set _yyyy=%%L'
-	$xArray[35] = '	Set _mm=00%%J'
-	$xArray[36] = '	Set _dd=00%%G'
-	$xArray[37] = '	Set _hour=00%%H'
-	$xArray[38] = '	Set _minute=00%%I'
-	$xArray[39] = '	Set _second=00%%K'
-	$xArray[40] = ')'
-	$xArray[41] = ':s_done'
-	$xArray[42] = ''
-	$xArray[43] = ':: Pad digits with leading zeros'
-	$xArray[44] = 'Set _mm=%_mm:~-2%'
-	$xArray[45] = 'Set _dd=%_dd:~-2%'
-	$xArray[46] = 'Set _hour=%_hour:~-2%'
-	$xArray[47] = 'Set _minute=%_minute:~-2%'
-	$xArray[48] = 'Set _second=%_second:~-2%'
-	$xArray[49] = ''
-	$xArray[50] = 'Set LOGTIMESTAMP=__%_yyyy%-%_mm%-%_dd%__%_hour%-%_minute%-%_second%'
-	$xArray[51] = ''
-	$xArray[52] = ':s_start'
-	$xArray[53] = ''
-	$xArray[54] = ''
-	$xArray[55] = ':: --------------------------------------------'
-	$xArray[56] = ':: STARTING SERVER'
-	$xArray[57] = ''
-	$xArray[58] = ''
-	$xArray[59] = 'echo|set /p="251570" > steam_appid.txt'
-	$xArray[60] = 'set SteamAppId=251570'
-	$xArray[61] = 'set SteamGameId=251570'
-	$xArray[62] = ''
-	$xArray[63] = 'set LOGFILE=%~dp0\%GAMENAME%_Data\%LOGNAME%%LOGTIMESTAMP%.txt'
-	$xArray[64] = ''
-	$xArray[65] = ''
-	$xArray[66] = 'echo Writing log file to: %LOGFILE%'
-	$xArray[67] = ''
-	$xArray[68] = 'start %GAMENAME% -logfile "%LOGFILE%" -quit -batchmode -nographics -configfile=' & $aConfigFile & ' -dedicated'
-;~ $xArray[68] = 'start %GAMENAME% -logfile "%LOGFILE%" -quit -batchmode -nographics -configfile=serverconfig.xml -dedicated'
-	$xArray[69] = ''
-	$xArray[70] = ''
-	$xArray[71] = 'echo Starting server ...'
-	$xArray[72] = 'timeout 15'
-	$xArray[73] = ''
-	$xArray[74] = 'cls'
-	$xArray[75] = ''
-	$xArray[76] = 'echo.'
-	$xArray[77] = 'echo Server running in background, you can close this window.'
-	$xArray[78] = 'echo You can check the task manager if the server process is really running.'
-	$xArray[79] = 'echo.'
-	$xArray[80] = 'echo.'
-	$xArray[81] = ''
-	$xArray[82] = 'pause'
-	FileDelete($aServerDirLocal & "\Start_7DTD_Dedicated_Server.bat")
-	_FileWriteFromArray($aServerDirLocal & "\Start_7DTD_Dedicated_Server.bat", $xArray)
-	FileDelete($aBatchDIR & "\Start_7DTD_Dedicated_Server.bat")
-	Local $xFileName = _PathSplit($aServerDirLocal, "", "", "", "")
-	_ArrayInsert($xArray, 1, $xFileName[1])
-	_ArrayInsert($xArray, 2, "CD " & $xFileName[2] & $xFileName[3])
-;~ 	Local $xArray[2]
-;~ 	$xArray[0] = '@echo off'
-;~ 	$xArray[1] = 'start "7 Days To Die Dedicated Server" "' & $aServerDirLocal & "\" & $aServerEXE & '" -quit -batchmode -nographics ' & $aServerExtraCMD & " -configfile=" & $aConfigFile & " -dedicated"
-;~ 	$xArray[1] = 'start "7 Days To Die Dedicated Server" /D "' & $aServerDirLocal & '" Start_7DTD_Dedicated_Server.bat"'
-	_FileWriteFromArray($aBatchDIR & "\Start_7DTD_Dedicated_Server.bat", $xArray)
-	#EndRegion ; SteamCMD Update Files Creation
-	Global $aUtilExe = @ScriptName
-	FileDelete($aServerBatchFile)
-	FileWrite($aServerBatchFile, '@echo off' & @CRLF & 'START "' & $aUtilName & '" "' & @ScriptDir & '\' & $aUtilExe & '"' & @CRLF & "EXIT")
-EndFunc   ;==>_SteamCMDBatchFilesCreate
 #Region ;**** Check for Update At Startup ****
 If ($aCheckForUpdate = "yes") Then
 	ControlSetText($aSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Checking for server updates.")
@@ -808,23 +543,6 @@ EndIf
 #EndRegion ;**** Check for Update At Startup ****
 ExternalScriptExist()
 _StartRemoteRestart()
-Func _StartRemoteRestart()
-	If $aRemoteRestartUse = "yes" Then
-		ControlSetText($aSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Starting Remote Restart.")
-		TCPStartup() ; Start The TCP Services
-		Global $MainSocket = TCPListen($aServerIP, $aRemoteRestartPort, 100)
-		If $MainSocket = -1 Then
-			MsgBox(0x0, "Remote Restart", "Could not bind to [" & $aServerIP & ":" & $aRemoteRestartPort & "] Check server IP or disable Remote Restart in INI", 10)
-			LogWrite(" [Remote Restart] Remote Restart enabled but could not bind to " & $aServerIP & ":" & $aRemoteRestartPort)
-		Else
-			If $sObfuscatePass = "no" Then
-				LogWrite(" [Remote Restart] Remote Restart enabled. Listening for restart request at http://" & $aServerIP & ":" & $aRemoteRestartPort & "/?[key]=[password]", " [Remote Restart] Remote Restart enabled. Listening for restart request at http://" & $aServerIP & ":" & $aRemoteRestartPort & "/?" & $aRemoteRestartKey & "=" & $aRemoteRestartCode)
-			Else
-				LogWrite(" [Remote Restart] Remote Restart enabled. Listening for restart request at http://" & $aServerIP & ":" & $aRemoteRestartPort & "/?[key]=[password]")
-			EndIf
-		EndIf
-	EndIf
-EndFunc   ;==>_StartRemoteRestart
 ControlSetText($aSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Preparing icon tray.")
 Opt("TrayMenuMode", 3) ; The default tray menu items will not be shown and items are not checked when selected. These are options 1 and 2 for TrayMenuMode.
 Opt("TrayOnEventMode", 1)
@@ -908,11 +626,7 @@ EndFunc   ;==>TrayRestartUtil
 If WinExists($hGUI_LoginLogo) Then GUIDelete($hGUI_LoginLogo)
 ShowOnlineGUI(True)
 _UpdateTray()
-
 If $aUpdateUtil = "yes" Then AdlibRegister("RunUtilUpdate", 28800000)
-Func RunUtilUpdate()
-	UtilUpdate($aServerUpdateLinkVerUse, $aServerUpdateLinkDLUse, $aUtilVersion, $aUtilName)
-EndFunc   ;==>RunUtilUpdate
 Global $gTelnetTimeCheck0 = _NowCalc()
 Global $gQueryTimeCheck0 = _DateAdd('h', -2, _NowCalc())
 Global $gServerUpdatedTimeCheck0 = IniRead($aUtilCFGFile, "CFG", "Last Server Update", "no")
@@ -1160,6 +874,25 @@ While True ;**** Loop Until Closed ****
 		If $aServerOnlinePlayerYN = "yes" Then
 			If ((_DateDiff('s', $aTimeCheck8, _NowCalc())) >= $aServerOnlinePlayerSec) Then
 				_PlayersOnlineCheck()
+				Local $tGameHour = Number(StringLeft(StringRight($aGameTime, 5), 2))
+				Local $tGameDay = Number(_ArrayToString(_StringBetween($aGameTime, "Day ", ",")))
+				If $sUseDiscordBotNewDayYN = "yes" Then
+					If $tGameDay > IniRead($aUtilCFGFile, "CFG", "NewDay: Last day announced", $tGameDay) Then
+						IniWrite($aUtilCFGFile, "CFG", "NewDay: Last day announced", $tGameDay)
+						_SendDiscordNewDay()
+					EndIf
+				EndIf
+				If $sUseDiscordBotHordeDayYN = "yes" Then
+					If $aNextHorde = 0 Then
+						If $tGameDay > IniRead($aUtilCFGFile, "CFG", "Horde: Last day announced", $tGameDay) Then
+							If $tGameHour >= Number($sUseDiscordBotHordeHour) Then
+								IniWrite($aUtilCFGFile, "CFG", "Horde: Last day announced", $tGameDay)
+								_SendDiscordNewHorde()
+;~ 							MsgBox(0, "Kim", "New Horde") ;kim125er!
+							EndIf
+						EndIf
+					EndIf
+				EndIf
 				$aTimeCheck8 = _NowCalc()
 			EndIf
 		EndIf
@@ -1503,6 +1236,9 @@ EndFunc   ;==>Gamercide
 #EndRegion ; **** Gamercide Shutdown Protocol ****
 
 ; -----------------------------------------------------------------------------------------------------------------------
+Func RunUtilUpdate()
+	UtilUpdate($aServerUpdateLinkVerUse, $aServerUpdateLinkDLUse, $aUtilVersion, $aUtilName)
+EndFunc   ;==>RunUtilUpdate
 Func BackupCheck($sWDays, $sHours, $sMin)
 	Local $iDay = -1
 	Local $iHour = -1
@@ -1521,6 +1257,58 @@ Func BackupCheck($sWDays, $sHours, $sMin)
 	Next
 	Return False
 EndFunc   ;==>BackupCheck
+Func _StartRemoteRestart()
+	If $aRemoteRestartUse = "yes" Then
+		ControlSetText($aSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Starting Remote Restart.")
+		TCPStartup() ; Start The TCP Services
+		Global $MainSocket = TCPListen($aServerIP, $aRemoteRestartPort, 100)
+		If $MainSocket = -1 Then
+			MsgBox(0x0, "Remote Restart", "Could not bind to [" & $aServerIP & ":" & $aRemoteRestartPort & "] Check server IP or disable Remote Restart in INI", 10)
+			LogWrite(" [Remote Restart] Remote Restart enabled but could not bind to " & $aServerIP & ":" & $aRemoteRestartPort)
+		Else
+			If $sObfuscatePass = "no" Then
+				LogWrite(" [Remote Restart] Remote Restart enabled. Listening for restart request at http://" & $aServerIP & ":" & $aRemoteRestartPort & "/?[key]=[password]", " [Remote Restart] Remote Restart enabled. Listening for restart request at http://" & $aServerIP & ":" & $aRemoteRestartPort & "/?" & $aRemoteRestartKey & "=" & $aRemoteRestartCode)
+			Else
+				LogWrite(" [Remote Restart] Remote Restart enabled. Listening for restart request at http://" & $aServerIP & ":" & $aRemoteRestartPort & "/?[key]=[password]")
+			EndIf
+		EndIf
+	EndIf
+EndFunc   ;==>_StartRemoteRestart
+Func _SteamCMDCommandlineWrite()
+	UpdateIni($aIniFile)
+EndFunc   ;==>_SteamCMDCommandlineWrite
+Func _SteamCMDCommandlineRead()
+	$tRead = FileRead($aIniFile)
+	$aSteamUpdateCommandline = _ArrayToString(_StringBetween($tRead, '<--- BEGIN SteamCMD CODE --->' & @CRLF, '<--- END SteamCMD CODE --->'))
+EndFunc   ;==>_SteamCMDCommandlineRead
+Func _SteamCMDCreate()
+	Local $ServExp = ""
+	If $aServerVer = "public" Then
+	Else
+		$ServExp = " -beta " & $aServerVer
+	EndIf
+;~ 	Global $aBatchDIR = @ScriptDir & "\BatchFiles"
+;~ 	DirCreate($aBatchDIR)
+;~ 	Global $aSteamUpdateCMDValY = $aBatchDIR & "\Update_7DTD_Validate_YES.bat"
+;~ 	Global $aSteamUpdateCMDValN = $aBatchDIR & "\Update_7DTD_Validate_NO.bat"
+	If $aSteamCMDUserName = "" Then
+		Local $tLogin = "anonymous"
+	Else
+		Local $tLogin = $aSteamCMDUserName
+	EndIf
+	Local $tCmd = 'SET steampath=' & $aSteamCMDDir & @CRLF & _
+			'SET gamepath=' & $aServerDirLocal & @CRLF & _
+			'"%steampath%\steamcmd.exe" +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login ' & $tLogin & ' ' & $aSteamCMDPassword & _
+			' +force_install_dir "%gamepath%" +app_update ' & $aSteamAppID & ' ' & $ServExp
+	If $aValidate = "yes" Then
+		$tCmd &= " validate +quit"
+	Else
+		$tCmd &= " +quit"
+	EndIf
+	$aSteamUpdateCommandline = $tCmd
+	_SteamCMDCommandlineWrite()
+	_SteamCMDBatchFilesCreate()
+EndFunc   ;==>_SteamCMDCreate
 Func _PlayersOnlineCheck()
 	_GetPlayerCount()
 	If $aQueryYN = "yes" Then
@@ -1577,6 +1365,245 @@ Func _PlayersOnlineCheck()
 		SplashOff()
 	EndIf
 EndFunc   ;==>_PlayersOnlineCheck
+Func _SteamCMDBatchFilesCreate()
+	#Region ; SteamCMD Update Files Creation
+	FileDelete($aSteamUpdateCMDValY)
+	FileDelete($aSteamUpdateCMDValN)
+	If StringInStr($aSteamUpdateCommandline, "validate") Then
+		FileWrite($aSteamUpdateCMDValY, $aSteamUpdateCommandline)
+	Else
+		FileWrite($aSteamUpdateCMDValY, StringReplace($aSteamUpdateCommandline, "+quit", "validate +quit"))
+	EndIf
+	If StringInStr($aSteamUpdateCommandline, "validate") Then
+		FileWrite($aSteamUpdateCMDValN, StringReplace($aSteamUpdateCommandline, " validate", ""))
+	Else
+		FileWrite($aSteamUpdateCMDValN, $aSteamUpdateCommandline)
+	EndIf
+	Local $xArray[85]
+	$xArray[0] = '@echo off'
+	$xArray[1] = 'rem Starts a dedicated server'
+	$xArray[2] = 'rem'
+	$xArray[3] = 'rem -quit, -batchmode, -nographics: Unity commands'
+	$xArray[4] = 'rem -configfile			  : Allows server settings to be set up in an xml config file. Use no path if in same dir or full path.'
+	$xArray[5] = 'rem -dedicated                    : Has to be the last option to start the dedicated server.'
+	$xArray[6] = ''
+	$xArray[7] = 'set LOGTIMESTAMP='
+	$xArray[8] = ''
+	$xArray[9] = ''
+	$xArray[10] = 'IF EXIST 7DaysToDieServer.exe ('
+	$xArray[11] = '	set GAMENAME=7DaysToDieServer'
+	$xArray[12] = '	set LOGNAME=output_log_dedi'
+	$xArray[13] = ') ELSE ('
+	$xArray[14] = '	set GAMENAME=7DaysToDie'
+	$xArray[15] = '	set LOGNAME=output_log'
+	$xArray[16] = ')'
+	$xArray[17] = ''
+	$xArray[18] = ':: --------------------------------------------'
+	$xArray[19] = ':: REMOVE OLD LOGS (only keep latest 20)'
+	$xArray[20] = ''
+	$xArray[21] = 'for /f "tokens=* skip=19" %%F in (' & "'dir %GAMENAME%_Data\%LOGNAME%*.txt /o-d /tc /b'" & ") do del %GAMENAME%_Data\%%F"
+	$xArray[22] = ''
+	$xArray[23] = ''
+	$xArray[24] = ''
+	$xArray[25] = ':: --------------------------------------------'
+	$xArray[26] = ':: BUILDING TIMESTAMP FOR LOGFILE'
+	$xArray[27] = ''
+	$xArray[28] = ':: Check WMIC is available'
+	$xArray[29] = 'WMIC.EXE Alias /? >NUL 2>&1 || GOTO s_start'
+	$xArray[30] = ''
+	$xArray[31] = ':: Use WMIC to retrieve date and time'
+	$xArray[32] = 'FOR /F "skip=1 tokens=1-6" %%G IN (' & "'WMIC Path Win32_LocalTime Get Day^,Hour^,Minute^,Month^,Second^,Year /Format:table'" & ") DO ("
+	$xArray[33] = '	IF "%%~L"=="" goto s_done'
+	$xArray[34] = '	Set _yyyy=%%L'
+	$xArray[35] = '	Set _mm=00%%J'
+	$xArray[36] = '	Set _dd=00%%G'
+	$xArray[37] = '	Set _hour=00%%H'
+	$xArray[38] = '	Set _minute=00%%I'
+	$xArray[39] = '	Set _second=00%%K'
+	$xArray[40] = ')'
+	$xArray[41] = ':s_done'
+	$xArray[42] = ''
+	$xArray[43] = ':: Pad digits with leading zeros'
+	$xArray[44] = 'Set _mm=%_mm:~-2%'
+	$xArray[45] = 'Set _dd=%_dd:~-2%'
+	$xArray[46] = 'Set _hour=%_hour:~-2%'
+	$xArray[47] = 'Set _minute=%_minute:~-2%'
+	$xArray[48] = 'Set _second=%_second:~-2%'
+	$xArray[49] = ''
+	$xArray[50] = 'Set LOGTIMESTAMP=__%_yyyy%-%_mm%-%_dd%__%_hour%-%_minute%-%_second%'
+	$xArray[51] = ''
+	$xArray[52] = ':s_start'
+	$xArray[53] = ''
+	$xArray[54] = ''
+	$xArray[55] = ':: --------------------------------------------'
+	$xArray[56] = ':: STARTING SERVER'
+	$xArray[57] = ''
+	$xArray[58] = ''
+	$xArray[59] = 'echo|set /p="251570" > steam_appid.txt'
+	$xArray[60] = 'set SteamAppId=251570'
+	$xArray[61] = 'set SteamGameId=251570'
+	$xArray[62] = ''
+	$xArray[63] = 'set LOGFILE=%~dp0\%GAMENAME%_Data\%LOGNAME%%LOGTIMESTAMP%.txt'
+	$xArray[64] = ''
+	$xArray[65] = ''
+	$xArray[66] = 'echo Writing log file to: %LOGFILE%'
+	$xArray[67] = ''
+	$xArray[68] = 'start %GAMENAME% -logfile "%LOGFILE%" -quit -batchmode -nographics -configfile=' & $aConfigFile & ' -dedicated'
+;~ $xArray[68] = 'start %GAMENAME% -logfile "%LOGFILE%" -quit -batchmode -nographics -configfile=serverconfig.xml -dedicated'
+	$xArray[69] = ''
+	$xArray[70] = ''
+	$xArray[71] = 'echo Starting server ...'
+	$xArray[72] = 'timeout 15'
+	$xArray[73] = ''
+	$xArray[74] = 'cls'
+	$xArray[75] = ''
+	$xArray[76] = 'echo.'
+	$xArray[77] = 'echo Server running in background, you can close this window.'
+	$xArray[78] = 'echo You can check the task manager if the server process is really running.'
+	$xArray[79] = 'echo.'
+	$xArray[80] = 'echo.'
+	$xArray[81] = ''
+	$xArray[82] = 'pause'
+	FileDelete($aServerDirLocal & "\Start_7DTD_Dedicated_Server.bat")
+	_FileWriteFromArray($aServerDirLocal & "\Start_7DTD_Dedicated_Server.bat", $xArray)
+	FileDelete($aBatchDIR & "\Start_7DTD_Dedicated_Server.bat")
+	Local $xFileName = _PathSplit($aServerDirLocal, "", "", "", "")
+	_ArrayInsert($xArray, 1, $xFileName[1])
+	_ArrayInsert($xArray, 2, "CD " & $xFileName[2] & $xFileName[3])
+;~ 	Local $xArray[2]
+;~ 	$xArray[0] = '@echo off'
+;~ 	$xArray[1] = 'start "7 Days To Die Dedicated Server" "' & $aServerDirLocal & "\" & $aServerEXE & '" -quit -batchmode -nographics ' & $aServerExtraCMD & " -configfile=" & $aConfigFile & " -dedicated"
+;~ 	$xArray[1] = 'start "7 Days To Die Dedicated Server" /D "' & $aServerDirLocal & '" Start_7DTD_Dedicated_Server.bat"'
+	_FileWriteFromArray($aBatchDIR & "\Start_7DTD_Dedicated_Server.bat", $xArray)
+	#EndRegion ; SteamCMD Update Files Creation
+	Global $aUtilExe = @ScriptName
+	FileDelete($aServerBatchFile)
+	FileWrite($aServerBatchFile, '@echo off' & @CRLF & 'START "' & $aUtilName & '" "' & @ScriptDir & '\' & $aUtilExe & '"' & @CRLF & "EXIT")
+EndFunc   ;==>_SteamCMDBatchFilesCreate
+Func _ImportServerConfig()
+	Local $kServerPort = "}ServerPort}value=}"
+	Local $kServerName = "}ServerName}value=}"
+	Local $kServerTelnetEnable = "}TelnetEnabled}value=}"
+	Local $kServerTelnetPort = "}TelnetPort}value=}"
+	Local $kServerTelnetPass = "}TelnetPassword}value=}"
+	Local $kServerDataFolder = "}UserDataFolder}value=}"
+	Local $kServerSaveGame = "}SaveGameFolder}value=}"
+	Local $kServerTerminalWindow = "}TerminalWindowEnabled}value=}"
+	Local $kFPServerPass = "}ServerPass}value=}"
+	Local $kFPServerMaxPlayerCount = "}ServerMaxPlayerCount}value=}"
+	Local $kFPServerDescription = "}ServerDescription}value=}"
+	Local $kFPServerWebsiteURL = "}ServerWebsiteURL}value=}"
+	Local $kFPGameWorld = "}GameWorld}value=}"
+	Local $kFPWorldGenSeed = "}WorldGenSeed}value=}"
+	Local $kFPWorldGenSize = "}WorldGenSize}value=}"
+	Local $kFPGameName = "}GameName}value=}"
+	Local $kFPGameDifficulty = "}GameDifficulty}value=}"
+	Local $kFPAdminFileName = "}AdminFileName}value=}"
+	Local $kFPDropOnDeath = "}DropOnDeath}value=}"
+	Local $kMaxPlayers = "}ServerMaxPlayerCount}value=}"
+	Local $kFPServerLoginConfirmationText = "}ServerLoginConfirmationText}value=}"
+	Local $kHordeFreq = "}BloodMoonFrequency}value=}"
+	Local $sConfigPathOpen = FileOpen($sConfigPath, 0)
+	Local $sConfigRead4 = FileRead($sConfigPathOpen)
+	Local $sConfigRead3 = StringRegExpReplace($sConfigRead4, """", "}")
+	Local $sConfigRead2 = StringRegExpReplace($sConfigRead3, "\t", "")
+	Local $sConfigRead1 = StringRegExpReplace($sConfigRead2, "  ", "")
+	Local $sConfigRead = StringRegExpReplace($sConfigRead1, " value=", "value=")
+	Local $xServerPort = _StringBetween($sConfigRead, $kServerPort, "}")
+	Global $aServerPort = _ArrayToString($xServerPort)
+	Local $xServerName = _StringBetween($sConfigRead, $kServerName, "}")
+	Global $aServerName = _ArrayToString($xServerName)
+	Local $xServerTelnetEnable = _StringBetween($sConfigRead, $kServerTelnetEnable, "}")
+	Global $aServerTelnetEnable = _ArrayToString($xServerTelnetEnable)
+	Local $xServerTelnetPort = _StringBetween($sConfigRead, $kServerTelnetPort, "}")
+	Global $aTelnetPort = _ArrayToString($xServerTelnetPort)
+	Local $xServerTelnetPass = _StringBetween($sConfigRead, $kServerTelnetPass, "}")
+	Global $aTelnetPass = _ArrayToString($xServerTelnetPass)
+	Local $xServerDataFolder = _StringBetween($sConfigRead, $kServerDataFolder, "}")
+	Global $aServerDataFolder = _ArrayToString($xServerDataFolder)
+	Local $xServerSaveGame = _StringBetween($sConfigRead, $kServerSaveGame, "}")
+	Global $aServerSaveGame = _ArrayToString($xServerSaveGame)
+	Local $xServerTerminalWindow = _StringBetween($sConfigRead, $kServerTerminalWindow, "}")
+	Global $aServerTerminalWindow = _ArrayToString($xServerTerminalWindow)
+	Local $xFPServerPass = _StringBetween($sConfigRead, $kFPServerPass, "}")
+	Global $aFPServerPass = _ArrayToString($xFPServerPass)
+	Local $xFPServerMaxPlayerCount = _StringBetween($sConfigRead, $kFPServerMaxPlayerCount, "}")
+	Global $aFPServerMaxPlayerCount = _ArrayToString($xFPServerMaxPlayerCount)
+	Local $xFPServerDescription = _StringBetween($sConfigRead, $kFPServerDescription, "}")
+	Global $aFPServerDescription = _ArrayToString($xFPServerDescription)
+	Local $xFPServerWebsiteURL = _StringBetween($sConfigRead, $kFPServerWebsiteURL, "}")
+	Global $aFPServerWebsiteURL = _ArrayToString($xFPServerWebsiteURL)
+	Local $xFPGameWorld = _StringBetween($sConfigRead, $kFPGameWorld, "}")
+	Global $aFPGameWorld = _ArrayToString($xFPGameWorld)
+	Local $xFPWorldGenSeed = _StringBetween($sConfigRead, $kFPWorldGenSeed, "}")
+	Global $aFPWorldGenSeed = _ArrayToString($xFPWorldGenSeed)
+	Local $xFPWorldGenSize = _StringBetween($sConfigRead, $kFPWorldGenSize, "}")
+	Global $aFPWorldGenSize = _ArrayToString($xFPWorldGenSize)
+	Local $xFPGameName = _StringBetween($sConfigRead, $kFPGameName, "}")
+	Global $aFPGameName = _ArrayToString($xFPGameName)
+	Local $xFPGameDifficulty = _StringBetween($sConfigRead, $kFPGameDifficulty, "}")
+	Global $aFPGameDifficulty = _ArrayToString($xFPGameDifficulty)
+	Local $xFPAdminFileName = _StringBetween($sConfigRead, $kFPAdminFileName, "}")
+	Global $aFPAdminFileName = _ArrayToString($xFPAdminFileName)
+	Local $xFPDropOnDeath = _StringBetween($sConfigRead, $kFPDropOnDeath, "}")
+	Global $aFPDropOnDeath = _ArrayToString($xFPDropOnDeath)
+	Local $xMaxPlayers = _StringBetween($sConfigRead, $kMaxPlayers, "}")
+	Global $aMaxPlayers = _ArrayToString($xMaxPlayers)
+	Local $xFPServerLoginConfirmationText = _StringBetween($sConfigRead, $kFPServerLoginConfirmationText, "}")
+	Global $aFPServerLoginConfirmationText = _ArrayToString($xFPServerLoginConfirmationText)
+	Local $xHordeFreq = _StringBetween($sConfigRead, $kHordeFreq, "}")
+	Global $aHordeFreq = _ArrayToString($xHordeFreq)
+	If $aHordeFreq < 1 Or $aHordeFreq > 99 Then $aHordeFreq = 7
+	$aServerQueryName = $aServerName
+	If $aServerSaveGame = "absolute path" Then
+		Global $aServerSaveGame = _PathFull("7DaysToDieFolder", @AppDataDir)
+	EndIf
+	If $aServerDataFolder = "absolute path" Then
+		Global $aServerDataFolder = $aServerDirLocal & "\UserData"
+	EndIf
+	If $aServerTelnetEnable = "no" Or $aServerTelnetEnable = "false" Then
+		LogWrite(" . . . Server telnet was disabled. Telnet required for this utility. TelnetEnabled set to: true")
+		;	Global $aServerTelnetEnable = "true"
+		$aServerTelnetReboot = "yes"
+		$aServerRebootReason = $aServerRebootReason & "Telnet was disabled." & @CRLF
+	EndIf
+	Global $aServerTelnetEnable = "true"
+	If $aTelnetPort = "" Then
+		LogWrite(" . . . Server telnet port was blank. Port CHANGED to default value: 8081")
+		$aTelnetPort = "8081"
+		$aServerTelnetReboot = "yes"
+		$aServerRebootReason = $aServerRebootReason & "Telnet port was blank." & @CRLF
+	EndIf
+	If $aTelnetPass = "CHANGEME" Or $aTelnetPass = "" Then
+		If $sObfuscatePass = "yes" Then
+			LogWrite(" . . . Server telnet password was " & $aTelnetPass & ". Password CHANGED to: [hidden]. Recommend change telnet password in " & $aConfigFile)
+		Else
+			LogWrite(" . . . Server telnet password was " & $aTelnetPass & ". Password CHANGED to: 7dtdServerUpdateUtility. Recommend change telnet password in " & $aConfigFile)
+		EndIf
+		Global $aTelnetPass = "7dtdServerUpdateUtility"
+		$aServerTelnetReboot = "yes"
+		$aServerRebootReason = $aServerRebootReason & "Telnet password was blank or CHANGEME." & @CRLF
+	EndIf
+	If $aServerTerminalWindow = "false" Then
+	Else
+		LogWrite(" . . . Terminal window was enabled. Utility cannot function with it enabled. Terminal window set to: false")
+		$aServerTelnetReboot = "yes"
+		$aServerRebootReason = $aServerRebootReason & "Terminal window was enabled." & @CRLF
+	EndIf
+	LogWrite(" [Config] Retrieving data from " & $aConfigFile & ".")
+	LogWrite("", " . . . Server Port = " & $aServerPort)
+	LogWrite("", " . . . Server Name = " & $aServerName)
+	LogWrite("", " . . . Server Telnet Port = " & $aTelnetPort)
+	If $sObfuscatePass = "no" Then
+		LogWrite("", " . . . Server Telnet Password = " & $aTelnetPass)
+	Else
+		LogWrite("", " . . . Server Telnet Password = [hidden]" & $aTelnetPass)
+	EndIf
+	LogWrite("", " . . . Server Save Game Folder = " & $aServerSaveGame)
+	LogWrite("", " . . . Server UserData Folder = " & $aServerDataFolder)
+	FileClose($sConfigRead)
+	AppendConfigSettings()
+EndFunc   ;==>_ImportServerConfig
 Func _BackupGame($tMinimizeTF = True, $tFullTF = False, $tRunWait = False)
 ;~ 	SetStatusBusy("Backup starting")
 ;~ 	RunExternalScriptBackUp()
@@ -1710,6 +1737,42 @@ Func _QueryCheck($tRestart1 = True)
 	Next
 	Return $tReturn3
 EndFunc   ;==>_QueryCheck
+Func _SendDiscordNewHorde()
+	Local $tDiscordPlayersMsg = StringReplace($sDiscordHordeDayMsg, "\o", $aPlayersCount)
+	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\m", $aMaxPlayers)
+	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\t", $aGameTime)
+	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\h", $aNextHorde)
+	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\j", _DiscordPlayersJoined())
+	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\l", _DiscordPlayersLeft())
+	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\a", _DiscordPlayersOnline())
+	If StringLen($aPlayersName) > 1 Then
+		$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\p", $aPlayersName)
+	Else
+		$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\p", "[None]")
+	EndIf
+	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\n", @CRLF)
+	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "0 days", "TODAY!")
+	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "0 day", "TODAY!")
+	_SendDiscordMsg($tDiscordPlayersMsg, $aServerDiscordWHSelPlayers)
+EndFunc   ;==>_SendDiscordNewHorde
+Func _SendDiscordNewDay()
+	Local $tDiscordPlayersMsg = StringReplace($sDiscordNewDayMsg, "\o", $aPlayersCount)
+	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\m", $aMaxPlayers)
+	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\t", $aGameTime)
+	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\h", $aNextHorde)
+	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\j", _DiscordPlayersJoined())
+	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\l", _DiscordPlayersLeft())
+	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\a", _DiscordPlayersOnline())
+	If StringLen($aPlayersName) > 1 Then
+		$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\p", $aPlayersName)
+	Else
+		$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\p", "[None]")
+	EndIf
+	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\n", @CRLF)
+	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "0 days", "TODAY!")
+	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "0 day", "TODAY!")
+	_SendDiscordMsg($tDiscordPlayersMsg, $aServerDiscordWHSelPlayers)
+EndFunc   ;==>_SendDiscordNewDay
 
 Func _SendDiscordPlayer()
 	If $aGameTime = "Day 1, 00:00" Then
@@ -3103,6 +3166,9 @@ Func ReadUini($aIniFile, $sLogFile)
 	Global $sUseDiscordBotPlayerChangeYN = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for Online Player changes? (yes/no) ###", $iniCheck)
 	Global $sUseDiscordBotPlayerChatYN = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for Player Chat? (yes/no) ###", $iniCheck)
 	Global $sUseDiscordBotPlayerDiedYN = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message when player dies? (yes/no) ###", $iniCheck)
+	Global $sUseDiscordBotNewDayYN = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message every new day at midnight? (yes/no) ###", $iniCheck)
+	Global $sUseDiscordBotHordeDayYN = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message every blood moon? (yes/no) ###", $iniCheck)
+	Global $sUseDiscordBotHordeHour = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Blood Moon time (hour) to send Discord Msg (00-23) ###", $iniCheck)
 	Global $sUseDiscordBotFirstAnnouncement = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for first ANNOUNCEMENT only? (reduces bot spam)(yes/no) ###", $iniCheck)
 
 	Global $sDiscordDailyMessage = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement DAILY (\m - minutes) ###", $iniCheck)
@@ -3115,6 +3181,8 @@ Func ReadUini($aIniFile, $sLogFile)
 	Global $sDiscordPlayerOnlineMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Online Player Sub-Message (\p - Player Name(s) of player(s) online, \n Next Line) ###", $iniCheck)
 	Global $sDiscordPlayerDiedMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Died Message (\p - Player Name, \n Next Line) ###", $iniCheck)
 	Global $sDiscordPlayerChatMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Chat (\p - Player Name, \m Message, \t Msg type (ex. Global,Friend)", $iniCheck)
+	Global $sDiscordNewDayMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every new day (Uses online players substitutes. \p All Online Players)", $iniCheck)
+	Global $sDiscordHordeDayMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every blood moon (Uses online players substitutes. \p All Online Players)", $iniCheck)
 
 	Global $sUseTwitchBotDaily = IniRead($aIniFile, " --------------- TWITCH INTEGRATION --------------- ", "Send Twitch message for DAILY reboot? (yes/no) ###", $iniCheck)
 	Global $sUseTwitchBotUpdate = IniRead($aIniFile, " --------------- TWITCH INTEGRATION --------------- ", "Send Twitch message for UPDATE reboot? (yes/no) ###", $iniCheck)
@@ -3725,6 +3793,21 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniFail += 1
 		$iIniError = $iIniError & "UseDiscordBotPlayerDiedYN, "
 	EndIf
+	If $iniCheck = $sUseDiscordBotNewDayYN Then
+		$sUseDiscordBotNewDayYN = "yes"
+		$iIniFail += 1
+		$iIniError = $iIniError & "UseDiscordBotNewDayYN, "
+	EndIf
+	If $iniCheck = $sUseDiscordBotHordeDayYN Then
+		$sUseDiscordBotHordeDayYN = "yes"
+		$iIniFail += 1
+		$iIniError = $iIniError & "UseDiscordBotHordeDayYN, "
+	EndIf
+	If $iniCheck = $sUseDiscordBotHordeHour Then
+		$sUseDiscordBotHordeHour = "07"
+		$iIniFail += 1
+		$iIniError = $iIniError & "UseDiscordBotHordeHour, "
+	EndIf
 	If $iniCheck = $sUseDiscordBotFirstAnnouncement Then
 		$sUseDiscordBotFirstAnnouncement = "no"
 		$iIniFail += 1
@@ -3759,6 +3842,16 @@ Func ReadUini($aIniFile, $sLogFile)
 		$sDiscordPlayerChatMsg = '[\t] **\p**: \m'
 		$iIniFail += 1
 		$iIniError = $iIniError & "DiscordPlayerChatMsg, "
+	EndIf
+	If $iniCheck = $sDiscordNewDayMsg Then
+		$sDiscordNewDayMsg = 'Game Time: **\t**  Next Horde: **\h days**'
+		$iIniFail += 1
+		$iIniError = $iIniError & "DiscordNewDayMsg, "
+	EndIf
+	If $iniCheck = $sDiscordHordeDayMsg Then
+		$sDiscordHordeDayMsg = 'Game Time: **\t**  :full_moon: HORDE DAY! :man_zombie:'
+		$iIniFail += 1
+		$iIniError = $iIniError & "DiscordNewDayMsg, "
 	EndIf
 	If $iniCheck = $sUseTwitchBotDaily Then
 		$sUseTwitchBotDaily = "no"
@@ -4208,6 +4301,9 @@ Func UpdateIni($aIniFile)
 	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for Online Player changes? (yes/no) ###", $sUseDiscordBotPlayerChangeYN)
 	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for Player Chat? (yes/no) ###", $sUseDiscordBotPlayerChatYN)
 	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message when player dies? (yes/no) ###", $sUseDiscordBotPlayerDiedYN)
+	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message every new day at midnight? (yes/no) ###", $sUseDiscordBotNewDayYN)
+	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message every blood moon? (yes/no) ###", $sUseDiscordBotHordeDayYN)
+	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Blood Moon time (hour) to send Discord Msg (00-23) ###", $sUseDiscordBotHordeHour)
 	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for first ANNOUNCEMENT only? (reduces bot spam)(yes/no) ###", $sUseDiscordBotFirstAnnouncement)
 	FileWriteLine($aIniFile, @CRLF)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement DAILY (\m - minutes) ###", $sDiscordDailyMessage)
@@ -4221,6 +4317,8 @@ Func UpdateIni($aIniFile)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Online Player Sub-Message (\p - Player Name(s) of player(s) online, \n Next Line) ###", $sDiscordPlayerOnlineMsg)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Died Message (\p - Player Name, \n Next Line) ###", $sDiscordPlayerDiedMsg)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Chat (\p - Player Name, \m Message, \t Msg type (ex. Global,Friend)", $sDiscordPlayerChatMsg)
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every new day (Uses online players substitutes. \p All Online Players)", $sDiscordNewDayMsg)
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every blood moon (Uses online players substitutes. \p All Online Players)", $sDiscordHordeDayMsg)
 	FileWriteLine($aIniFile, @CRLF)
 	IniWrite($aIniFile, " --------------- TWITCH INTEGRATION --------------- ", "Send Twitch message for DAILY reboot? (yes/no) ###", $sUseTwitchBotDaily)
 	IniWrite($aIniFile, " --------------- TWITCH INTEGRATION --------------- ", "Send Twitch message for UPDATE reboot? (yes/no) ###", $sUseTwitchBotUpdate)
@@ -4602,10 +4700,9 @@ Func GetPlayerCount($tSplash)
 			EndIf
 			$aGameTime = "Day " & $tDay & ", " & $tTime9
 		EndIf
-		Local $t2 = (Int($tDay / $aHordeFreq) * $aHordeFreq)
-		$aNextHorde = $aHordeFreq - ($tDay - $t2) - 1
-;~ 		Local $t2 = (Int($tDay / 7) * 7)
-;~ 		$aNextHorde = 7 - ($tDay - $t2)
+		Local $t2 = Int($tDay / $aHordeFreq) * $aHordeFreq
+		$aNextHorde = $aHordeFreq - ($tDay - $t2)
+		If Int($aNextHorde) = Int($aHordeFreq) Then $aNextHorde = 0
 		$tOnlinePlayers[1] = "Game Time: " & $aGameTime & @CRLF & "Total Players " ; Screen version with @CRLF
 		$tOnlinePlayers[2] = "Game Time(" & $aGameTime & ") Total Players " ; Log version without @CRLF
 		If StringInStr($sMsg[1], "Total of 0 in the game") <> 0 Then
@@ -5284,7 +5381,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T1_C_ServerUpdateCheckClick")
-		Global $W1_T1_I_UpdateMinutes = GUICtrlCreateInput("5", 705, 113, 47, 24)
+		Global $W1_T1_I_UpdateMinutes = GUICtrlCreateInput("0", 705, 113, 47, 24)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T1_I_UpdateMinutesChange")
@@ -5430,7 +5527,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T1_I_BackupCmChange")
-		Global $W1_T1_I_BackupNumberToKeep = GUICtrlCreateInput("1", 792, 383, 47, 22)
+		Global $W1_T1_I_BackupNumberToKeep = GUICtrlCreateInput("0", 792, 383, 47, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T1_I_BackupNumberToKeepChange")
@@ -5444,7 +5541,7 @@ Func GUI_Config($tNewInstallTF = False)
 		Global $W1_T1_U_BackupFullEvery = GUICtrlCreateUpdown($W1_T1_I_BackupFullEvery)
 		GUICtrlSetLimit(-1, 99, 0)
 		GUICtrlSetOnEvent(-1, "W1_T1_U_BackupFullEveryChange")
-		Global $W1_T1_I_BackupMaxWaitSec = GUICtrlCreateInput("30", 792, 499, 47, 22)
+		Global $W1_T1_I_BackupMaxWaitSec = GUICtrlCreateInput("0", 792, 499, 47, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "Arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T1_I_BackupMaxWaitSecChange")
@@ -5498,7 +5595,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label83Click")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		Global $Pic1 = GUICtrlCreatePic("" & $aFolderTemp & "zombiehorde.jpg", 614, 193, 274, 165)
+		Global $Pic1 = GUICtrlCreatePic("" & $aFolderTemp & "zombiehorde.jpg""", 614, 193, 274, 165)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Pic1Click")
 		Global $Tab2 = GUICtrlCreateTabItem("2 Watchdog")
@@ -5620,7 +5717,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetOnEvent(-1, "W1_T2_I_RestartExcessiveMemoryAmtChange")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		Global $Pic2 = GUICtrlCreatePic("" & $aFolderTemp & "zombiedog.jpg", 610, 359, 222, 180)
+		Global $Pic2 = GUICtrlCreatePic("" & $aFolderTemp & "zombiedog.jpg""", 610, 359, 222, 180)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Pic2Click")
 		Global $Tab3 = GUICtrlCreateTabItem("3 Restarts")
@@ -5793,11 +5890,11 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T3_I_RemoteRestartPortChange")
-		Global $W1_T3_I_RemoteRestartKey = GUICtrlCreateInput("Input1", 367, 283, 65, 22)
+		Global $W1_T3_I_RemoteRestartKey = GUICtrlCreateInput("W1_T3_I_RemoteRestartKey", 367, 283, 65, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T3_I_RemoteRestartKeyChange")
-		Global $W1_T3_I_RemoteRestartCode = GUICtrlCreateInput("Input1", 491, 283, 65, 22)
+		Global $W1_T3_I_RemoteRestartCode = GUICtrlCreateInput("W1_T3_I_RemoteRestartCode", 491, 283, 65, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T3_I_RemoteRestartCodeChange")
@@ -5837,7 +5934,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T3_R_AppendLongClick")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		Global $Pic3 = GUICtrlCreatePic("" & $aFolderTemp & "zombie1.jpg", 702, 187, 173, 251)
+		Global $Pic3 = GUICtrlCreatePic("" & $aFolderTemp & "zombie1.jpg""", 702, 187, 173, 251)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Pic3Click")
 		Global $Tab4 = GUICtrlCreateTabItem("4 Announcements")
@@ -5880,7 +5977,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label13Click")
-		Global $W1_T4_I_UpdateMins = GUICtrlCreateInput("Input1", 356, 289, 75, 22)
+		Global $W1_T4_I_UpdateMins = GUICtrlCreateInput("W1_T4_I_UpdateMins", 356, 289, 75, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T4_I_UpdateMinsChange")
@@ -5912,7 +6009,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label24Click")
-		Global $W1_T4_I_UpdateRemote = GUICtrlCreateInput("Input1", 356, 318, 75, 22)
+		Global $W1_T4_I_UpdateRemote = GUICtrlCreateInput("W1_T4_I_UpdateRemote", 356, 318, 75, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T4_I_UpdateRemoteChange")
@@ -5964,7 +6061,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label53Click")
-		Global $W1_T4_I_AnnounceUpdate = GUICtrlCreateInput("W1_T4_I_AnnounceDaily", 195, 449, 677, 22)
+		Global $W1_T4_I_AnnounceUpdate = GUICtrlCreateInput("W1_T4_I_AnnounceUpdate", 195, 449, 677, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T4_I_AnnounceUpdateChange")
@@ -5972,7 +6069,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label54Click")
-		Global $W1_T4_I_AnnounceRemote = GUICtrlCreateInput("W1_T4_I_AnnounceDaily", 195, 477, 677, 22)
+		Global $W1_T4_I_AnnounceRemote = GUICtrlCreateInput("W1_T4_I_AnnounceRemote", 195, 477, 677, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T4_I_AnnounceRemoteChange")
@@ -5980,7 +6077,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label84Click")
-		Global $W1_T4_I_BackupStarted = GUICtrlCreateInput("W1_T4_I_AnnounceBackup", 195, 520, 677, 22)
+		Global $W1_T4_I_BackupStarted = GUICtrlCreateInput("W1_T4_I_BackupStarted", 195, 520, 677, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T4_I_BackupStartedChange")
@@ -6003,7 +6100,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 2, "arial")
 		GUICtrlSetOnEvent(-1, "Label92Click")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		Global $Pic6 = GUICtrlCreatePic("" & $aFolderTemp & "zombie6.jpg", 586, 69, 263, 161)
+		Global $Pic6 = GUICtrlCreatePic("" & $aFolderTemp & "zombie6.jpg""", 586, 69, 263, 161)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Pic6Click")
 		Global $Group19 = GUICtrlCreateGroup("Telnet", 20, 63, 533, 83)
@@ -6029,7 +6126,6 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetOnEvent(-1, "Label100Click")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		Global $Tab5 = GUICtrlCreateTabItem("5 Discord Webhooks")
-		GUICtrlSetState(-1, $GUI_SHOW)
 		Global $Group3 = GUICtrlCreateGroup("Discord Webhooks", 38, 65, 831, 325)
 		GUICtrlSetFont(-1, 10, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
@@ -6041,11 +6137,11 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D1URLChange")
-		Global $W1_T5_I_D1Bot = GUICtrlCreateInput("Input1", 181, 116, 101, 22)
+		Global $W1_T5_I_D1Bot = GUICtrlCreateInput("W1_T5_I_D1Bot", 181, 116, 101, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D1BotChange")
-		Global $W1_T5_I_D1Avatar = GUICtrlCreateInput("Input1", 365, 117, 415, 22)
+		Global $W1_T5_I_D1Avatar = GUICtrlCreateInput("W1_T5_I_D1Avatar", 365, 117, 415, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D1AvatarChange")
@@ -6077,11 +6173,11 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label20Click")
-		Global $W1_T5_I_D2URL = GUICtrlCreateInput("Input1", 180, 166, 677, 22)
+		Global $W1_T5_I_D2URL = GUICtrlCreateInput("W1_T5_I_D2URL", 180, 166, 677, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D2URLChange")
-		Global $W1_T5_I_D2Bot = GUICtrlCreateInput("Input1", 180, 195, 101, 22)
+		Global $W1_T5_I_D2Bot = GUICtrlCreateInput("W1_T5_I_D2Bot", 180, 195, 101, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D2BotChange")
@@ -6089,7 +6185,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label25Click")
-		Global $W1_T5_I_D2Avatar = GUICtrlCreateInput("Input1", 364, 196, 415, 22)
+		Global $W1_T5_I_D2Avatar = GUICtrlCreateInput("W1_T5_I_D2Avatar", 364, 196, 415, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D2AvatarChange")
@@ -6109,11 +6205,11 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label57Click")
-		Global $W1_T5_I_D3URL = GUICtrlCreateInput("Input1", 178, 245, 677, 22)
+		Global $W1_T5_I_D3URL = GUICtrlCreateInput("W1_T5_I_D3URL", 178, 245, 677, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D3URLChange")
-		Global $W1_T5_I_D3Bot = GUICtrlCreateInput("Input1", 178, 274, 101, 22)
+		Global $W1_T5_I_D3Bot = GUICtrlCreateInput("W1_T5_I_D3Bot", 178, 274, 101, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D3BotChange")
@@ -6121,7 +6217,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label58Click")
-		Global $W1_T5_I_D3Avatar = GUICtrlCreateInput("Input1", 362, 275, 415, 22)
+		Global $W1_T5_I_D3Avatar = GUICtrlCreateInput("W1_T5_I_D3Avatar", 362, 275, 415, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D3AvatarChange")
@@ -6141,11 +6237,11 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label61Click")
-		Global $W1_T5_I_D4URL = GUICtrlCreateInput("Input1", 178, 321, 677, 22)
+		Global $W1_T5_I_D4URL = GUICtrlCreateInput("W1_T5_I_D4URL", 178, 321, 677, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D4URLChange")
-		Global $W1_T5_I_D4Bot = GUICtrlCreateInput("Input1", 178, 350, 101, 22)
+		Global $W1_T5_I_D4Bot = GUICtrlCreateInput("W1_T5_I_D4Bot", 178, 350, 101, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D4BotChange")
@@ -6153,7 +6249,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label62Click")
-		Global $W1_T5_I_D4Avatar = GUICtrlCreateInput("Input1", 362, 351, 415, 22)
+		Global $W1_T5_I_D4Avatar = GUICtrlCreateInput("W1_T5_I_D4Avatar", 362, 351, 415, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_I_D4AvatarChange")
@@ -6266,111 +6362,143 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHAllChat4Click")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		Global $Pic4 = GUICtrlCreatePic("" & $aFolderTemp & "zombie2.jpg", 722, 429, 53, 123)
+		Global $Pic4 = GUICtrlCreatePic("" & $aFolderTemp & "zombie2.jpg""", 690, 399, 85, 153)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Pic4Click")
 		Global $Tab6 = GUICtrlCreateTabItem("6 Discord Announcements")
-		Global $Group12 = GUICtrlCreateGroup("Discord Announcements", 18, 75, 867, 455)
+		GUICtrlSetState(-1, $GUI_SHOW)
+		Global $Group12 = GUICtrlCreateGroup("Discord Announcements", 18, 63, 867, 495)
 		GUICtrlSetFont(-1, 10, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-		Global $W1_T6_C_Daily = GUICtrlCreateCheckbox("Daily", 32, 118, 112, 17)
+		Global $W1_T6_C_Daily = GUICtrlCreateCheckbox("Daily", 32, 106, 112, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_C_DailyClick")
-		Global $W1_T6_I_Daily = GUICtrlCreateInput("W1_T6_I_Daily", 147, 115, 728, 22)
+		Global $W1_T6_I_Daily = GUICtrlCreateInput("W1_T6_I_Daily", 147, 103, 728, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_I_DailyChange")
-		Global $W1_T6_C_Update = GUICtrlCreateCheckbox("Update", 32, 147, 112, 17)
+		Global $W1_T6_C_Update = GUICtrlCreateCheckbox("Update", 32, 135, 112, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_C_UpdateClick")
-		Global $W1_T6_I_Update = GUICtrlCreateInput("Input13", 147, 144, 728, 22)
+		Global $W1_T6_I_Update = GUICtrlCreateInput("W1_T6_I_Update", 147, 132, 728, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_I_UpdateChange")
-		Global $W1_T6_C_Remote = GUICtrlCreateCheckbox("Remote Restart", 32, 176, 112, 17)
+		Global $W1_T6_C_Remote = GUICtrlCreateCheckbox("Remote Restart", 32, 164, 112, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_C_RemoteClick")
-		Global $W1_T6_I_Remote = GUICtrlCreateInput("Input13", 147, 173, 728, 22)
+		Global $W1_T6_I_Remote = GUICtrlCreateInput("W1_T6_I_Remote", 147, 161, 728, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_I_RemoteChange")
-		Global $Label29 = GUICtrlCreateLabel("Text substitution: \m - minutes", 146, 93, 174, 18)
+		Global $Label29 = GUICtrlCreateLabel("Text substitution: \m - minutes", 146, 81, 174, 18)
 		GUICtrlSetFont(-1, 8, 800, 0, "Arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label29Click")
-		Global $W1_T6_C_BackOnline = GUICtrlCreateCheckbox("When server is back online", 32, 215, 183, 17)
+		Global $W1_T6_C_BackOnline = GUICtrlCreateCheckbox("When server is back online", 32, 191, 183, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_C_BackOnlineClick")
-		Global $W1_T6_I_BackOnline = GUICtrlCreateInput("W1_T6_I_BackOnline", 218, 213, 657, 22)
+		Global $W1_T6_I_BackOnline = GUICtrlCreateInput("W1_T6_I_BackOnline", 218, 189, 657, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_I_BackOnlineChange")
-		Global $W1_T6_C_PlayerChange = GUICtrlCreateCheckbox("Online Player Change", 31, 275, 147, 17)
-		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
-		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-		GUICtrlSetOnEvent(-1, "W1_T6_C_PlayerChangeClick")
-		Global $W1_T6_I_PlayerChange = GUICtrlCreateInput("Input13", 182, 272, 692, 22)
-		GUICtrlSetFont(-1, 8, 400, 0, "arial")
-		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-		GUICtrlSetOnEvent(-1, "W1_T6_I_PlayerChangeChange")
-		Global $W1_T6_I_SubJoined = GUICtrlCreateInput("Input13", 230, 299, 644, 22)
-		GUICtrlSetFont(-1, 8, 400, 0, "Arial")
-		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-		GUICtrlSetOnEvent(-1, "W1_T6_I_SubJoinedChange")
-		Global $Label21 = GUICtrlCreateLabel("Joined Player Sub-Message ( \j )", 69, 303, 157, 17)
-		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-		GUICtrlSetOnEvent(-1, "Label21Click")
-		Global $W1_T6_I_SubLeft = GUICtrlCreateInput("Input13", 230, 326, 644, 22)
-		GUICtrlSetFont(-1, 8, 400, 0, "arial")
-		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-		GUICtrlSetOnEvent(-1, "W1_T6_I_SubLeftChange")
-		Global $Label67 = GUICtrlCreateLabel("Left Player Sub-Message ( \l )", 81, 330, 144, 17)
-		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-		GUICtrlSetOnEvent(-1, "Label67Click")
-		Global $Label68 = GUICtrlCreateLabel("Online Player Sub-Message ( \a )", 67, 357, 160, 17)
-		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-		GUICtrlSetOnEvent(-1, "Label68Click")
-		Global $W1_T6_I_SubOnlinePlayer = GUICtrlCreateInput("Input13", 230, 353, 644, 22)
-		GUICtrlSetFont(-1, 8, 400, 0, "arial")
-		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-		GUICtrlSetOnEvent(-1, "W1_T6_I_SubOnlinePlayerChange")
-		Global $W1_T6_C_PlayerDie = GUICtrlCreateCheckbox("Player Died (\p - Player Name, \n Next Line)", 30, 389, 277, 17)
+		Global $W1_T6_C_PlayerDie = GUICtrlCreateCheckbox("Player Died (\p - Player Name, \n Next Line)", 26, 445, 277, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_C_PlayerDieClick")
-		Global $W1_T6_I_PlayerDie = GUICtrlCreateInput("Input13", 312, 386, 562, 22)
+		Global $W1_T6_I_PlayerDie = GUICtrlCreateInput("W1_T6_I_PlayerDie", 308, 442, 566, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_I_PlayerDieChange")
-		Global $W1_T6_C_PlayerChat = GUICtrlCreateCheckbox("Player Chat (\p - Player Name, \m Message, \t Msg type (ex. Global,Friend)", 30, 418, 463, 17)
+		Global $W1_T6_C_PlayerChat = GUICtrlCreateCheckbox("Player Chat (\p - Player Name, \m Message, \t Msg type (ex. Global,Friend)", 26, 472, 463, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_C_PlayerChatClick")
-		Global $W1_T6_I_PlayerChat = GUICtrlCreateInput("Input13", 494, 415, 380, 22)
+		Global $W1_T6_I_PlayerChat = GUICtrlCreateInput("W1_T6_I_PlayerChat", 490, 469, 384, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_I_PlayerChatChange")
-		Global $W1_T6_C_FirstAnnounceOnly = GUICtrlCreateCheckbox("Send Discord message for FIRST ANNOUNCEMENT only (reduces bot spam)", 30, 447, 491, 17)
+		Global $W1_T6_C_FirstAnnounceOnly = GUICtrlCreateCheckbox("Send Discord message for FIRST ANNOUNCEMENT only (reduces bot spam)", 26, 499, 491, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_C_FirstAnnounceOnlyClick")
-		Global $W1_T6_C_BackupStarted = GUICtrlCreateCheckbox("Backup Started", 30, 491, 111, 17)
+		Global $W1_T6_C_BackupStarted = GUICtrlCreateCheckbox("Backup Started", 26, 525, 111, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_C_BackupStartedClick")
-		Global $W1_T6_I_BackupStarted = GUICtrlCreateInput("Input13", 142, 488, 732, 22)
+		Global $W1_T6_I_BackupStarted = GUICtrlCreateInput("W1_T6_I_BackupStarted", 138, 522, 736, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_I_BackupStartedChange")
-		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		Global $Label26 = GUICtrlCreateLabel("\o Online Player Count, \m Max Players, \t Game Time, \h Days to Next Horde, \j Joined Sub-Msg, \l Left Sub-Msg, \a Online Players Sub-Msg, \n Next Line", 38, 253, 827, 18)
-		GUICtrlSetFont(-1, 8, 800, 0, "Arial")
+		Global $Group20 = GUICtrlCreateGroup("Online Players", 30, 218, 845, 155)
+		Global $W1_T6_C_PlayerChange = GUICtrlCreateCheckbox("Online Player Change", 44, 262, 147, 17)
+		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T6_C_PlayerChangeClick")
+		Global $W1_T6_I_PlayerChange = GUICtrlCreateInput("W1_T6_I_PlayerChange", 195, 259, 672, 22)
+		GUICtrlSetFont(-1, 8, 400, 0, "arial")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T6_I_PlayerChangeChange")
+		Global $W1_T6_I_SubJoined = GUICtrlCreateInput("W1_T6_I_SubJoined", 291, 286, 576, 22)
+		GUICtrlSetFont(-1, 8, 400, 0, "Arial")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T6_I_SubJoinedChange")
+		Global $Label21 = GUICtrlCreateLabel("(\j) Joined Player Sub-Message ( \p players joined)", 42, 288, 241, 17)
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "Label21Click")
+		Global $W1_T6_I_SubLeft = GUICtrlCreateInput("W1_T6_I_SubLeft", 291, 313, 576, 22)
+		GUICtrlSetFont(-1, 8, 400, 0, "arial")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T6_I_SubLeftChange")
+		Global $Label67 = GUICtrlCreateLabel("(\l) Left Player Sub-Message ( \p players left)", 70, 315, 214, 17)
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "Label67Click")
+		Global $Label68 = GUICtrlCreateLabel("(\o) Online Player Sub-Message ( \p online players)", 40, 342, 244, 17)
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "Label68Click")
+		Global $W1_T6_I_SubOnlinePlayer = GUICtrlCreateInput("W1_T6_I_SubOnlinePlayer", 291, 340, 576, 22)
+		GUICtrlSetFont(-1, 8, 400, 0, "arial")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T6_I_SubOnlinePlayerChange")
+		Global $Label26 = GUICtrlCreateLabel("Subs: \o Player Count, \m Max Players, \t Game Time, \h Days to Next Horde, \j Joined Sub-Msg, \l Left Sub-Msg, \a Online Players Sub-Msg, \n Next Line, \p Online Player Names", 42, 238, 807, 15)
+		GUICtrlSetFont(-1, 7, 800, 0, "Arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label26Click")
+		GUICtrlCreateGroup("", -99, -99, 1, 1)
+		Global $W1_T6_C_NewDay = GUICtrlCreateCheckbox("New Day Msg After Midnight (uses subs above)", 26, 387, 301, 17)
+		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T6_C_NewDayClick")
+		Global $W1_T6_I_NewDayMsg = GUICtrlCreateInput("W1_T6_I_NewDayMsg", 330, 383, 544, 22)
+		GUICtrlSetFont(-1, 8, 400, 0, "arial")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T6_I_NewDayMsgChange")
+		Global $W1_T6_C_HordeDay = GUICtrlCreateCheckbox("Day of Blood Moon Msg (uses subs above)", 26, 413, 301, 17)
+		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T6_C_HordeDayClick")
+		Global $W1_T6_I_HordeDayMsg = GUICtrlCreateInput("W1_T6_I_HordeDayMsg", 330, 411, 306, 22)
+		GUICtrlSetFont(-1, 8, 400, 0, "arial")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T6_I_HordeDayMsgChange")
+		Global $Label103 = GUICtrlCreateLabel("Hour To Trigger Msg", 644, 414, 129, 20)
+		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+		GUICtrlSetOnEvent(-1, "Label103Click")
+		Global $W1_T6_I_HordeHour = GUICtrlCreateInput("1", 777, 413, 47, 22)
+		GUICtrlSetFont(-1, 8, 400, 0, "arial")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T6_I_HordeHourChange")
+		Global $W1_T6_U_HordeHour = GUICtrlCreateUpdown($W1_T6_I_HordeHour)
+		GUICtrlSetLimit(-1, 23, 0)
+		GUICtrlSetOnEvent(-1, "W1_T6_U_HordeHourChange")
+		Global $Label104 = GUICtrlCreateLabel("(0-23)", 828, 415, 31, 17)
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "Label104Click")
+		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		Global $Tab7 = GUICtrlCreateTabItem("7 Twitch")
 		Global $Group13 = GUICtrlCreateGroup("Twitch Announcements", 18, 75, 865, 369)
 		GUICtrlSetFont(-1, 10, 400, 0, "arial")
@@ -6383,7 +6511,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T7_C_TwitchDailyClick")
-		Global $W1_T7_I_TwitchDaily = GUICtrlCreateInput("Input13", 145, 130, 728, 22)
+		Global $W1_T7_I_TwitchDaily = GUICtrlCreateInput("W1_T7_I_TwitchDaily", 145, 130, 728, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T7_I_TwitchDailyChange")
@@ -6391,7 +6519,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T7_C_TwitchUpdateClick")
-		Global $W1_T7_I_TwitchUpdate = GUICtrlCreateInput("Input13", 145, 159, 728, 22)
+		Global $W1_T7_I_TwitchUpdate = GUICtrlCreateInput("W1_T7_I_TwitchUpdate", 145, 159, 728, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T7_I_TwitchUpdateChange")
@@ -6399,7 +6527,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T7_C_TwitchRemoteClick")
-		Global $W1_T7_I_TwitchRemote = GUICtrlCreateInput("Input13", 145, 188, 728, 22)
+		Global $W1_T7_I_TwitchRemote = GUICtrlCreateInput("W1_T7_I_TwitchRemote", 145, 188, 728, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T7_I_TwitchRemoteChange")
@@ -6419,11 +6547,11 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T7_I_TwitchNickChange")
-		Global $W1_T7_I_TwitchChatOAuth = GUICtrlCreateInput("Input1", 107, 279, 633, 22)
+		Global $W1_T7_I_TwitchChatOAuth = GUICtrlCreateInput("W1_T7_I_TwitchChatOAuth", 107, 279, 633, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T7_I_TwitchChatOAuthChange")
-		Global $W1_T7_I_TwitchChannels = GUICtrlCreateInput("Input1", 106, 308, 633, 22)
+		Global $W1_T7_I_TwitchChannels = GUICtrlCreateInput("W1_T7_I_TwitchChannels", 106, 308, 633, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T7_I_TwitchChannelsChange")
@@ -6435,7 +6563,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T7_C_BackupStartedClick")
-		Global $W1_T7_I_TwitchBackStarted = GUICtrlCreateInput("Input13", 147, 403, 728, 22)
+		Global $W1_T7_I_TwitchBackStarted = GUICtrlCreateInput("W1_T7_I_TwitchBackStarted", 147, 403, 728, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T7_I_TwitchBackStartedChange")
@@ -6454,7 +6582,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label85Click")
-		Global $W1_T8_I_ExecuteBeforeSteamandStart = GUICtrlCreateInput("W1_T1_I_DIR", 129, 114, 376, 22)
+		Global $W1_T8_I_ExecuteBeforeSteamandStart = GUICtrlCreateInput("W1_T8_I_ExecuteBeforeSteamandStart", 129, 114, 376, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T8_I_ExecuteBeforeSteamandStartChange")
@@ -6472,7 +6600,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label86Click")
-		Global $W1_T8_I_ExecuteAfterSteamBeforeStart = GUICtrlCreateInput("W1_T1_I_DIR", 129, 185, 376, 22)
+		Global $W1_T8_I_ExecuteAfterSteamBeforeStart = GUICtrlCreateInput("W1_T8_I_ExecuteAfterSteamBeforeStart", 129, 185, 376, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T8_I_ExecuteAfterSteamBeforeStartChange")
@@ -6490,7 +6618,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label87Click")
-		Global $W1_T8_I_ExecuteAfterUpdate = GUICtrlCreateInput("W1_T1_I_DIR", 129, 258, 376, 22)
+		Global $W1_T8_I_ExecuteAfterUpdate = GUICtrlCreateInput("W1_T8_I_ExecuteAfterUpdate", 129, 258, 376, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T8_I_ExecuteAfterUpdateChange")
@@ -6508,7 +6636,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label88Click")
-		Global $W1_T8_I_ExecuteAfterRestart = GUICtrlCreateInput("W1_T1_I_DIR", 128, 335, 376, 22)
+		Global $W1_T8_I_ExecuteAfterRestart = GUICtrlCreateInput("W1_T8_I_ExecuteAfterRestart", 128, 335, 376, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T8_I_ExecuteAfterRestartChange")
@@ -6526,7 +6654,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label89Click")
-		Global $W1_T8_I_ExecuteAFirstRestartAnnouncement = GUICtrlCreateInput("W1_T1_I_DIR", 127, 408, 376, 22)
+		Global $W1_T8_I_ExecuteAFirstRestartAnnouncement = GUICtrlCreateInput("W1_T8_I_ExecuteAFirstRestartAnnouncement", 127, 408, 376, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T8_I_ExecuteAFirstRestartAnnouncementChange")
@@ -6544,7 +6672,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label90Click")
-		Global $W1_T8_I_ExecuteRemoteRestart = GUICtrlCreateInput("W1_T1_I_DIR", 126, 475, 376, 22)
+		Global $W1_T8_I_ExecuteRemoteRestart = GUICtrlCreateInput("W1_T8_I_ExecuteRemoteRestart", 126, 475, 376, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T8_I_ExecuteRemoteRestartChange")
@@ -6553,7 +6681,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T8_B_ExecuteRemoteRestartClick")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		Global $Pic5 = GUICtrlCreatePic("" & $aFolderTemp & "zombie3.jpg", 696, 117, 125, 353)
+		Global $Pic5 = GUICtrlCreatePic("" & $aFolderTemp & "zombie3.jpg""", 696, 117, 125, 353)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Pic5Click")
 		Global $Tab9 = GUICtrlCreateTabItem("9 Future-Proof")
@@ -6595,7 +6723,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetOnEvent(-1, "W1_T9_C_RenameModFolderClick")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		Global $Tab10 = GUICtrlCreateTabItem("10 FINISH / SAVE")
-		Global $Pic7 = GUICtrlCreatePic("" & $aFolderTemp & "zombieGroup.jpg", 104, 337, 637, 197)
+		Global $Pic7 = GUICtrlCreatePic("" & $aFolderTemp & "zombieGroup.jpg""", 104, 337, 637, 197)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Pic7Click")
 		Global $Label98 = GUICtrlCreateLabel("Click to restart the utility with your new settings.", 213, 125, 459, 29)
@@ -6620,20 +6748,20 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T10_B_RestartBothClick")
 		GUICtrlCreateTabItem("")
-		Global $W1_B_RestartServerAndUtil = GUICtrlCreateButton("RESTART SERVER", 628, 4, 135, 25)
+		Global $W1_B_RestartServerAndUtil = GUICtrlCreateButton("RESTART SERVER", 734, 4, 135, 25)
 		GUICtrlSetFont(-1, 8, 800, 0, "MS Sans Serif")
 		GUICtrlSetBkColor(-1, 0xFF4A4A)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_B_RestartServerAndUtilClick")
-		Global $W1_B_RestartUtil = GUICtrlCreateButton("RESTART Util", 509, 4, 115, 25)
+		Global $W1_B_RestartUtil = GUICtrlCreateButton("RESTART Util", 615, 4, 115, 25)
 		GUICtrlSetFont(-1, 8, 800, 0, "MS Sans Serif")
 		GUICtrlSetBkColor(-1, 0xF3E747)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_B_RestartUtilClick")
-		Global $W1_B_Exit = GUICtrlCreateButton("Exit without Restarting", 765, 4, 131, 25)
+		Global $W1_B_Exit = GUICtrlCreateButton("X", 871, 4, 25, 25)
+		GUICtrlSetFont(-1, 10, 800, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_B_ExitClick")
-		GUISetState(@SW_SHOW)
 		GUISetState(@SW_SHOW)
 		#EndRegion ### END Koda GUI section ###
 		_UpdateWindowConfig()
@@ -7100,6 +7228,16 @@ Func _UpdateWindowConfig()
 	Else
 		GUICtrlSetState($W1_T6_C_Update, $GUI_UNCHECKED)
 	EndIf
+	If $sUseDiscordBotNewDayYN = "yes" Then
+		GUICtrlSetState($W1_T6_C_NewDay, $GUI_CHECKED)
+	Else
+		GUICtrlSetState($W1_T6_C_NewDay, $GUI_UNCHECKED)
+	EndIf
+	If $sUseDiscordBotHordeDayYN = "yes" Then
+		GUICtrlSetState($W1_T6_C_HordeDay, $GUI_CHECKED)
+	Else
+		GUICtrlSetState($W1_T6_C_HordeDay, $GUI_UNCHECKED)
+	EndIf
 	GUICtrlSetData($W1_T6_I_BackupStarted, $aBackupDiscord)
 	GUICtrlSetData($W1_T6_I_Daily, $sDiscordDailyMessage)
 	GUICtrlSetData($W1_T6_I_PlayerChange, $sDiscordPlayersMsg)
@@ -7111,6 +7249,9 @@ Func _UpdateWindowConfig()
 	GUICtrlSetData($W1_T6_I_SubOnlinePlayer, $sDiscordPlayerOnlineMsg)
 	GUICtrlSetData($W1_T6_I_Update, $sDiscordUpdateMessage)
 	GUICtrlSetData($W1_T6_I_BackOnline, $sDiscordServersUpMessage)
+	GUICtrlSetData($W1_T6_I_NewDayMsg, $sDiscordNewDayMsg)
+	GUICtrlSetData($W1_T6_I_HordeDayMsg, $sDiscordHordeDayMsg)
+	GUICtrlSetData($W1_T6_I_HordeHour, $sUseDiscordBotHordeHour)
 	If $aBackupSendTwitchYN = "yes" Then
 		GUICtrlSetState($W1_T7_C_BackupStarted, $GUI_CHECKED)
 	Else
@@ -8310,6 +8451,22 @@ Func W1_T6_C_RemoteClick()
 	EndIf
 	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for REMOTE RESTART reboot? (yes/no) ###", $sUseDiscordBotRemoteRestart)
 EndFunc   ;==>W1_T6_C_RemoteClick
+Func W1_T6_C_HordeDayClick()
+	If GUICtrlRead($W1_T6_C_HordeDay) = $GUI_CHECKED Then
+		$sUseDiscordBotHordeDayYN = "yes"
+	Else
+		$sUseDiscordBotHordeDayYN = "no"
+	EndIf
+	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message every blood moon? (yes/no) ###", $sUseDiscordBotHordeDayYN)
+EndFunc   ;==>W1_T6_C_HordeDayClick
+Func W1_T6_C_NewDayClick()
+	If GUICtrlRead($W1_T6_C_NewDay) = $GUI_CHECKED Then
+		$sUseDiscordBotNewDayYN = "yes"
+	Else
+		$sUseDiscordBotNewDayYN = "no"
+	EndIf
+	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message every new day at midnight? (yes/no) ###", $sUseDiscordBotNewDayYN)
+EndFunc   ;==>W1_T6_C_NewDayClick
 Func W1_T6_C_UpdateClick()
 	If GUICtrlRead($W1_T6_C_Update) = $GUI_CHECKED Then
 		$sUseDiscordBotUpdate = "yes"
@@ -8362,6 +8519,18 @@ Func W1_T6_I_UpdateChange()
 	$sDiscordUpdateMessage = GUICtrlRead($W1_T6_I_Update)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement UPDATES (\m - minutes) ###", $sDiscordUpdateMessage)
 EndFunc   ;==>W1_T6_I_UpdateChange
+Func W1_T6_I_NewDayMsgChange()
+	$sDiscordNewDayMsg = GUICtrlRead($W1_T6_I_NewDayMsg)
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every new day (Uses online players substitutes. \p All Online Players)", $sDiscordNewDayMsg)
+EndFunc   ;==>W1_T6_I_NewDayMsgChange
+Func W1_T6_I_HordeDayMsgChange()
+	$sDiscordHordeDayMsg = GUICtrlRead($W1_T6_I_HordeDayMsg)
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every blood moon (Uses online players substitutes. \p All Online Players)", $sDiscordHordeDayMsg)
+EndFunc   ;==>W1_T6_I_HordeDayMsgChange
+Func W1_T6_I_HordeHourChange()
+	$sUseDiscordBotHordeHour = GUICtrlRead($W1_T6_I_HordeHour)
+	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Blood Moon time (hour) to send Discord Msg (00-23) ###", $sUseDiscordBotHordeHour)
+EndFunc   ;==>W1_T6_I_HordeHourChange
 Func W1_T7_C_BackupStartedClick()
 	If GUICtrlRead($W1_T7_C_BackupStarted) = $GUI_CHECKED Then
 		$aBackupSendTwitchYN = "yes"
