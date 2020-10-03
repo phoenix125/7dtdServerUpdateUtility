@@ -1,6 +1,7 @@
 #Region
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
 #AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.5.9.exe
+#AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
 #AutoIt3Wrapper_Res_Fileversion=2.5.9.0
@@ -19717,7 +19718,7 @@ IniWrite($aIniFile, " --------------- DISCORD WEBHOOK --------------- ", "Discor
 EndIf
 $tUpdateINI = True
 EndIf
-If $aCFGLastVerNumber < 7 Then
+If $aCFGLastVerNumber < 8 Then
 IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message every blood moon? (yes/no) ###", "yes")
 IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message every new day at midnight? (yes/no) ###", "yes")
 IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Blood Moon time (hour) to send Discord Msg (00-23) ###", "7")
