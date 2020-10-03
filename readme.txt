@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.5.9 (2020-10-02) (Beta and Stable are the same version)
+- Latest version: 7dtdServerUpdateUtility_v2.6.0 (2020-10-03) (Beta and Stable are the same version)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -141,6 +141,11 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2020-10-03) v2.6.0 Discord Bug Fix & New "Horde Finished" message
+- Fixed: Discord: New Day & Horde Day Announcements were not sending.
+- Added: Discord: Optional Horde Finished announcement.
+- Added: Discord: Selectable Webhooks for New Day & Horde announcements.
+
 (2020-10-02) v2.5.9 Horde Day Bug Fix and New Discord Announcements
 - Fixed: Discord: Next Horde was off by one day.
 - Fixed: Discord: Next Horde was not displaying TODAY on horde day.

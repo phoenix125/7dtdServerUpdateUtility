@@ -1,12 +1,12 @@
 #Region
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.5.9.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.0.exe
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.5.9.0
+#AutoIt3Wrapper_Res_Fileversion=2.6.0.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.5.9
+#AutoIt3Wrapper_Res_ProductVersion=2.6.0
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -19389,10 +19389,10 @@ Return $tPalette
 EndFunc
 Opt("GUIOnEventMode", 1)
 Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
-$aUtilVerStable = "v2.5.9"
-$aUtilVerBeta = "v2.5.9"
+$aUtilVerStable = "v2.6.0"
+$aUtilVerBeta = "v2.6.0"
 $aUtilVersion = $aUtilVerStable
-Global $aUtilVerNumber = 8
+Global $aUtilVerNumber = 9
 Global Const $aUtilName = "7dtdServerUpdateUtility"
 Global Const $aServerEXE = "7DaysToDieServer.exe"
 Global Const $aServerShort = "7DTD"
@@ -19722,8 +19722,14 @@ If $aCFGLastVerNumber < 8 Then
 IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message every blood moon? (yes/no) ###", "yes")
 IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message every new day at midnight? (yes/no) ###", "yes")
 IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Blood Moon time (hour) to send Discord Msg (00-23) ###", "7")
-IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every blood moon (Uses online players substitutes. \p All Online Players)", 'Game Time: **\t**  :full_moon: HORDE DAY! :man_zombie:')
+IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every blood moon (Uses online players substitutes. \p All Online Players)", 'Game Time: **\t**  :full_moon: __**HORDE DAY!**__ :man_zombie:')
 IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every new day (Uses online players substitutes. \p All Online Players)", 'Game Time: **\t**  Next Horde: **\h days**')
+$tUpdateINI = True
+EndIf
+If $aCFGLastVerNumber < 9 Then
+IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message when blood moon done? (yes/no) ###", "yes")
+IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement when blood moon done (Uses online players substitutes. \p All Online Players)", 'Game Time: **\t**  :new_moon: **Horde Day Finished**')
+IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send New Day and Horde Msg (ie 14) ###", "3")
 $tUpdateINI = True
 EndIf
 If $tUpdateINI Then
@@ -20145,17 +20151,27 @@ _PlayersOnlineCheck()
 Local $tGameHour = Number(StringLeft(StringRight($aGameTime, 5), 2))
 Local $tGameDay = Number(_ArrayToString(_StringBetween($aGameTime, "Day ", ",")))
 If $sUseDiscordBotNewDayYN = "yes" Then
-If $tGameDay > IniRead($aUtilCFGFile, "CFG", "NewDay: Last day announced", $tGameDay) Then
+If $tGameDay > IniRead($aUtilCFGFile, "CFG", "NewDay: Last day announced", "1") Then
 IniWrite($aUtilCFGFile, "CFG", "NewDay: Last day announced", $tGameDay)
 _SendDiscordNewDay()
 EndIf
 EndIf
 If $sUseDiscordBotHordeDayYN = "yes" Then
 If $aNextHorde = 0 Then
-If $tGameDay > IniRead($aUtilCFGFile, "CFG", "Horde: Last day announced", $tGameDay) Then
+If $tGameDay > IniRead($aUtilCFGFile, "CFG", "Horde: Last day announced", "1") Then
 If $tGameHour >= Number($sUseDiscordBotHordeHour) Then
 IniWrite($aUtilCFGFile, "CFG", "Horde: Last day announced", $tGameDay)
 _SendDiscordNewHorde()
+EndIf
+EndIf
+EndIf
+EndIf
+If $sUseDiscordBotHordeDoneYN = "yes" Then
+If $aNextHorde = ($aHordeFreq - 1) Then
+If $tGameDay > IniRead($aUtilCFGFile, "CFG", "Horde: Last day done announced", "1") Then
+If $tGameHour >= 4 Then
+IniWrite($aUtilCFGFile, "CFG", "Horde: Last day done announced", $tGameDay)
+_SendDiscordHordeDone()
 EndIf
 EndIf
 EndIf
@@ -20964,25 +20980,19 @@ Next
 Return $tReturn3
 EndFunc
 Func _SendDiscordNewHorde()
-Local $tDiscordPlayersMsg = StringReplace($sDiscordHordeDayMsg, "\o", $aPlayersCount)
-$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\m", $aMaxPlayers)
-$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\t", $aGameTime)
-$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\h", $aNextHorde)
-$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\j", _DiscordPlayersJoined())
-$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\l", _DiscordPlayersLeft())
-$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\a", _DiscordPlayersOnline())
-If StringLen($aPlayersName) > 1 Then
-$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\p", $aPlayersName)
-Else
-$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\p", "[None]")
-EndIf
-$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\n", @CRLF)
-$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "0 days", "TODAY!")
-$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "0 day", "TODAY!")
-_SendDiscordMsg($tDiscordPlayersMsg, $aServerDiscordWHSelPlayers)
+Local $tMsg2 = _SendDiscordSubs($sDiscordHordeDayMsg)
+_SendDiscordMsg($tMsg2, $aServerDiscordWHHorde)
 EndFunc
 Func _SendDiscordNewDay()
-Local $tDiscordPlayersMsg = StringReplace($sDiscordNewDayMsg, "\o", $aPlayersCount)
+Local $tMsg2 = _SendDiscordSubs($sDiscordNewDayMsg)
+_SendDiscordMsg($tMsg2, $aServerDiscordWHHorde)
+EndFunc
+Func _SendDiscordHordeDone()
+Local $tMsg2 = _SendDiscordSubs($sDiscordHordeDoneMsg)
+_SendDiscordMsg($tMsg2, $aServerDiscordWHHorde)
+EndFunc
+Func _SendDiscordSubs($tMsg3)
+Local $tDiscordPlayersMsg = StringReplace($tMsg3, "\o", $aPlayersCount)
 $tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\m", $aMaxPlayers)
 $tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\t", $aGameTime)
 $tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\h", $aNextHorde)
@@ -20997,7 +21007,7 @@ EndIf
 $tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\n", @CRLF)
 $tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "0 days", "TODAY!")
 $tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "0 day", "TODAY!")
-_SendDiscordMsg($tDiscordPlayersMsg, $aServerDiscordWHSelPlayers)
+Return $tDiscordPlayersMsg
 EndFunc
 Func _SendDiscordPlayer()
 If $aGameTime = "Day 1, 00:00" Then
@@ -22262,6 +22272,7 @@ Global $aServerDiscordWHSelPlayers = IniRead($aIniFile, " --------------- DISCOR
 Global $aServerDiscordWHSelChat = IniRead($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send GLOBAL CHAT Msg (ie 23) ###", $iniCheck)
 Global $aServerDiscordWHSelAllChat = IniRead($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send ALL CHAT Msg (ie 23) ###", $iniCheck)
 Global $aServerDiscordWHSelDie = IniRead($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send PLAYERS DIE Msg (ie 1234) ###", $iniCheck)
+Global $aServerDiscordWHHorde = IniRead($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send New Day and Horde Msg (ie 14) ###", $iniCheck)
 Global $sUseDiscordBotDaily = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for DAILY reboot? (yes/no) ###", $iniCheck)
 Global $sUseDiscordBotUpdate = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for UPDATE reboot? (yes/no) ###", $iniCheck)
 Global $sUseDiscordBotRemoteRestart = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for REMOTE RESTART reboot? (yes/no) ###", $iniCheck)
@@ -22272,6 +22283,7 @@ Global $sUseDiscordBotPlayerDiedYN = IniRead($aIniFile, " --------------- DISCOR
 Global $sUseDiscordBotNewDayYN = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message every new day at midnight? (yes/no) ###", $iniCheck)
 Global $sUseDiscordBotHordeDayYN = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message every blood moon? (yes/no) ###", $iniCheck)
 Global $sUseDiscordBotHordeHour = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Blood Moon time (hour) to send Discord Msg (00-23) ###", $iniCheck)
+Global $sUseDiscordBotHordeDoneYN = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message when blood moon done? (yes/no) ###", $iniCheck)
 Global $sUseDiscordBotFirstAnnouncement = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for first ANNOUNCEMENT only? (reduces bot spam)(yes/no) ###", $iniCheck)
 Global $sDiscordDailyMessage = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement DAILY (\m - minutes) ###", $iniCheck)
 Global $sDiscordUpdateMessage = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement UPDATES (\m - minutes) ###", $iniCheck)
@@ -22285,6 +22297,7 @@ Global $sDiscordPlayerDiedMsg = IniRead($aIniFile, " --------------- DISCORD MES
 Global $sDiscordPlayerChatMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Chat (\p - Player Name, \m Message, \t Msg type (ex. Global,Friend)", $iniCheck)
 Global $sDiscordNewDayMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every new day (Uses online players substitutes. \p All Online Players)", $iniCheck)
 Global $sDiscordHordeDayMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every blood moon (Uses online players substitutes. \p All Online Players)", $iniCheck)
+Global $sDiscordHordeDoneMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement when blood moon done (Uses online players substitutes. \p All Online Players)", $iniCheck)
 Global $sUseTwitchBotDaily = IniRead($aIniFile, " --------------- TWITCH INTEGRATION --------------- ", "Send Twitch message for DAILY reboot? (yes/no) ###", $iniCheck)
 Global $sUseTwitchBotUpdate = IniRead($aIniFile, " --------------- TWITCH INTEGRATION --------------- ", "Send Twitch message for UPDATE reboot? (yes/no) ###", $iniCheck)
 Global $sUseTwitchBotRemoteRestart = IniRead($aIniFile, " --------------- TWITCH INTEGRATION --------------- ", "Send Twitch message for REMOTE RESTART reboot? (yes/no) ###", $iniCheck)
@@ -22797,6 +22810,11 @@ $aServerDiscordWHSelDie = "3"
 $iIniFail += 1
 $iIniError = $iIniError & "ServerDiscordWHSelDie, "
 EndIf
+If $iniCheck = $aServerDiscordWHHorde Then
+$aServerDiscordWHHorde = "3"
+$iIniFail += 1
+$iIniError = $iIniError & "ServerDiscordWHHorde, "
+EndIf
 If $iniCheck = $sDiscordDailyMessage Then
 $sDiscordDailyMessage = "Daily server restart begins in \m minute(s)."
 $iIniFail += 1
@@ -22887,6 +22905,11 @@ $sUseDiscordBotHordeHour = "07"
 $iIniFail += 1
 $iIniError = $iIniError & "UseDiscordBotHordeHour, "
 EndIf
+If $iniCheck = $sUseDiscordBotHordeDoneYN Then
+$sUseDiscordBotHordeDoneYN = "yes"
+$iIniFail += 1
+$iIniError = $iIniError & "UseDiscordBotHordeDone, "
+EndIf
 If $iniCheck = $sUseDiscordBotFirstAnnouncement Then
 $sUseDiscordBotFirstAnnouncement = "no"
 $iIniFail += 1
@@ -22928,9 +22951,14 @@ $iIniFail += 1
 $iIniError = $iIniError & "DiscordNewDayMsg, "
 EndIf
 If $iniCheck = $sDiscordHordeDayMsg Then
-$sDiscordHordeDayMsg = 'Game Time: **\t**  :full_moon: HORDE DAY! :man_zombie:'
+$sDiscordHordeDayMsg = 'Game Time: **\t**  :full_moon: __**HORDE DAY!**__ :man_zombie:'
 $iIniFail += 1
 $iIniError = $iIniError & "DiscordNewDayMsg, "
+EndIf
+If $iniCheck = $sDiscordHordeDoneMsg Then
+$sDiscordHordeDoneMsg = 'Game Time: **\t**  :new_moon: **Horde Day Finished**'
+$iIniFail += 1
+$iIniError = $iIniError & "DiscordHordeDoneMsg, "
 EndIf
 If $iniCheck = $sUseTwitchBotDaily Then
 $sUseTwitchBotDaily = "no"
@@ -23291,6 +23319,7 @@ IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT -----------
 IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send GLOBAL CHAT Msg (ie 23) ###", $aServerDiscordWHSelChat)
 IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send ALL CHAT Msg (ie 23) ###", $aServerDiscordWHSelAllChat)
 IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send PLAYERS DIE Msg (ie 1234) ###", $aServerDiscordWHSelDie)
+IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send New Day and Horde Msg (ie 14) ###", $aServerDiscordWHHorde)
 FileWriteLine($aIniFile, @CRLF)
 IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for DAILY reboot? (yes/no) ###", $sUseDiscordBotDaily)
 IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for UPDATE reboot? (yes/no) ###", $sUseDiscordBotUpdate)
@@ -23302,6 +23331,7 @@ IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Se
 IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message every new day at midnight? (yes/no) ###", $sUseDiscordBotNewDayYN)
 IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message every blood moon? (yes/no) ###", $sUseDiscordBotHordeDayYN)
 IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Blood Moon time (hour) to send Discord Msg (00-23) ###", $sUseDiscordBotHordeHour)
+IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message when blood moon done? (yes/no) ###", $sUseDiscordBotHordeDoneYN)
 IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for first ANNOUNCEMENT only? (reduces bot spam)(yes/no) ###", $sUseDiscordBotFirstAnnouncement)
 FileWriteLine($aIniFile, @CRLF)
 IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement DAILY (\m - minutes) ###", $sDiscordDailyMessage)
@@ -23317,6 +23347,7 @@ IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Playe
 IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Chat (\p - Player Name, \m Message, \t Msg type (ex. Global,Friend)", $sDiscordPlayerChatMsg)
 IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every new day (Uses online players substitutes. \p All Online Players)", $sDiscordNewDayMsg)
 IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every blood moon (Uses online players substitutes. \p All Online Players)", $sDiscordHordeDayMsg)
+IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement when blood moon done (Uses online players substitutes. \p All Online Players)", $sDiscordHordeDoneMsg)
 FileWriteLine($aIniFile, @CRLF)
 IniWrite($aIniFile, " --------------- TWITCH INTEGRATION --------------- ", "Send Twitch message for DAILY reboot? (yes/no) ###", $sUseTwitchBotDaily)
 IniWrite($aIniFile, " --------------- TWITCH INTEGRATION --------------- ", "Send Twitch message for UPDATE reboot? (yes/no) ###", $sUseTwitchBotUpdate)
@@ -25035,6 +25066,7 @@ GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetOnEvent(-1, "Label100Click")
 GUICtrlCreateGroup("", -99, -99, 1, 1)
 Global $Tab5 = GUICtrlCreateTabItem("5 Discord Webhooks")
+GUICtrlSetState(-1, $GUI_SHOW)
 Global $Group3 = GUICtrlCreateGroup("Discord Webhooks", 38, 65, 831, 325)
 GUICtrlSetFont(-1, 10, 400, 0, "arial")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
@@ -25167,116 +25199,135 @@ GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_D4TTSClick")
 GUICtrlCreateGroup("", -99, -99, 1, 1)
-Global $Group11 = GUICtrlCreateGroup("Discord Webhook Select", 38, 397, 535, 145)
+Global $Group11 = GUICtrlCreateGroup("Discord Webhook Select", 36, 393, 535, 169)
 GUICtrlSetFont(-1, 10, 400, 0, "arial")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-Global $Label63 = GUICtrlCreateLabel("Webhook(s) to send RESTART / STATUS Messages to:", 54, 419, 342, 20, $SS_RIGHT)
+Global $Label63 = GUICtrlCreateLabel("Webhook(s) to send RESTART / STATUS Messages to:", 52, 415, 342, 20, $SS_RIGHT)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "Label63Click")
-Global $W1_T5_C_WHRestart1 = GUICtrlCreateCheckbox("#1", 403, 420, 30, 17)
+Global $W1_T5_C_WHRestart1 = GUICtrlCreateCheckbox("#1", 401, 416, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHRestart1Click")
-Global $W1_T5_C_WHRestart2 = GUICtrlCreateCheckbox("#2", 444, 420, 30, 17)
+Global $W1_T5_C_WHRestart2 = GUICtrlCreateCheckbox("#2", 442, 416, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHRestart2Click")
-Global $W1_T5_C_WHRestart3 = GUICtrlCreateCheckbox("#3", 485, 420, 30, 17)
+Global $W1_T5_C_WHRestart3 = GUICtrlCreateCheckbox("#3", 483, 416, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHRestart3Click")
-Global $W1_T5_C_WHRestart4 = GUICtrlCreateCheckbox("#4", 527, 420, 30, 17)
+Global $W1_T5_C_WHRestart4 = GUICtrlCreateCheckbox("#4", 525, 416, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHRestart4Click")
-Global $Label64 = GUICtrlCreateLabel("Webhook(s) to send PLAYERS ONLINE Messages to:", 58, 441, 326, 20)
+Global $Label64 = GUICtrlCreateLabel("Webhook(s) to send PLAYERS ONLINE Messages to:", 56, 437, 326, 20)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "Label64Click")
-Global $W1_T5_C_WHOnline1 = GUICtrlCreateCheckbox("#1", 403, 442, 30, 17)
+Global $W1_T5_C_WHOnline1 = GUICtrlCreateCheckbox("#1", 401, 438, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHOnline1Click")
-Global $W1_T5_C_WHOnline2 = GUICtrlCreateCheckbox("#2", 444, 442, 30, 17)
+Global $W1_T5_C_WHOnline2 = GUICtrlCreateCheckbox("#2", 442, 438, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHOnline2Click")
-Global $W1_T5_C_WHOnline3 = GUICtrlCreateCheckbox("#3", 485, 442, 30, 17)
+Global $W1_T5_C_WHOnline3 = GUICtrlCreateCheckbox("#3", 483, 438, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHOnline3Click")
-Global $W1_T5_C_WHOnline4 = GUICtrlCreateCheckbox("#4", 527, 442, 30, 17)
+Global $W1_T5_C_WHOnline4 = GUICtrlCreateCheckbox("#4", 525, 438, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHOnline4Click")
-Global $Label65 = GUICtrlCreateLabel("Webhook(s) to send GLOBAL CHAT Messages to:", 58, 463, 304, 20)
+Global $Label65 = GUICtrlCreateLabel("Webhook(s) to send GLOBAL CHAT Messages to:", 56, 459, 304, 20)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "Label65Click")
-Global $W1_T5_C_WHChat1 = GUICtrlCreateCheckbox("#1", 403, 464, 30, 17)
+Global $W1_T5_C_WHChat1 = GUICtrlCreateCheckbox("#1", 401, 460, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHChat1Click")
-Global $W1_T5_C_WHChat2 = GUICtrlCreateCheckbox("#2", 444, 464, 30, 17)
+Global $W1_T5_C_WHChat2 = GUICtrlCreateCheckbox("#2", 442, 460, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHChat2Click")
-Global $W1_T5_C_WHChat3 = GUICtrlCreateCheckbox("#3", 485, 464, 30, 17)
+Global $W1_T5_C_WHChat3 = GUICtrlCreateCheckbox("#3", 483, 460, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHChat3Click")
-Global $W1_T5_C_WHChat4 = GUICtrlCreateCheckbox("#4", 527, 464, 30, 17)
+Global $W1_T5_C_WHChat4 = GUICtrlCreateCheckbox("#4", 525, 460, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHChat4Click")
-Global $Label66 = GUICtrlCreateLabel("Webhook(s) to send PLAYER DEATH Messages to:", 58, 485, 315, 20)
+Global $Label66 = GUICtrlCreateLabel("Webhook(s) to send PLAYER DEATH Messages to:", 56, 481, 315, 20)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "Label66Click")
-Global $W1_T5_C_WHDie1 = GUICtrlCreateCheckbox("#1", 403, 486, 30, 17)
+Global $W1_T5_C_WHDie1 = GUICtrlCreateCheckbox("#1", 401, 482, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHDie1Click")
-Global $W1_T5_C_WHDie2 = GUICtrlCreateCheckbox("#2", 444, 486, 30, 17)
+Global $W1_T5_C_WHDie2 = GUICtrlCreateCheckbox("#2", 442, 482, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHDie2Click")
-Global $W1_T5_C_WHDie3 = GUICtrlCreateCheckbox("#3", 485, 486, 30, 17)
+Global $W1_T5_C_WHDie3 = GUICtrlCreateCheckbox("#3", 483, 482, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHDie3Click")
-Global $W1_T5_C_WHDie4 = GUICtrlCreateCheckbox("#4", 527, 486, 30, 17)
+Global $W1_T5_C_WHDie4 = GUICtrlCreateCheckbox("#4", 525, 482, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHDie4Click")
-Global $Label102 = GUICtrlCreateLabel("Webhook(s) to send ALL CHAT Messages to:", 58, 507, 275, 20)
+Global $Label102 = GUICtrlCreateLabel("Webhook(s) to send ALL CHAT Messages to:", 56, 503, 275, 20)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "Label102Click")
-Global $W1_T5_C_WHAllChat1 = GUICtrlCreateCheckbox("#1", 403, 508, 30, 17)
+Global $W1_T5_C_WHAllChat1 = GUICtrlCreateCheckbox("#1", 401, 504, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHAllChat1Click")
-Global $W1_T5_C_WHAllChat2 = GUICtrlCreateCheckbox("#2", 444, 508, 30, 17)
+Global $W1_T5_C_WHAllChat2 = GUICtrlCreateCheckbox("#2", 442, 504, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHAllChat2Click")
-Global $W1_T5_C_WHAllChat3 = GUICtrlCreateCheckbox("#3", 485, 508, 30, 17)
+Global $W1_T5_C_WHAllChat3 = GUICtrlCreateCheckbox("#3", 483, 504, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHAllChat3Click")
-Global $W1_T5_C_WHAllChat4 = GUICtrlCreateCheckbox("#4", 527, 508, 30, 17)
+Global $W1_T5_C_WHAllChat4 = GUICtrlCreateCheckbox("#4", 525, 504, 30, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T5_C_WHAllChat4Click")
+Global $Label105 = GUICtrlCreateLabel("Webhook(s) to send New Day && Horde Messages to:", 57, 525, 330, 20)
+GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+GUICtrlSetOnEvent(-1, "Label105Click")
+Global $W1_T5_C_WHHorde1 = GUICtrlCreateCheckbox("#1", 401, 527, 31, 17)
+GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+GUICtrlSetOnEvent(-1, "W1_T5_C_WHHorde1Click")
+Global $W1_T5_C_WHHorde2 = GUICtrlCreateCheckbox("#2", 441, 527, 31, 17)
+GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+GUICtrlSetOnEvent(-1, "W1_T5_C_WHHorde2Click")
+Global $W1_T5_C_WHHorde3 = GUICtrlCreateCheckbox("#3", 483, 527, 31, 17)
+GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+GUICtrlSetOnEvent(-1, "W1_T5_C_WHHorde3Click")
+Global $W1_T5_C_WHHorde4 = GUICtrlCreateCheckbox("#4", 525, 527, 31, 17)
+GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+GUICtrlSetOnEvent(-1, "W1_T5_C_WHHorde4Click")
 GUICtrlCreateGroup("", -99, -99, 1, 1)
 Global $Pic4 = GUICtrlCreatePic("" & $aFolderTemp & "zombie2.jpg""", 690, 399, 85, 153)
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "Pic4Click")
 Global $Tab6 = GUICtrlCreateTabItem("6 Discord Announcements")
-GUICtrlSetState(-1, $GUI_SHOW)
-Global $Group12 = GUICtrlCreateGroup("Discord Announcements", 18, 63, 867, 495)
+Global $Group12 = GUICtrlCreateGroup("Discord Announcements", 18, 63, 867, 499)
 GUICtrlSetFont(-1, 10, 400, 0, "arial")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 Global $W1_T6_C_Daily = GUICtrlCreateCheckbox("Daily", 32, 106, 112, 17)
@@ -25315,31 +25366,31 @@ Global $W1_T6_I_BackOnline = GUICtrlCreateInput("W1_T6_I_BackOnline", 218, 189, 
 GUICtrlSetFont(-1, 8, 400, 0, "arial")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T6_I_BackOnlineChange")
-Global $W1_T6_C_PlayerDie = GUICtrlCreateCheckbox("Player Died (\p - Player Name, \n Next Line)", 26, 445, 277, 17)
+Global $W1_T6_C_PlayerDie = GUICtrlCreateCheckbox("Player Died (\p - Player Name, \n Next Line)", 26, 463, 277, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T6_C_PlayerDieClick")
-Global $W1_T6_I_PlayerDie = GUICtrlCreateInput("W1_T6_I_PlayerDie", 308, 442, 566, 22)
+Global $W1_T6_I_PlayerDie = GUICtrlCreateInput("W1_T6_I_PlayerDie", 308, 460, 566, 22)
 GUICtrlSetFont(-1, 8, 400, 0, "arial")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T6_I_PlayerDieChange")
-Global $W1_T6_C_PlayerChat = GUICtrlCreateCheckbox("Player Chat (\p - Player Name, \m Message, \t Msg type (ex. Global,Friend)", 26, 472, 463, 17)
+Global $W1_T6_C_PlayerChat = GUICtrlCreateCheckbox("Player Chat (\p - Player Name, \m Message, \t Msg type (ex. Global,Friend)", 26, 488, 463, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T6_C_PlayerChatClick")
-Global $W1_T6_I_PlayerChat = GUICtrlCreateInput("W1_T6_I_PlayerChat", 490, 469, 384, 22)
+Global $W1_T6_I_PlayerChat = GUICtrlCreateInput("W1_T6_I_PlayerChat", 490, 485, 384, 22)
 GUICtrlSetFont(-1, 8, 400, 0, "arial")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T6_I_PlayerChatChange")
-Global $W1_T6_C_FirstAnnounceOnly = GUICtrlCreateCheckbox("Send Discord message for FIRST ANNOUNCEMENT only (reduces bot spam)", 26, 499, 491, 17)
+Global $W1_T6_C_FirstAnnounceOnly = GUICtrlCreateCheckbox("Send Discord message for FIRST ANNOUNCEMENT only (reduces bot spam)", 26, 511, 491, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T6_C_FirstAnnounceOnlyClick")
-Global $W1_T6_C_BackupStarted = GUICtrlCreateCheckbox("Backup Started", 26, 525, 111, 17)
+Global $W1_T6_C_BackupStarted = GUICtrlCreateCheckbox("Backup Started", 26, 535, 111, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T6_C_BackupStartedClick")
-Global $W1_T6_I_BackupStarted = GUICtrlCreateInput("W1_T6_I_BackupStarted", 138, 522, 736, 22)
+Global $W1_T6_I_BackupStarted = GUICtrlCreateInput("W1_T6_I_BackupStarted", 138, 532, 736, 22)
 GUICtrlSetFont(-1, 8, 400, 0, "arial")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T6_I_BackupStartedChange")
@@ -25378,35 +25429,43 @@ GUICtrlSetFont(-1, 7, 800, 0, "Arial")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "Label26Click")
 GUICtrlCreateGroup("", -99, -99, 1, 1)
-Global $W1_T6_C_NewDay = GUICtrlCreateCheckbox("New Day Msg After Midnight (uses subs above)", 26, 387, 301, 17)
+Global $W1_T6_C_NewDay = GUICtrlCreateCheckbox("New Day Msg After Midnight (uses subs above)", 26, 381, 301, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T6_C_NewDayClick")
-Global $W1_T6_I_NewDayMsg = GUICtrlCreateInput("W1_T6_I_NewDayMsg", 330, 383, 544, 22)
+Global $W1_T6_I_NewDayMsg = GUICtrlCreateInput("W1_T6_I_NewDayMsg", 330, 377, 544, 22)
 GUICtrlSetFont(-1, 8, 400, 0, "arial")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T6_I_NewDayMsgChange")
-Global $W1_T6_C_HordeDay = GUICtrlCreateCheckbox("Day of Blood Moon Msg (uses subs above)", 26, 413, 301, 17)
+Global $W1_T6_C_HordeDay = GUICtrlCreateCheckbox("Day of Blood Moon Msg (uses subs above)", 26, 407, 301, 17)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T6_C_HordeDayClick")
-Global $W1_T6_I_HordeDayMsg = GUICtrlCreateInput("W1_T6_I_HordeDayMsg", 330, 411, 306, 22)
+Global $W1_T6_I_HordeDayMsg = GUICtrlCreateInput("W1_T6_I_HordeDayMsg", 330, 405, 306, 22)
 GUICtrlSetFont(-1, 8, 400, 0, "arial")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T6_I_HordeDayMsgChange")
-Global $Label103 = GUICtrlCreateLabel("Hour To Trigger Msg", 644, 414, 129, 20)
+Global $Label103 = GUICtrlCreateLabel("Hour To Trigger Msg", 644, 406, 129, 20)
 GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 GUICtrlSetOnEvent(-1, "Label103Click")
-Global $W1_T6_I_HordeHour = GUICtrlCreateInput("1", 777, 413, 47, 22)
+Global $W1_T6_I_HordeHour = GUICtrlCreateInput("0", 777, 405, 47, 22)
 GUICtrlSetFont(-1, 8, 400, 0, "arial")
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "W1_T6_I_HordeHourChange")
-Global $W1_T6_U_HordeHour = GUICtrlCreateUpdown($W1_T6_I_HordeHour)
+Global $W1_T1_U_HordeHour = GUICtrlCreateUpdown($W1_T6_I_HordeHour)
 GUICtrlSetLimit(-1, 23, 0)
-GUICtrlSetOnEvent(-1, "W1_T6_U_HordeHourChange")
-Global $Label104 = GUICtrlCreateLabel("(0-23)", 828, 415, 31, 17)
+GUICtrlSetOnEvent(-1, "W1_T1_U_HordeHourChange")
+Global $Label104 = GUICtrlCreateLabel("(0-23)", 828, 407, 31, 17)
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetOnEvent(-1, "Label104Click")
+Global $W1_T6_C_HordeDone = GUICtrlCreateCheckbox("Blood Moon Finished Msg (uses subs above)", 26, 435, 301, 17)
+GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+GUICtrlSetOnEvent(-1, "W1_T6_C_HordeDoneClick")
+Global $W1_T6_I_HordeDoneMsg = GUICtrlCreateInput("W1_T6_I_HordeDoneMsg", 330, 431, 544, 22)
+GUICtrlSetFont(-1, 8, 400, 0, "arial")
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+GUICtrlSetOnEvent(-1, "W1_T6_I_HordeDoneMsgChange")
 GUICtrlCreateGroup("", -99, -99, 1, 1)
 Global $Tab7 = GUICtrlCreateTabItem("7 Twitch")
 Global $Group13 = GUICtrlCreateGroup("Twitch Announcements", 18, 75, 865, 369)
@@ -26069,6 +26128,26 @@ GUICtrlSetState($W1_T5_C_WHRestart4, $GUI_CHECKED)
 Else
 GUICtrlSetState($W1_T5_C_WHRestart4, $GUI_UNCHECKED)
 EndIf
+If StringInStr($aServerDiscordWHHorde, "1") Then
+GUICtrlSetState($W1_T5_C_WHHorde1, $GUI_CHECKED)
+Else
+GUICtrlSetState($W1_T5_C_WHHorde1, $GUI_UNCHECKED)
+EndIf
+If StringInStr($aServerDiscordWHHorde, "2") Then
+GUICtrlSetState($W1_T5_C_WHHorde2, $GUI_CHECKED)
+Else
+GUICtrlSetState($W1_T5_C_WHHorde2, $GUI_UNCHECKED)
+EndIf
+If StringInStr($aServerDiscordWHHorde, "3") Then
+GUICtrlSetState($W1_T5_C_WHHorde3, $GUI_CHECKED)
+Else
+GUICtrlSetState($W1_T5_C_WHHorde3, $GUI_UNCHECKED)
+EndIf
+If StringInStr($aServerDiscordWHHorde, "4") Then
+GUICtrlSetState($W1_T5_C_WHHorde4, $GUI_CHECKED)
+Else
+GUICtrlSetState($W1_T5_C_WHHorde4, $GUI_UNCHECKED)
+EndIf
 GUICtrlSetData($W1_T5_I_D1Avatar, $aServerDiscord1Avatar)
 GUICtrlSetData($W1_T5_I_D2Avatar, $aServerDiscord2Avatar)
 GUICtrlSetData($W1_T5_I_D3Avatar, $aServerDiscord3Avatar)
@@ -26136,6 +26215,11 @@ GUICtrlSetState($W1_T6_C_HordeDay, $GUI_CHECKED)
 Else
 GUICtrlSetState($W1_T6_C_HordeDay, $GUI_UNCHECKED)
 EndIf
+If $sUseDiscordBotHordeDoneYN = "yes" Then
+GUICtrlSetState($W1_T6_C_HordeDone, $GUI_CHECKED)
+Else
+GUICtrlSetState($W1_T6_C_HordeDone, $GUI_UNCHECKED)
+EndIf
 GUICtrlSetData($W1_T6_I_BackupStarted, $aBackupDiscord)
 GUICtrlSetData($W1_T6_I_Daily, $sDiscordDailyMessage)
 GUICtrlSetData($W1_T6_I_PlayerChange, $sDiscordPlayersMsg)
@@ -26150,6 +26234,7 @@ GUICtrlSetData($W1_T6_I_BackOnline, $sDiscordServersUpMessage)
 GUICtrlSetData($W1_T6_I_NewDayMsg, $sDiscordNewDayMsg)
 GUICtrlSetData($W1_T6_I_HordeDayMsg, $sDiscordHordeDayMsg)
 GUICtrlSetData($W1_T6_I_HordeHour, $sUseDiscordBotHordeHour)
+GUICtrlSetData($W1_T6_I_HordeDoneMsg, $sDiscordHordeDoneMsg)
 If $aBackupSendTwitchYN = "yes" Then
 GUICtrlSetState($W1_T7_C_BackupStarted, $GUI_CHECKED)
 Else
@@ -27234,6 +27319,22 @@ Func W1_T5_C_WHRestart4Click()
 $aServerDiscordWHSelStatus = _ConfigWH($W1_T5_C_WHRestart4, $aServerDiscordWHSelStatus, "4")
 IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send RESTART/STATUS Msg (ie 1) ###", $aServerDiscordWHSelStatus)
 EndFunc
+Func W1_T5_C_WHHorde1Click()
+$aServerDiscordWHHorde = _ConfigWH($W1_T5_C_WHHorde1, $aServerDiscordWHHorde, "1")
+IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send New Day and Horde Msg (ie 14) ###", $aServerDiscordWHHorde)
+EndFunc
+Func W1_T5_C_WHHorde2Click()
+$aServerDiscordWHHorde = _ConfigWH($W1_T5_C_WHHorde2, $aServerDiscordWHHorde, "2")
+IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send New Day and Horde Msg (ie 14) ###", $aServerDiscordWHHorde)
+EndFunc
+Func W1_T5_C_WHHorde3Click()
+$aServerDiscordWHHorde = _ConfigWH($W1_T5_C_WHHorde3, $aServerDiscordWHHorde, "3")
+IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send New Day and Horde Msg (ie 14) ###", $aServerDiscordWHHorde)
+EndFunc
+Func W1_T5_C_WHHorde4Click()
+$aServerDiscordWHHorde = _ConfigWH($W1_T5_C_WHHorde4, $aServerDiscordWHHorde, "4")
+IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send New Day and Horde Msg (ie 14) ###", $aServerDiscordWHHorde)
+EndFunc
 Func W1_T5_I_D1AvatarChange()
 $aServerDiscord1Avatar = GUICtrlRead($W1_T5_I_D1Avatar)
 IniWrite($aIniFile, " --------------- DISCORD WEBHOOK --------------- ", "Discord #1 Avatar URL (optional) ###", $aServerDiscord1Avatar)
@@ -27354,6 +27455,14 @@ $sUseDiscordBotHordeDayYN = "no"
 EndIf
 IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message every blood moon? (yes/no) ###", $sUseDiscordBotHordeDayYN)
 EndFunc
+Func W1_T6_C_HordeDoneClick()
+If GUICtrlRead($W1_T6_C_HordeDone) = $GUI_CHECKED Then
+$sUseDiscordBotHordeDoneYN = "yes"
+Else
+$sUseDiscordBotHordeDoneYN = "no"
+EndIf
+IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message when blood moon done? (yes/no) ###", $sUseDiscordBotHordeDoneYN)
+EndFunc
 Func W1_T6_C_NewDayClick()
 If GUICtrlRead($W1_T6_C_NewDay) = $GUI_CHECKED Then
 $sUseDiscordBotNewDayYN = "yes"
@@ -27425,6 +27534,10 @@ EndFunc
 Func W1_T6_I_HordeHourChange()
 $sUseDiscordBotHordeHour = GUICtrlRead($W1_T6_I_HordeHour)
 IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Blood Moon time (hour) to send Discord Msg (00-23) ###", $sUseDiscordBotHordeHour)
+EndFunc
+Func W1_T6_I_HordeDoneMsgChange()
+$sDiscordHordeDoneMsg = GUICtrlRead($W1_T6_I_HordeDoneMsg)
+IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement when blood moon done (Uses online players substitutes. \p All Online Players)", $sDiscordHordeDoneMsg)
 EndFunc
 Func W1_T7_C_BackupStartedClick()
 If GUICtrlRead($W1_T7_C_BackupStarted) = $GUI_CHECKED Then
