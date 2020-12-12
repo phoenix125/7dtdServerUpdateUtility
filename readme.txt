@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.6.0 (2020-10-03) (Beta and Stable are the same version)
+- Latest version: 7dtdServerUpdateUtility_v2.6.1 (2020-12-12) (Beta and Stable are the same version)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -141,6 +141,14 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2020-12-12) v2.6.1 Game Save Bug Fix & Minor Discord Bug Fixes
+- Added: Option to disable watchdog. Useful if using 7DTD RAT to manage server. (Thanks to @merlin66676 for requesting)
+- Fixed: Backups were not saving saved folder if left at default (the AppData folder). (Thanks to KrissirK  & @Jared for reporting)
+- Fixed: Improved Telnet response window and log file.
+- Fixed: Log file now substitutes new line with |
+- Fixed: Discord: No longer repeats "No Online Player" message when server or util is restarted.
+- Fixed: Discord: ServerTools messages now remove the color code ie.[FFCC00] (Thanks to @Doublee for repoting)
+
 (2020-10-03) v2.6.0 Discord Bug Fix & New "Horde Finished" message
 - Fixed: Discord: New Day & Horde Day Announcements were not sending.
 - Added: Discord: Optional Horde Finished announcement.

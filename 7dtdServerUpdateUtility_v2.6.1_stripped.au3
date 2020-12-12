@@ -1,12 +1,12 @@
 #Region
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.0.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.1.exe
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.6.0.0
+#AutoIt3Wrapper_Res_Fileversion=2.6.1.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.6.0
+#AutoIt3Wrapper_Res_ProductVersion=2.6.1
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -19389,10 +19389,10 @@ Return $tPalette
 EndFunc
 Opt("GUIOnEventMode", 1)
 Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
-$aUtilVerStable = "v2.6.0"
-$aUtilVerBeta = "v2.6.0"
+$aUtilVerStable = "v2.6.1"
+$aUtilVerBeta = "v2.6.1"
 $aUtilVersion = $aUtilVerStable
-Global $aUtilVerNumber = 9
+Global $aUtilVerNumber = 10
 Global Const $aUtilName = "7dtdServerUpdateUtility"
 Global Const $aServerEXE = "7DaysToDieServer.exe"
 Global Const $aServerShort = "7DTD"
@@ -19732,6 +19732,10 @@ IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Annou
 IniWrite($aIniFile, " --------------- DISCORD MESSAGE WEBHOOK SELECT --------------- ", "Webhook number(s) to send New Day and Horde Msg (ie 14) ###", "3")
 $tUpdateINI = True
 EndIf
+If $aCFGLastVerNumber < 10 Then
+IniWrite($aIniFile, " --------------- KEEP ALIVE WATCHDOG ---------------", "Disable watchdog. Util will NOT start server (but can shut it down)? (yes/no) ###", "no")
+$tUpdateINI = True
+EndIf
 If $tUpdateINI Then
 ReadUini($aIniFile, $aLogFile)
 FileDelete($aIniFile)
@@ -19951,7 +19955,10 @@ Switch @error
 Case 0
 If ProcessExists($aServerPID) And ($aBeginDelayedShutdown = 0) Then
 Local $MEM = ProcessGetStats($aServerPID, 0)
+If @error Then
+Else
 LogWrite(" [" & $aServerName & " (PID: " & $aServerPID & ")] [Work Memory:" & $MEM[0] & " | Peak Memory:" & $MEM[1] & "] " & $sRestart)
+EndIf
 If ($sUseDiscordBotDaily = "yes") Or ($sUseDiscordBotUpdate = "yes") Or ($sUseTwitchBotDaily = "yes") Or ($sUseTwitchBotUpdate = "yes") Or ($sInGameAnnounce = "yes") Then
 $aBeginDelayedShutdown = 1
 $aRebootReason = "remoterestart"
@@ -19967,7 +19974,7 @@ EndSwitch
 EndIf
 #EndRegion
 #Region
-If Not ProcessExists($aServerPID) Then
+If $aDisableWatchdog = "no" And Not ProcessExists($aServerPID) Then
 $tReturn = _CheckForExistingServer()
 If $tReturn = 0 Then
 $aBeginDelayedShutdown = 0
@@ -20128,12 +20135,18 @@ EndSelect
 EndIf
 IniWrite($aUtilCFGFile, "CFG", "PID", $aServerPID)
 ElseIf ((_DateDiff('n', $aTimeCheck1, _NowCalc())) >= 5) Then
+If ProcessExists($aServerPID) Then
 Local $MEM = ProcessGetStats($aServerPID, 0)
+If @error Then
+Else
 If $MEM[0] > $aExMemAmt And $aExMemRestart = "yes" Then
 LogWrite(" [" & $aServerName & " (PID: " & $aServerPID & ")] Work Memory:" & $MEM[0] & " Peak Memory:" & $MEM[1] & " Excessive Memory Use - Restart requested by " & $aUtilName & " Script", " [" & $aServerName & " (PID: " & $aServerPID & ")] Work Memory:" & $MEM[0] & " Peak Memory:" & $MEM[1])
 CloseServer($aTelnetIP, $aTelnetPort, $aTelnetPass)
 EndIf
+EndIf
 $aTimeCheck1 = _NowCalc()
+Else
+EndIf
 EndIf
 If $aQueryYN = "no" And $tQueryLogReadDoneTF = False Then
 Local $tDiffStart = _DateDiff('n', $gWatchdogServerStartTimeCheck, _NowCalc())
@@ -20184,7 +20197,10 @@ EndIf
 If (($aRestartDaily = "yes") And ((_DateDiff('n', $aTimeCheck2, _NowCalc())) >= 1) And (DailyRestartCheck($aRestartDays, $aRestartHours, $aRestartMin)) And ($aBeginDelayedShutdown = 0)) Then
 If ProcessExists($aServerPID) Then
 Local $MEM = ProcessGetStats($aServerPID, 0)
+If @error Then
+Else
 LogWrite(" [" & $aServerName & " (PID: " & $aServerPID & ")] Work Memory:" & $MEM[0] & " Peak Memory:" & $MEM[1] & " - Daily restart requested by " & $aUtilName & ".")
+EndIf
 If $aDelayShutdownTime Not = 0 Then
 $aBeginDelayedShutdown = 1
 $aRebootReason = "daily"
@@ -20253,7 +20269,7 @@ EndIf
 If $aGameTime = "Day 1, 00:00" Then
 Else
 If $aPlayersOnlineName <> IniRead($aUtilCFGFile, "CFG", "Players Name", "") Then
-_SendDiscordPlayer()
+If IniRead($aUtilCFGFile, "CFG", "Last Online Player Count", 0) <> $aPlayersCount Then _SendDiscordPlayer()
 IniWrite($aUtilCFGFile, "CFG", "Players Name", $aPlayersOnlineName)
 IniWrite($aUtilCFGFile, "CFG", "Last Online Player Count", $aPlayersCount)
 EndIf
@@ -20577,6 +20593,7 @@ If $aServerReadyTF And $aServerReadyOnce Then
 If $aNoExistingPID Then
 If $sUseDiscordBotServersUpYN = "yes" Then
 Local $aAnnounceCount3 = 0
+If ProcessExists($aServerPID) Then
 If $aRebootReason = "remoterestart" And $sUseDiscordBotRemoteRestart = "yes" Then
 $aSplash = _Splash("Server online and ready for connection." & @CRLF & @CRLF & "Discord announcement sent . . .")
 _SendDiscordStatus($sDiscordServersUpMessage)
@@ -20606,6 +20623,7 @@ $aSplash = _Splash("Server online and ready for connection." & @CRLF & @CRLF & "
 _SendDiscordStatus($sDiscordServersUpMessage)
 If StringLen($aGameTime) > 5 Then _SendDiscordPlayer()
 $aFirstStartDiscordAnnounce = False
+EndIf
 EndIf
 Else
 $aSplash = _Splash("Server online and ready for connection." & @CRLF & @CRLF & "Discord announcement NOT sent. Enable first announcement and/or daily, mod, update, remote restart annoucements in config if desired.")
@@ -20805,7 +20823,7 @@ Global $aHordeFreq = _ArrayToString($xHordeFreq)
 If $aHordeFreq < 1 Or $aHordeFreq > 99 Then $aHordeFreq = 7
 $aServerQueryName = $aServerName
 If $aServerSaveGame = "absolute path" Then
-Global $aServerSaveGame = _PathFull("7DaysToDieFolder", @AppDataDir)
+Global $aServerSaveGame = _PathFull("7DaysToDie", @AppDataDir)
 EndIf
 If $aServerDataFolder = "absolute path" Then
 Global $aServerDataFolder = $aServerDirLocal & "\UserData"
@@ -21194,6 +21212,13 @@ $sBotMessage = StringReplace($sBotMessage, @CRLF, "\n")
 $sBotMessage = StringReplace($sBotMessage, @LF, "\n")
 $sBotMessage = StringReplace($sBotMessage, @CR, "\n")
 $sBotMessage = StringReplace($sBotMessage, '"', "")
+If StringInStr($sBotMessage, "]ServerTools") Then
+Local $xStr6 = StringSplit($sBotMessage, "] **", 3)
+If UBound($xStr6) > 1 Then
+Local $tStr2 = StringRegExpReplace($xStr6[1], "\[.*\]", "**")
+$sBotMessage = $xStr6[0] & "] " & StringReplace($tStr2, "[]ServerTools", "ServerTools")
+EndIf
+EndIf
 Local $sJsonMessage = '{"username": "' & $sBotName & '", "avatar_url": "' & $sBotAvatar & '", "content": "' & $sBotMessage & '", "tts": "' & $sBotTTS & '"}'
 Local $oHTTPOST = ObjCreate("WinHttp.WinHttpRequest.5.1")
 $oHTTPOST.Open("POST", StringStripWS($sHookURL, 3) & "?wait=True", False)
@@ -22208,6 +22233,7 @@ Global $aWipeServer = IniRead($aIniFile, " --------------- APPEND SERVER VERSION
 Global $aAppendVerBegin = IniRead($aIniFile, " --------------- APPEND SERVER VERSION TO NAME --------------- ", "Append Server Version (ex. Alpha 16.4 (b8)) at BEGINNING of Server Name? (yes/no) ###", $iniCheck)
 Global $aAppendVerEnd = IniRead($aIniFile, " --------------- APPEND SERVER VERSION TO NAME --------------- ", "Append Server Version (ex. Alpha 16.4 (b8)) at END of Server Name? (yes/no) ###", $iniCheck)
 Global $aAppendVerShort = IniRead($aIniFile, " --------------- APPEND SERVER VERSION TO NAME --------------- ", "Use SHORT name (B9) or LONG (Alpha 17.1 (B9))? (short/long) ###", $iniCheck)
+Global $aDisableWatchdog = IniRead($aIniFile, " --------------- KEEP ALIVE WATCHDOG --------------- ", "Disable watchdog. Util will NOT start server (but can shut it down)? (yes/no) ###", $iniCheck)
 Global $aQueryYN = IniRead($aIniFile, " --------------- KEEP ALIVE WATCHDOG --------------- ", "Use Query Port to check if server is alive? (yes/no) ###", $iniCheck)
 Global $aQueryCheckSec = IniRead($aIniFile, " --------------- KEEP ALIVE WATCHDOG --------------- ", "Query Port check interval in seconds (30-900) ###", $iniCheck)
 Global $aQueryIP = IniRead($aIniFile, " --------------- KEEP ALIVE WATCHDOG --------------- ", "Query IP (ex. 127.0.0.1 - Leave BLANK for server IP) ###", $iniCheck)
@@ -22463,6 +22489,11 @@ If $iniCheck = $aRemoteRestartCode Then
 $aRemoteRestartCode = "password"
 $iIniFail += 1
 $iIniError = $iIniError & "RemoteRestartCode, "
+EndIf
+If $iniCheck = $aDisableWatchdog Then
+$aDisableWatchdog = "no"
+$iIniFail += 1
+$iIniError = $iIniError & "DisableWatchdog, "
 EndIf
 If $iniCheck = $aQueryYN Then
 $aQueryYN = "yes"
@@ -23245,6 +23276,7 @@ IniWrite($aIniFile, " --------------- APPEND SERVER VERSION TO NAME ------------
 IniWrite($aIniFile, " --------------- APPEND SERVER VERSION TO NAME --------------- ", "Append Server Version (ex. Alpha 16.4 (b8)) at END of Server Name? (yes/no) ###", $aAppendVerEnd)
 IniWrite($aIniFile, " --------------- APPEND SERVER VERSION TO NAME --------------- ", "Use SHORT name (B9) or LONG (Alpha 17.1 (B9))? (short/long) ###", $aAppendVerShort)
 FileWriteLine($aIniFile, @CRLF)
+IniWrite($aIniFile, " --------------- KEEP ALIVE WATCHDOG ---------------", "Disable watchdog. Util will NOT start server (but can shut it down)? (yes/no) ###", $aDisableWatchdog)
 IniWrite($aIniFile, " --------------- KEEP ALIVE WATCHDOG ---------------", "Pause watchdog for _ minutes after server updated to allow map generation (1-360) ###", $aWatchdogWaitServerUpdate)
 IniWrite($aIniFile, " --------------- KEEP ALIVE WATCHDOG ---------------", "Pause watchdog for _ minutes after server started to allow server to come online (1-60) ###", $aWatchdogWaitServerStart)
 IniWrite($aIniFile, " --------------- KEEP ALIVE WATCHDOG --------------- ", "Number of failed responses (after server has responded at least once) before restarting server (1-10) (Default is 3) ###", $aWatchdogAttemptsBeforeRestart)
@@ -23604,11 +23636,24 @@ $aSplash = _Splash("Global chat Message canceled. Resuming utility . . .", 2000)
 Else
 $tMsg = "say """ & $tMsg & """"
 $aSplash = _Splash("Sending global chat message:" & @CRLF & $tMsg)
-$aReply = _PlinkSend($tMsg)
+$aReply1 = _PlinkSend($tMsg)
+$aReply = _PlinkMsgTrim($aReply1)
 LogWrite(" [Telnet] Global chat Message sent (" & $tMsg & ") " & $aReply)
 SplashOff()
 MsgBox($MB_OKCANCEL, $aUtilityVer, "Global chat Message sent:" & @CRLF & $tMsg & @CRLF & @CRLF & "Response:" & @CRLF & $aReply, 10)
 EndIf
+EndFunc
+Func _PlinkMsgTrim($tMsg5)
+Local $tRead4 = ""
+Local $xRead3 = StringSplit($tMsg5, @CRLF, BitOR($STR_NOCOUNT, $STR_ENTIRESPLIT))
+For $x2 = 0 To (UBound($xRead3) - 1)
+If StringInStr($xRead3[$x2], "Executing command") Then
+For $x3 = $x2 To (UBound($xRead3) - 1)
+If StringLen($xRead3[$x3]) > 2 Then $tRead4 &= $xRead3[$x3] & @CRLF
+Next
+EndIf
+Next
+Return StringTrimRight($tRead4, 1)
 EndFunc
 Func TraySendInGame()
 LogWrite(" [Telnet] Send Telnet command requested by user via tray icon (Send telnet command).")
@@ -23619,7 +23664,8 @@ LogWrite(" [Telnet] Send Telnet command canceled by user.")
 $aSplash = _Splash("Send Telnet command canceled. Resuming utility . . .", 2000)
 Else
 $aSplash = _Splash("Sending Telnet command. " & @CRLF & $tMsg)
-$aReply = _PlinkSend($tMsg)
+$aReply1 = _PlinkSend($tMsg)
+$aReply = _PlinkMsgTrim($aReply1)
 LogWrite(" [Telnet] Telnet command sent (" & $tMsg & ") " & $aReply)
 SplashOff()
 MsgBox($MB_OKCANCEL, $aUtilityVer, "Telnet command sent: " & @CRLF & $tMsg & @CRLF & @CRLF & "Response:" & @CRLF & $aReply, 15)
@@ -23634,7 +23680,6 @@ EndFunc
 Func GetPlayerCount($tSplash)
 Local $aCMD = "listplayers"
 $tOnlinePlayerReady = True
-Global $aServerPlayers[2]
 Global $tOnlinePlayers[4]
 Local $aErr = False
 $aServerReadyTF = False
@@ -23677,7 +23722,6 @@ If Int($aNextHorde) = Int($aHordeFreq) Then $aNextHorde = 0
 $tOnlinePlayers[1] = "Game Time: " & $aGameTime & @CRLF & "Total Players "
 $tOnlinePlayers[2] = "Game Time(" & $aGameTime & ") Total Players "
 If StringInStr($sMsg[1], "Total of 0 in the game") <> 0 Then
-$aServerPlayers = "0"
 $tOnlinePlayers[1] = $tOnlinePlayers[1] & "(0)"
 $tOnlinePlayers[2] = $tOnlinePlayers[2] & "(0)"
 $aPlayersCount = 0
@@ -23961,6 +24005,9 @@ Return False
 EndIf
 EndFunc
 Func LogWrite($Msg, $msgdebug = -1)
+$Msg = StringReplace($Msg, @CRLF, "|")
+$Msg = StringReplace($Msg, @CR, "|")
+$Msg = StringReplace($Msg, @LF, "|")
 $aLogFile = $aFolderLog & $aUtilName & "_Log_" & @YEAR & "-" & @MON & "-" & @MDAY & ".txt"
 $aLogDebugFile = $aFolderLog & $aUtilName & "_LogFull_" & @YEAR & "-" & @MON & "-" & @MDAY & ".txt"
 Local $tFileSize = FileGetSize($aLogFile)
@@ -24084,6 +24131,7 @@ Func _PlinkSend($sCmd, $tReadTF = True, $aSkipConnectTF = False)
 If $aSkipConnectTF = False Then _PlinkConnect($aTelnetIP, $aTelnetPort, $aTelnetPass, 0, True)
 $iChars = StdinWrite($aPlinkPID, $sCmd & @CRLF)
 Local $tRead3 = _PlinkRead($aSkipConnectTF)
+$tRead3 = StringReplace($tRead3, "*** ERROR: unknown command ''", "")
 If StringInStr($tRead3, "Password incorrect, please enter password") Then
 StdinWrite($aPlinkPID, $aTelnetPass & @CRLF)
 Sleep(250)
@@ -24148,7 +24196,7 @@ EndFunc
 Func _TelnetLookForChat($tTxt4)
 Local $tMsg4 = $sDiscordPlayerChatMsg
 If $tMsg4 <> "" Then
-If StringInStr($tTxt4, " INF Chat (from") Then
+If StringInStr($tTxt4, " INF Chat (from") Or StringInStr($tTxt4, " INF Chat handled by mod") Then
 Local $tName = _ArrayToString(_StringBetween($tTxt4, "'): '", "': "))
 Local $tChat = StringMid($tTxt4, StringInStr($tTxt4, $tName & "': ") + StringLen($tName & "': "))
 Local $tType = _ArrayToString(_StringBetween($tTxt4, "', to '", "'):"))
