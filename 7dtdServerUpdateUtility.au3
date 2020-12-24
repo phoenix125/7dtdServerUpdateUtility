@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.1.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.2.exe
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.6.1.0
+#AutoIt3Wrapper_Res_Fileversion=2.6.2.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.6.1
+#AutoIt3Wrapper_Res_ProductVersion=2.6.2
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -25,8 +25,9 @@
 #include <EditConstants.au3>
 #include <EditConstants.au3>
 #include <File.au3>
-#include <GUIConstantsEx.au3>
+#include <GDIPlus.au3>
 #include <GuiConstants.au3>
+#include <GUIConstantsEx.au3>
 #include <IE.au3>
 #include <Inet.au3>
 #include <ListViewConstants.au3>
@@ -39,17 +40,16 @@
 #include <TrayConstants.au3>
 #include <WinAPISysWin.au3>
 #include <WindowsConstants.au3>
-#include <GDIPlus.au3>
 
 Opt("GUIOnEventMode", 1)
 Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
 
 ; *** End added by AutoIt3Wrapper ***
 
-$aUtilVerStable = "v2.6.1" ; (2020-12-12)
-$aUtilVerBeta = "v2.6.1" ; (2020-12-12)
+$aUtilVerStable = "v2.6.2" ; (2020-12-12)
+$aUtilVerBeta = "v2.6.2" ; (2020-12-12)
 $aUtilVersion = $aUtilVerStable
-Global $aUtilVerNumber = 10
+Global $aUtilVerNumber = 11
 ; 1 = v2.3.3
 ; 2 = v2.3.4
 ; 3 = v2.5.0
@@ -60,6 +60,7 @@ Global $aUtilVerNumber = 10
 ; 8 = 2.5.9
 ; 9 = 2.6.0
 ;10 = 2.6.1
+;11 = 2.6.2
 
 ;**** Directives created by AutoIt3Wrapper_GUI ****
 ;Originally written by Dateranoth for use and modified for 7DTD by Phoenix125.com
@@ -83,6 +84,7 @@ Global $aUtilCFGFile = $aFolderTemp & $aUtilName & "_cfg.ini"
 Global $aDiscordSendWebhookEXE = $aFolderTemp & "DiscordSendWebhook.exe"
 Global $aFilePlink = $aFolderTemp & "plink.exe"
 Global $aServerBatchFile = @ScriptDir & "\_start_" & $aUtilName & ".bat"
+Global $aCustomChatFile = @ScriptDir & "\" & $aUtilName & "_CustomChat.txt"
 Global $aBatchDIR = @ScriptDir & "\BatchFiles"
 Global $aSteamUpdateCMDValY = $aBatchDIR & "\Update_7DTD_Validate_YES.bat"
 Global $aSteamUpdateCMDValN = $aBatchDIR & "\Update_7DTD_Validate_NO.bat"
@@ -105,7 +107,7 @@ If @Compiled = 0 Then
 Else
 	Global $aIconFile = @ScriptFullPath
 EndIf
-
+Global $aTelnetCheckInProgressTF = False
 Global $aTimeCheck0 = _NowCalc()
 Global $aTimeCheck1 = _NowCalc()
 Global $aTimeCheck2 = _NowCalc()
@@ -131,13 +133,20 @@ Global $iEdit = 0
 Global $tUserCnt = 1
 Global $aBusy = False
 Global $aSteamUpdateNow = False
+Global $xCustomCommands[0]
+Global $xCustomReponses[0]
+Global $aCustomCommands = ""
 ;~ Global $aPlayerCountWindowTF = False
 Global $tOnlinePlayerReady = False
 Global $aPlayerCountShowTF = True
 Global $aPlayersOnlineName = ""
 Global $aPlayersOnlineSteamID = ""
-Global $aPlayersJoined = ""
-Global $aPlayersLeft = ""
+Global $aPlayersJoinedTxt = ""
+Global $aPlayersLeftTxt = ""
+Global $aPlayersJoinedInGame = ""
+Global $aPlayersJoinedDiscord = ""
+Global $aPlayersLeftInGame = ""
+Global $aPlayersLeftDiscord = ""
 Global $aPlayersName = ""
 Local $aFirstStartDiscordAnnounce = True
 Local $xLabels[15] = ["Raw", "Name", "Map", "Folder", "Game", "ID", "Players", "Max Players", "Bots", "Server Type", "Environment", "Visibility", "VAC", "Version", "Extra Data Field"]
@@ -436,6 +445,48 @@ If $aCFGLastVerNumber < 10 Then
 	IniWrite($aIniFile, " --------------- KEEP ALIVE WATCHDOG ---------------", "Disable watchdog. Util will NOT start server (but can shut it down)? (yes/no) ###", "no")
 	$tUpdateINI = True
 EndIf
+If $aCFGLastVerNumber < 11 Then
+	Global $sInGameDailyRestartMessage = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement DAILY (\m - minutes) ###", "[FF8C00]Daily server restart begins in \m minute(s).")
+	$sInGameDailyRestartMessage = "[FF8C00]" & $sInGameDailyRestartMessage
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement DAILY RESTART (\m - minutes) ###", $sInGameDailyRestartMessage)
+	Global $sInGameAnnounceRestartsDailyYN = "yes"
+	Global $sInGameAnnounceRestartsUpdateYN = "yes"
+	Global $sInGameAnnounceRestartsRemoteYN = "yes"
+	Global $sInGameAnnounceDailyYN = "yes"
+	Global $sInGameAnnounceDailyHour = 7
+	Global $sInGameAnnouncePlayerJoinYN = "yes"
+	Global $sInGameAnnounceBackupYN = "yes"
+	Global $sInGameDailyMessage = "[FF8C00]Next Horde: \h days Players: \o"
+	Global $sInGamePlayerJoinMessage = "[FF8C00]Welcome \y! Next Horde: \h days Players: \o"
+	Global $sAnnounceBloodMoonOffset = 0
+	IniWrite($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Blood Moon Day Announcement Offset +(0-99) days (Use when horde day msg gets off sync) ###", $sAnnounceBloodMoonOffset)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce DAILY RESTARTS messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnounceRestartsDailyYN)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce UPDATES messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnounceRestartsUpdateYN)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce REMOTE RESTARTS messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnounceRestartsRemoteYN)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce DAILY messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnounceDailyYN)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce DAILY messages in-game Hour to Send? (Requires telnet) (0-23) ###", $sInGameAnnounceDailyHour)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce PLAYER JOIN messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnouncePlayerJoinYN)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce BACKUP STARTED messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnounceBackupYN)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement DAILY (\m - minutes) ###", $sInGameDailyMessage)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement PLAYER JOIN (\o Player Count, \m Max Players, \t Game Time, \h Days to Next Horde, \n Next Line, \p Online Player Names, \y Player Joined Name, \q Player Left Name) ###", $sInGamePlayerJoinMessage)
+	Global $sDiscordPlayerJoinMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Join Player Sub-Message (\p - Player Name(s) of player(s) that joined server, \n Next Line) ###", ':white_check_mark: Joined: ***\y***')
+	Global $sDiscordPlayerLeftMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Left Player Sub-Message (\p - Player Name(s) of player(s) that left server, \n Next Line) ###", ':x: Left: ***\q***')
+	Global $sInGameUpdateMessage = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement UPDATES (\m - minutes) ###", "[FF8C00]Fun Pimps have released a new update. Server is rebooting in \m minute(s).")
+	Global $sInGameRemoteRestartMessage = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement REMOTE RESTART (\m - minutes) ###", "[FF8C00]Admin has requested a server reboot. Server is rebooting in \m minute(s).")
+	$sDiscordPlayerJoinMsg = StringReplace($sDiscordPlayerJoinMsg, "\p", "\y")
+	$sDiscordPlayerLeftMsg = StringReplace($sDiscordPlayerLeftMsg, "\p", "\q")
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Join Player Sub-Message (\y - Player Name(s) of player(s) that joined server, \n Next Line) ###", $sDiscordPlayerJoinMsg)
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Left Player Sub-Message (\q - Player Name(s) of player(s) that left server, \n Next Line) ###", $sDiscordPlayerLeftMsg)
+	$sInGameUpdateMessage = "[FF8C00]" & $sInGameUpdateMessage
+	$sInGameRemoteRestartMessage = "[FF8C00]" & $sInGameRemoteRestartMessage
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement UPDATES (\m - minutes) ###", $sInGameUpdateMessage)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement REMOTE RESTART (\m - minutes) ###", $sInGameRemoteRestartMessage)
+	Global $aSendTelnetMaxAttempts = 3
+	IniWrite($aIniFile, " --------------- ADVANCED HIDDEN OPTIONS --------------- ", "Send Telnet Command: Number of attempts (1-5) ###", $aSendTelnetMaxAttempts)
+	Global $aRestartServerNowPause = 10
+	IniWrite($aIniFile, " --------------- ADVANCED HIDDEN OPTIONS --------------- ", "Restart Now pause (Delay between Restart Now message being sent and Server Reboot) (0-60) seconds ###", $aRestartServerNowPause)
+	$tUpdateINI = True
+EndIf
 If $tUpdateINI Then
 	ReadUini($aIniFile, $aLogFile)
 	FileDelete($aIniFile)
@@ -461,6 +512,10 @@ Global $aShowConfigSplash = True
 ReadUini($aIniFile, $aLogFile)
 Global $aShowConfigSplash = False
 If FileExists($aBackupOutputFolder) = 0 Then DirCreate($aBackupOutputFolder)
+If FileExists($aCustomChatFile) = 0 Then _CustomCommandsWriteDefault($aCustomChatFile)
+
+ControlSetText($aSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Importing custom chat commands from " & _FileNameFromPath($aCustomChatFile) & ".")
+_CustomCommandsRead($aCustomChatFile)
 
 If $aTelnetIP = "" Then
 	$aTelnetIP = $aServerIP
@@ -486,15 +541,12 @@ If $aUpdateUtil = "yes" Then
 EndIf
 
 ControlSetText($aSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Creating temp config file.")
-;Func GetfromServerConfig()
 Global $sConfigPath = $aServerDirLocal & "\" & $aConfigFile
 Local $sFileExists = FileExists($sConfigPath)
 If $sFileExists = 0 Then
 	LogWrite("!!! ERROR !!! Could not find " & $sConfigPath)
 	SplashOff()
-	Local $xFileName = _PathSplit($sConfigPath, "", "", "", "")
-	Local $tFileName = $xFileName[3] & $xFileName[4]
-	$tMsg = MsgBox($MB_YESNO, $aConfigFile & " Not Found", "Could not find 7DTD Config: [" & $tFileName & "]" & @CRLF & @CRLF & $sConfigPath & @CRLF & @CRLF & _
+	$tMsg = MsgBox($MB_YESNO, $aConfigFile & " Not Found", "Could not find 7DTD Config: [" & _FileNameFromPath($sConfigPath) & "]" & @CRLF & @CRLF & $sConfigPath & @CRLF & @CRLF & _
 			"This is normal for New Install" & @CRLF & "Do you wish to continue with installation?" & @CRLF & "(YES) Continue with installation" & @CRLF & "(NO) Open Config Window", 60)
 	If $tMsg = 7 Then
 		LogWrite("!!! ERROR !!! Could not find " & $sConfigPath & ". Config Window opened.")
@@ -504,7 +556,6 @@ If $sFileExists = 0 Then
 EndIf
 Global $aServerTelnetReboot = "no"
 _ImportServerConfig()
-;EndFunc
 #EndRegion ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 
 If $aUseSteamCMD = "yes" Then
@@ -550,11 +601,12 @@ If ($aCheckForUpdate = "yes") Then
 			SteamUpdate()
 		EndIf
 	EndIf
-;~ 	SplashOff()
 EndIf
 #EndRegion ;**** Check for Update At Startup ****
+
 ExternalScriptExist()
 _StartRemoteRestart()
+#Region ;**** Create Tray ****
 ControlSetText($aSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Preparing icon tray.")
 Opt("TrayMenuMode", 3) ; The default tray menu items will not be shown and items are not checked when selected. These are options 1 and 2 for TrayMenuMode.
 Opt("TrayOnEventMode", 1)
@@ -638,6 +690,8 @@ EndFunc   ;==>TrayRestartUtil
 If WinExists($hGUI_LoginLogo) Then GUIDelete($hGUI_LoginLogo)
 ShowOnlineGUI(True)
 _UpdateTray()
+#EndRegion ;**** Create Tray ****
+
 If $aUpdateUtil = "yes" Then AdlibRegister("RunUtilUpdate", 28800000)
 Global $gTelnetTimeCheck0 = _NowCalc()
 Global $gQueryTimeCheck0 = _DateAdd('h', -2, _NowCalc())
@@ -648,27 +702,22 @@ If $gServerUpdatedTimeCheck0 = "no" Then
 EndIf
 ; -----------------------------------------------------------------------------------------------------------------------
 $aServerCheck = TimerInit()
-$aTelnetCheckTimer = TimerInit()
 If ProcessExists($aServerPID) Then
-	$aTimeCheck8 = _DateAdd('h', -1, $aTimeCheck8)
+	_PlinkSend("version")
+	Sleep(500)
+	_OnlinePlayerCheck()
 	$aServerCheck = _DateAdd('h', -1, $aServerCheck)
 Else
 	$aServerCheck = _DateAdd('h', -1, $aServerCheck)
 	ControlSetText($aSplash, "", "Static1", "Preparing to start server...")
 EndIf
-
+If $aTelnetMonitorAllYN = "yes" Then AdlibRegister("_TelnetCheck", $aTelnetTrafficCheckSec * 1000)
 While True ;**** Loop Until Closed ****
-	#Region ;**** Listen for Remote Restart Request ****
-	If $aTelnetMonitorAllYN = "yes" Then
-		If TimerDiff($aTelnetCheckTimer) > ($aTelnetTrafficCheckSec * 1000) Then
-			_TelnetLookForAll(_PlinkRead())
-			If $aTelnetStayConnectedYN = "no" Then _PlinkDisconnect()
-			$aTelnetCheckTimer = TimerInit()
-		EndIf
-	EndIf
 	If TimerDiff($aServerCheck) > 10000 Then
 		TraySetToolTip("Server process check in progress...")
 		TraySetIcon(@ScriptName, 201)
+
+		#Region ;**** Listen for Remote Restart Request ****
 		If $aRemoteRestartUse = "yes" Then
 			Local $sRestart = _RemoteRestart($MainSocket, $aRemoteRestartCode, $aRemoteRestartKey, $sObfuscatePass, $aServerIP, $aServerName)
 			Switch @error
@@ -679,7 +728,7 @@ While True ;**** Loop Until Closed ****
 						Else
 							LogWrite(" [" & $aServerName & " (PID: " & $aServerPID & ")] [Work Memory:" & $MEM[0] & " | Peak Memory:" & $MEM[1] & "] " & $sRestart)
 						EndIf
-						If ($sUseDiscordBotDaily = "yes") Or ($sUseDiscordBotUpdate = "yes") Or ($sUseTwitchBotDaily = "yes") Or ($sUseTwitchBotUpdate = "yes") Or ($sInGameAnnounce = "yes") Then
+						If ($sUseDiscordBotDaily = "yes") Or ($sUseDiscordBotUpdate = "yes") Or ($sUseTwitchBotDaily = "yes") Or ($sUseTwitchBotUpdate = "yes") Or ($sInGameAnnounceRestartsRemoteYN = "yes") Then
 							;						Local $aMaintenanceMsg = """WARNING! " & $sAnnounceRemoteRestartMessage & " Restarting server in " & $aDelayShutdownTime & " minutes...""" & @CRLF
 							$aBeginDelayedShutdown = 1
 							$aRebootReason = "remoterestart"
@@ -695,7 +744,7 @@ While True ;**** Loop Until Closed ****
 		EndIf
 		#EndRegion ;**** Listen for Remote Restart Request ****
 
-		#Region ;**** Keep Server Alive Check. ****
+		#Region ;**** Watchdog and Server Start, Rename, Update, etc. ****
 		If $aDisableWatchdog = "no" And Not ProcessExists($aServerPID) Then
 			$tReturn = _CheckForExistingServer()
 			If $tReturn = 0 Then
@@ -760,7 +809,6 @@ While True ;**** Loop Until Closed ****
 				LogWrite(" [Server] Server version: " & $aGameVer & ".", " [Server] Server version: " & $aGameVer & ". Version derived from """ & $LogTimeStamp & """.")
 				IniWrite($aUtilCFGFile, "CFG", "Last Server Version", $aGameVer)
 				Sleep(3000)
-				; **** END Retrieve Server Version ****
 
 				; **** Append Server Version to Server Name And/Or Change GameName to Server Version ****
 				Local $tRebootTF = False
@@ -849,7 +897,6 @@ While True ;**** Loop Until Closed ****
 				$aServerPID = $tReturn
 				SplashOff()
 			EndIf
-			; **** Append Server Version to Server Name And/Or Change GameName to Server Version ****
 
 			If @error Or Not $aServerPID Then
 				If Not IsDeclared("iMsgBoxAnswer") Then Local $iMsgBoxAnswer
@@ -865,6 +912,9 @@ While True ;**** Loop Until Closed ****
 				EndSelect
 			EndIf
 			IniWrite($aUtilCFGFile, "CFG", "PID", $aServerPID)
+			#EndRegion ;**** Watchdog and Server Start, Rename, Update, etc. ****
+
+			#Region ;**** Watchdog Disabled ****
 		ElseIf ((_DateDiff('n', $aTimeCheck1, _NowCalc())) >= 5) Then
 			;			If $aExMemRestart = "yes" Then
 			If ProcessExists($aServerPID) Then
@@ -880,7 +930,9 @@ While True ;**** Loop Until Closed ****
 			Else
 			EndIf
 		EndIf
+		#EndRegion ;**** Watchdog Disabled ****
 
+		#Region ;**** If Query Port Disabled, Get Server Name From Log ****
 		If $aQueryYN = "no" And $tQueryLogReadDoneTF = False Then
 			Local $tDiffStart = _DateDiff('n', $gWatchdogServerStartTimeCheck, _NowCalc())
 			If $tDiffStart < 1 Then
@@ -889,44 +941,53 @@ While True ;**** Loop Until Closed ****
 				$tQueryLogReadDoneTF = True
 			EndIf
 		EndIf
+		#EndRegion ;**** If Query Port Disabled, Get Server Name From Log ****
 
-		#EndRegion ;**** Keep Server Alive Check. ****
-		#Region ;**** Show Online Players ****
+		#Region ;**** Online Player Check & Horde Day Announcements ****
 		If $aServerOnlinePlayerYN = "yes" Then
-			If ((_DateDiff('s', $aTimeCheck8, _NowCalc())) >= $aServerOnlinePlayerSec) Then
-				_PlayersOnlineCheck()
-				Local $tGameHour = Number(StringLeft(StringRight($aGameTime, 5), 2))
-				Local $tGameDay = Number(_ArrayToString(_StringBetween($aGameTime, "Day ", ",")))
-				If $sUseDiscordBotNewDayYN = "yes" Then
-					If $tGameDay > IniRead($aUtilCFGFile, "CFG", "NewDay: Last day announced", "1") Then
-						IniWrite($aUtilCFGFile, "CFG", "NewDay: Last day announced", $tGameDay)
-						_SendDiscordNewDay()
-					EndIf
-				EndIf
-				If $sUseDiscordBotHordeDayYN = "yes" Then
-					If $aNextHorde = 0 Then
-						If $tGameDay > IniRead($aUtilCFGFile, "CFG", "Horde: Last day announced", "1") Then
-							If $tGameHour >= Number($sUseDiscordBotHordeHour) Then
-								IniWrite($aUtilCFGFile, "CFG", "Horde: Last day announced", $tGameDay)
-								_SendDiscordNewHorde()
-							EndIf
-						EndIf
-					EndIf
-				EndIf
-				If $sUseDiscordBotHordeDoneYN = "yes" Then
-					If $aNextHorde = ($aHordeFreq - 1) Then
-						If $tGameDay > IniRead($aUtilCFGFile, "CFG", "Horde: Last day done announced", "1") Then
-							If $tGameHour >= 4 Then
-								IniWrite($aUtilCFGFile, "CFG", "Horde: Last day done announced", $tGameDay)
-								_SendDiscordHordeDone()
-							EndIf
-						EndIf
-					EndIf
-				EndIf
-				$aTimeCheck8 = _NowCalc()
-			EndIf
+			If ((_DateDiff('s', $aTimeCheck8, _NowCalc())) >= $aServerOnlinePlayerSec) Then _OnlinePlayerCheck()
+;~ 				_PlayersOnlineCheck()
+;~ 				Local $tGameHour = Number(StringLeft(StringRight($aGameTime, 5), 2))
+;~ 				Local $tGameDay = Number(_ArrayToString(_StringBetween($aGameTime, "Day ", ",")))
+;~ 				If $sUseDiscordBotNewDayYN = "yes" Then
+;~ 					If $tGameDay > IniRead($aUtilCFGFile, "CFG", "NewDay: Last day announced", "1") Then
+;~ 						IniWrite($aUtilCFGFile, "CFG", "NewDay: Last day announced", $tGameDay)
+;~ 						_SendDiscordNewDay()
+;~ 					EndIf
+;~ 				EndIf
+;~ 				If $sUseDiscordBotHordeDayYN = "yes" Then
+;~ 					If $aNextHorde = 0 Then
+;~ 						If $tGameDay > IniRead($aUtilCFGFile, "CFG", "Horde: Last day announced", "1") Then
+;~ 							If $tGameHour >= Number($sUseDiscordBotHordeHour) Then
+;~ 								IniWrite($aUtilCFGFile, "CFG", "Horde: Last day announced", $tGameDay)
+;~ 								_SendDiscordNewHorde()
+;~ 							EndIf
+;~ 						EndIf
+;~ 					EndIf
+;~ 				EndIf
+;~ 				If $sUseDiscordBotHordeDoneYN = "yes" Then
+;~ 					If $aNextHorde = ($aHordeFreq - 1) Then
+;~ 						If $tGameDay > IniRead($aUtilCFGFile, "CFG", "Horde: Last day done announced", "1") Then
+;~ 							If $tGameHour >= 4 Then
+;~ 								IniWrite($aUtilCFGFile, "CFG", "Horde: Last day done announced", $tGameDay)
+;~ 								_SendDiscordHordeDone()
+;~ 							EndIf
+;~ 						EndIf
+;~ 					EndIf
+;~ 				EndIf
+;~ 				If $sInGameAnnounceDailyYN = "yes" Then
+;~ 					If $tGameDay > IniRead($aUtilCFGFile, "CFG", "InGameAnnounceDailyHour:Last day announced", "1") Then
+;~ 						If $tGameHour >= Number($sInGameAnnounceDailyHour) Then
+;~ 							IniWrite($aUtilCFGFile, "CFG", "InGameAnnounceDailyHour:Last day announced", $tGameDay)
+;~ 							_SendInGameDaily()
+;~ 						EndIf
+;~ 					EndIf
+;~ 				EndIf
+;~ 				$aTimeCheck8 = _NowCalc()
+;~ 			EndIf
 		EndIf
-		#EndRegion ;**** Show Online Players ****
+		#EndRegion ;**** Online Player Check & Horde Day Announcements ****
+
 		#Region ;**** Restart Server Every X Days and X Hours & Min****
 		If (($aRestartDaily = "yes") And ((_DateDiff('n', $aTimeCheck2, _NowCalc())) >= 1) And (DailyRestartCheck($aRestartDays, $aRestartHours, $aRestartMin)) And ($aBeginDelayedShutdown = 0)) Then
 			If ProcessExists($aServerPID) Then
@@ -958,7 +1019,7 @@ While True ;**** Loop Until Closed ****
 		#EndRegion ;**** Backup Every X Days and X Hours & Min****
 
 		#Region ;**** KeepServerAlive Telnet Check ****
-		If ($aTelnetCheckYN = "yes") And (_DateDiff('s', $gTelnetTimeCheck0, _NowCalc()) >= $aTelnetCheckSec) Then
+		If ($aDisableWatchdog = "no") And ($aTelnetCheckYN = "yes") And (_DateDiff('s', $gTelnetTimeCheck0, _NowCalc()) >= $aTelnetCheckSec) Then
 			Local $tSkipUpdateCheckTF = False
 			Local $tSkipStartCheckTF = False
 			Local $tDiffUpdate = _DateDiff('n', $gServerUpdatedTimeCheck0, _NowCalc())
@@ -1004,19 +1065,24 @@ While True ;**** Loop Until Closed ****
 			$gQueryTimeCheck0 = _NowCalc()
 		EndIf
 		#EndRegion ;**** KeepServerAlive Query Port Check ****
-		If $aGameTime = "Day 1, 00:00" Then
-		Else
+
+		#Region ;**** If Players Changed, Send Discord Message ****
+		If $aGameTime <> "Day 1, 00:00" Then
 			If $aPlayersOnlineName <> IniRead($aUtilCFGFile, "CFG", "Players Name", "") Then
-				If IniRead($aUtilCFGFile, "CFG", "Last Online Player Count", 0) <> $aPlayersCount Then _SendDiscordPlayer()
+;~ 				If IniRead($aUtilCFGFile, "CFG", "Last Online Player Count", 0) <> $aPlayersCount Then
+				_SendDiscordPlayer()
+				_SendInGamePlayerJoin()
+;~ 				EndIf
 				IniWrite($aUtilCFGFile, "CFG", "Players Name", $aPlayersOnlineName)
 				IniWrite($aUtilCFGFile, "CFG", "Last Online Player Count", $aPlayersCount)
 			EndIf
 		EndIf
+		#EndRegion ;**** If Players Changed, Send Discord Message ****
 
 		#Region ;**** Check for Update every X Minutes ****
 		If ($aCheckForUpdate = "yes") And ((_DateDiff('n', $aTimeCheck0, _NowCalc())) >= $aUpdateCheckInterval) And ($aBeginDelayedShutdown = 0) Then
 			Local $bRestart = UpdateCheck(False)
-			If $bRestart And (($sUseDiscordBotDaily = "yes") Or ($sUseDiscordBotUpdate = "yes") Or ($sUseTwitchBotDaily = "yes") Or ($sUseTwitchBotUpdate = "yes") Or ($sInGameAnnounce = "yes")) Then
+			If $bRestart And (($sUseDiscordBotDaily = "yes") Or ($sUseDiscordBotUpdate = "yes") Or ($sUseTwitchBotDaily = "yes") Or ($sUseTwitchBotUpdate = "yes") Or ($sInGameAnnounceRestartsUpdateYN = "yes")) Then
 				$aBeginDelayedShutdown = 1
 				$aRebootReason = "update"
 			ElseIf $bRestart Then
@@ -1029,7 +1095,7 @@ While True ;**** Loop Until Closed ****
 		EndIf
 		#EndRegion ;**** Check for Update every X Minutes ****
 
-		#Region ;**** Announce to Twitch, In Game, Discord ****
+		#Region ;**** Announce RESTARTS to Twitch, In Game, Discord ****
 		If $aDelayShutdownTime Not = 0 Then
 			If $aBeginDelayedShutdown = 1 Then
 				RunExternalScriptAnnounce()
@@ -1037,14 +1103,13 @@ While True ;**** Loop Until Closed ****
 					$aAnnounceCount0 = $aDailyCnt
 					$aAnnounceCount1 = $aAnnounceCount0 - 1
 					If $aAnnounceCount1 = 0 Then
-						;					$aDelayShutdownTime = $aDailyTime[$aAnnounceCount0]
 						$aDelayShutdownTime = 0
 						$aBeginDelayedShutdown = 3
 					Else
 						$aDelayShutdownTime = $aDailyTime[$aAnnounceCount0] - $aDailyTime[$aAnnounceCount1]
 					EndIf
-					If $sInGameAnnounce = "yes" Then
-						If UBound($aDailyMsgInGame) > $aAnnounceCount0 Then SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aDailyMsgInGame[$aAnnounceCount0])
+					If $sInGameAnnounceRestartsDailyYN = "yes" Then
+						If UBound($aDailyMsgInGame) > $aAnnounceCount0 Then _SendInGameMsg($aDailyMsgInGame[$aAnnounceCount0])
 					EndIf
 					If $sUseDiscordBotDaily = "yes" Then
 						If UBound($aDailyMsgDiscord) > $aAnnounceCount0 Then _SendDiscordStatus($aDailyMsgDiscord[$aAnnounceCount0])
@@ -1058,14 +1123,13 @@ While True ;**** Loop Until Closed ****
 					$aDelayShutdownTime = $aRemoteTime[$aAnnounceCount0] - $aRemoteTime[$aAnnounceCount1]
 					$aAnnounceCount1 = $aAnnounceCount0 - 1
 					If $aAnnounceCount1 = 0 Then
-						;					$aDelayShutdownTime = $aRemoteTime[$aAnnounceCount0]
 						$aDelayShutdownTime = 0
 						$aBeginDelayedShutdown = 3
 					Else
 						$aDelayShutdownTime = $aRemoteTime[$aAnnounceCount0] - $aRemoteTime[$aAnnounceCount1]
 					EndIf
-					If $sInGameAnnounce = "yes" Then
-						If UBound($aRemoteMsgInGame) > $aAnnounceCount0 Then SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aRemoteMsgInGame[$aAnnounceCount0])
+					If $sInGameAnnounceRestartsRemoteYN = "yes" Then
+						If UBound($aRemoteMsgInGame) > $aAnnounceCount0 Then _SendInGameMsg($aRemoteMsgInGame[$aAnnounceCount0])
 					EndIf
 					If $sUseDiscordBotRemoteRestart = "yes" Then
 						If UBound($aRemoteMsgDiscord) > $aAnnounceCount0 Then _SendDiscordStatus($aRemoteMsgDiscord[$aAnnounceCount0])
@@ -1084,8 +1148,8 @@ While True ;**** Loop Until Closed ****
 					Else
 						$aDelayShutdownTime = $aUpdateTime[$aAnnounceCount0] - $aUpdateTime[$aAnnounceCount1]
 					EndIf
-					If $sInGameAnnounce = "yes" Then
-						If UBound($aUpdateMsgInGame) > $aAnnounceCount0 Then SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aUpdateMsgInGame[$aAnnounceCount0])
+					If $sInGameAnnounceRestartsUpdateYN = "yes" Then
+						If UBound($aUpdateMsgInGame) > $aAnnounceCount0 Then _SendInGameMsg($aUpdateMsgInGame[$aAnnounceCount0])
 					EndIf
 					If $sUseDiscordBotUpdate = "yes" Then
 						If UBound($aUpdateMsgDiscord) > $aAnnounceCount0 Then _SendDiscordStatus($aUpdateMsgDiscord[$aAnnounceCount0])
@@ -1105,7 +1169,7 @@ While True ;**** Loop Until Closed ****
 						$aDelayShutdownTime = $aRestartTime[$aAnnounceCount0] - $aRestartTime[$aAnnounceCount1]
 					EndIf
 					If UBound($aRestartMsg) > $aAnnounceCount0 Then
-						SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aRestartMsg[$aAnnounceCount0])
+						_SendInGameMsg($aRestartMsg[$aAnnounceCount0])
 						If $sUseDiscordBotRestartServer = "yes" Then _SendDiscordStatus($aRestartMsg[$aAnnounceCount0])
 						If $sUseTwitchBotRestartServer = "yes" Then TwitchMsgLog($aRestartMsg[$aAnnounceCount0])
 					EndIf
@@ -1131,8 +1195,9 @@ While True ;**** Loop Until Closed ****
 					RunExternalRemoteRestart()
 				EndIf
 				If $aRebootReason = "restartserver" Then $aSplash = _Splash("Restart server requested. Restarting server . . .", 0, 350, 50)
-				If $sInGameAnnounce = "yes" Then
-					SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, "FINAL WARNING! Rebooting server in 10 seconds...")
+				If ($aRebootReason = "remoterestart" And $sInGameAnnounceRestartsRemoteYN = "yes") Or ($aRebootReason = "update" And $sInGameAnnounceRestartsUpdateYN = "yes") Or _
+						($aRebootReason = "daily" And $sInGameAnnounceRestartsDailyYN = "yes") Or $aRebootReason = "restartserver" Then
+					_SendInGameMsg("FINAL WARNING! Rebooting server in 10 seconds...")
 					Sleep(10000)
 				EndIf
 				CloseServer($aTelnetIP, $aTelnetPort, $aTelnetPass)
@@ -1144,8 +1209,8 @@ While True ;**** Loop Until Closed ****
 					Else
 						$aDelayShutdownTime = $aDailyTime[$aAnnounceCount1]
 					EndIf
-					If $sInGameAnnounce = "yes" Then
-						If UBound($aDailyMsgInGame) > $aAnnounceCount1 Then SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aDailyMsgInGame[$aAnnounceCount1])
+					If $sInGameAnnounceRestartsDailyYN = "yes" Then
+						If UBound($aDailyMsgInGame) > $aAnnounceCount1 Then _SendInGameMsg($aDailyMsgInGame[$aAnnounceCount1])
 					EndIf
 					If $sUseDiscordBotDaily = "yes" And ($sUseDiscordBotFirstAnnouncement = "no") Then
 						If UBound($aDailyMsgDiscord) > $aAnnounceCount1 Then _SendDiscordStatus($aDailyMsgDiscord[$aAnnounceCount1])
@@ -1160,8 +1225,8 @@ While True ;**** Loop Until Closed ****
 					Else
 						$aDelayShutdownTime = $aRemoteTime[$aAnnounceCount1]
 					EndIf
-					If $sInGameAnnounce = "yes" Then
-						If UBound($aRemoteMsgInGame) > $aAnnounceCount1 Then SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aRemoteMsgInGame[$aAnnounceCount1])
+					If $sInGameAnnounceRestartsRemoteYN = "yes" Then
+						If UBound($aRemoteMsgInGame) > $aAnnounceCount1 Then _SendInGameMsg($aRemoteMsgInGame[$aAnnounceCount1])
 					EndIf
 					If ($sUseDiscordBotRemoteRestart = "yes") And ($sUseDiscordBotFirstAnnouncement = "no") Then
 						If UBound($aRemoteMsgDiscord) > $aAnnounceCount1 Then _SendDiscordStatus($aRemoteMsgDiscord[$aAnnounceCount1])
@@ -1176,8 +1241,8 @@ While True ;**** Loop Until Closed ****
 					Else
 						$aDelayShutdownTime = $aUpdateTime[$aAnnounceCount1]
 					EndIf
-					If $sInGameAnnounce = "yes" Then
-						If UBound($aUpdateMsgInGame) > $aAnnounceCount1 Then SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aUpdateMsgInGame[$aAnnounceCount1])
+					If $sInGameAnnounceRestartsUpdateYN = "yes" Then
+						If UBound($aUpdateMsgInGame) > $aAnnounceCount1 Then _SendInGameMsg($aUpdateMsgInGame[$aAnnounceCount1])
 					EndIf
 					If $sUseDiscordBotUpdate = "yes" And ($sUseDiscordBotFirstAnnouncement = "no") Then
 						If UBound($aUpdateMsgDiscord) > $aAnnounceCount1 Then _SendDiscordStatus($aUpdateMsgDiscord[$aAnnounceCount1])
@@ -1193,7 +1258,7 @@ While True ;**** Loop Until Closed ****
 						$aDelayShutdownTime = $aRestartTime[$aAnnounceCount1]
 					EndIf
 					If UBound($aRestartMsg) > $aAnnounceCount1 Then
-						SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aRestartMsg[$aAnnounceCount1])
+						_SendInGameMsg($aRestartMsg[$aAnnounceCount1])
 						If $sUseDiscordBotRestartServer = "yes" Then _SendDiscordStatus($aRestartMsg[$aAnnounceCount1])
 						If $sUseTwitchBotRestartServer = "yes" Then TwitchMsgLog($aRestartMsg[$aAnnounceCount1])
 					EndIf
@@ -1207,7 +1272,8 @@ While True ;**** Loop Until Closed ****
 		Else
 			$aBeginDelayedShutdown = 0
 		EndIf
-		#EndRegion ;**** Announce to Twitch, In Game, Discord ****
+		#EndRegion ;**** Announce RESTARTS to Twitch, In Game, Discord ****
+
 		_UpdateTray()
 		$aServerCheck = TimerInit()
 		TraySetToolTip(@ScriptName)
@@ -1290,6 +1356,55 @@ Func BackupCheck($sWDays, $sHours, $sMin)
 	Next
 	Return False
 EndFunc   ;==>BackupCheck
+Func _TelnetCheck()
+	If $aTelnetCheckInProgressTF = False Then
+		_TelnetLookForAll(_PlinkRead())
+	Else
+		Sleep(500)
+		If $aTelnetCheckInProgressTF = False Then _TelnetLookForAll(_PlinkRead())
+	EndIf
+	If $aTelnetStayConnectedYN = "no" Then _PlinkDisconnect()
+EndFunc   ;==>_TelnetCheck
+Func _OnlinePlayerCheck()
+	_PlayersOnlineCheck()
+	Local $tGameHour = Number(StringLeft(StringRight($aGameTime, 5), 2))
+	Local $tGameDay = Number(_ArrayToString(_StringBetween($aGameTime, "Day ", ",")))
+	If $sUseDiscordBotNewDayYN = "yes" Then
+		If $tGameDay > IniRead($aUtilCFGFile, "CFG", "NewDay: Last day announced", "1") Then
+			IniWrite($aUtilCFGFile, "CFG", "NewDay: Last day announced", $tGameDay)
+			_SendDiscordNewDay()
+		EndIf
+	EndIf
+	If $sUseDiscordBotHordeDayYN = "yes" Then
+		If $aNextHorde = 0 Then
+			If $tGameDay > IniRead($aUtilCFGFile, "CFG", "Horde: Last day announced", "1") Then
+				If $tGameHour >= Number($sUseDiscordBotHordeHour) Then
+					IniWrite($aUtilCFGFile, "CFG", "Horde: Last day announced", $tGameDay)
+					_SendDiscordNewHorde()
+				EndIf
+			EndIf
+		EndIf
+	EndIf
+	If $sUseDiscordBotHordeDoneYN = "yes" Then
+		If $aNextHorde = ($aHordeFreq - 1) Then
+			If $tGameDay > IniRead($aUtilCFGFile, "CFG", "Horde: Last day done announced", "1") Then
+				If $tGameHour >= 4 Then
+					IniWrite($aUtilCFGFile, "CFG", "Horde: Last day done announced", $tGameDay)
+					_SendDiscordHordeDone()
+				EndIf
+			EndIf
+		EndIf
+	EndIf
+	If $sInGameAnnounceDailyYN = "yes" Then
+		If $tGameDay > IniRead($aUtilCFGFile, "CFG", "InGameAnnounceDailyHour:Last day announced", "1") Then
+			If $tGameHour >= Number($sInGameAnnounceDailyHour) Then
+				IniWrite($aUtilCFGFile, "CFG", "InGameAnnounceDailyHour:Last day announced", $tGameDay)
+				_SendInGameDaily()
+			EndIf
+		EndIf
+	EndIf
+	$aTimeCheck8 = _NowCalc()
+EndFunc   ;==>_OnlinePlayerCheck
 Func _StartRemoteRestart()
 	If $aRemoteRestartUse = "yes" Then
 		ControlSetText($aSplash, "", "Static1", $aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Starting Remote Restart.")
@@ -1644,7 +1759,7 @@ Func _BackupGame($tMinimizeTF = True, $tFullTF = False, $tRunWait = False)
 ;~ 	RunExternalScriptBackUp()
 	If $aBackupInGame <> "" Then
 		LogWrite(" [Backup] In-Game Announcement sent: " & $aBackupInGame)
-		SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $aBackupInGame)
+		_SendInGameMsg($aBackupInGame)
 	EndIf
 	Local $tCount = IniRead($aUtilCFGFile, "CFG", "aLastBackupCount", 0)
 	$tCount += 1
@@ -1772,80 +1887,128 @@ Func _QueryCheck($tRestart1 = True)
 	Next
 	Return $tReturn3
 EndFunc   ;==>_QueryCheck
+Func _SendInGameDaily()
+	Local $tMsg2 = _SendMsgSubs($sInGameDailyMessage, "I")
+	_SendInGameMsg($tMsg2)
+EndFunc   ;==>_SendInGameDaily
+Func _SendInGameMsg($tMsg1, $tSplash = False, $tSkipLookForAllTF = False)
+	Local $tMsg2 = 'say "' & $tMsg1 & '"'
+	If $tSplash Then _Splash("Sending global message:" & @CRLF & $tMsg1)
+	Local $aReply1 = _SendTelnetSafe($tMsg2, $tSkipLookForAllTF, "E")
+	LogWrite(" [InGame] Global Message sent (" & $tMsg1 & ") " & $aReply1)
+	Return $aReply1
+EndFunc   ;==>_SendInGameMsg
+Func _SendInGamePlayerJoin()
+	If $aGameTime = "Day 1, 00:00" Then
+		LogWrite("", " [InGame] Online player count error or not ready. InGame message not sent.")
+	Else
+		If $sInGameAnnouncePlayerJoinYN = "yes" Then
+			If $aPlayersJoinedInGame <> "" Then
+				Local $tMsg2 = _SendMsgSubs($sInGamePlayerJoinMessage, "I")
+				_SendInGameMsg($tMsg2)
+			EndIf
+		EndIf
+	EndIf
+EndFunc   ;==>_SendInGamePlayerJoin
 Func _SendDiscordNewHorde()
-	Local $tMsg2 = _SendDiscordSubs($sDiscordHordeDayMsg)
+	Local $tMsg2 = _SendMsgSubs($sDiscordHordeDayMsg)
 	_SendDiscordMsg($tMsg2, $aServerDiscordWHHorde)
 EndFunc   ;==>_SendDiscordNewHorde
 Func _SendDiscordNewDay()
-	Local $tMsg2 = _SendDiscordSubs($sDiscordNewDayMsg)
+	Local $tMsg2 = _SendMsgSubs($sDiscordNewDayMsg)
 	_SendDiscordMsg($tMsg2, $aServerDiscordWHHorde)
 EndFunc   ;==>_SendDiscordNewDay
 Func _SendDiscordHordeDone()
-	Local $tMsg2 = _SendDiscordSubs($sDiscordHordeDoneMsg)
+	Local $tMsg2 = _SendMsgSubs($sDiscordHordeDoneMsg)
 	_SendDiscordMsg($tMsg2, $aServerDiscordWHHorde)
 EndFunc   ;==>_SendDiscordHordeDone
-Func _SendDiscordSubs($tMsg3)
-	Local $tDiscordPlayersMsg = StringReplace($tMsg3, "\o", $aPlayersCount)
-	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\m", $aMaxPlayers)
-	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\t", $aGameTime)
-	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\h", $aNextHorde)
-	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\j", _DiscordPlayersJoined())
-	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\l", _DiscordPlayersLeft())
-	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\a", _DiscordPlayersOnline())
-	If StringLen($aPlayersName) > 1 Then
-		$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\p", $aPlayersName)
+Func _SendMsgSubs($tMsg3, $tDest = "D") ; $tDest D = Discord , I = InGame
+	If $tDest = "D" Then
+		Local $tMsgJoin = $sDiscordPlayerJoinMsg
+		Local $tMsgLeft = $sDiscordPlayerLeftMsg
+		Local $tMsgOnline = $sDiscordPlayerOnlineMsg
+	ElseIf $tDest = "I" Then
+		Local $tMsgJoin = 'Joined: \y'
+		Local $tMsgLeft = 'Left: \q'
+		Local $tMsgOnline = 'Online Players: \p'
 	Else
-		$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\p", "[None]")
+		Local $tMsgJoin = 'Joined: \y'
+		Local $tMsgLeft = 'Left: \q'
+		Local $tMsgOnline = 'Online Players: \p'
 	EndIf
-	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\n", @CRLF)
-	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "0 days", "TODAY!")
-	$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "0 day", "TODAY!")
-	Return $tDiscordPlayersMsg
-EndFunc   ;==>_SendDiscordSubs
+	Local $tMsg4 = StringReplace($tMsg3, "\o", $aPlayersCount)
+	$tMsg4 = StringReplace($tMsg4, "\m", $aMaxPlayers)
+	$tMsg4 = StringReplace($tMsg4, "\t", $aGameTime)
+	$tMsg4 = StringReplace($tMsg4, "\h", $aNextHorde)
+	$tMsg4 = StringReplace($tMsg4, "\y", $aPlayersJoinedInGame)
+	$tMsg4 = StringReplace($tMsg4, "\q", $aPlayersLeftInGame)
+	$tMsg4 = StringReplace($tMsg4, "\j", _MsgPlayersJoined($tMsgJoin, $tDest))
+	$tMsg4 = StringReplace($tMsg4, "\l", _MsgPlayersLeft($tMsgLeft, $tDest))
+	$tMsg4 = StringReplace($tMsg4, "\a", _MsgPlayersOnline($tMsgOnline))
+	$tMsg4 = StringReplace($tMsg4, "\c", $aCustomCommands)
+	If StringLen($aPlayersName) > 1 Then
+		$tMsg4 = StringReplace($tMsg4, "\p", $aPlayersName)
+	Else
+		$tMsg4 = StringReplace($tMsg4, "\p", "[None]")
+	EndIf
+	If $tDest = "D" Then $tMsg4 = StringReplace($tMsg4, "\n", @CRLF)
+	$tMsg4 = StringReplace($tMsg4, "0 days", "TODAY")
+	$tMsg4 = StringReplace($tMsg4, "0 day", "TODAY")
+	$tMsg4 = StringReplace($tMsg4, "in TODAY!", "TODAY")
+	$tMsg4 = StringReplace($tMsg4, "1 days", "1 day")
+
+	Return $tMsg4
+EndFunc   ;==>_SendMsgSubs
 Func _SendDiscordPlayer()
 	If $aGameTime = "Day 1, 00:00" Then
 		LogWrite("", " [Discord] Online player count error or not ready. Discord message not sent.")
 	Else
-		If $sUseDiscordBotPlayerChangeYN = "yes" Then
-			Local $tDiscordPlayersMsg = StringReplace($sDiscordPlayersMsg, "\o", $aPlayersCount)
-			$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\m", $aMaxPlayers)
-			$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\t", $aGameTime)
-			$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\h", $aNextHorde)
-			$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\j", _DiscordPlayersJoined())
-			$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\l", _DiscordPlayersLeft())
-			$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\a", _DiscordPlayersOnline())
-			$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "\n", @CRLF)
-			$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "0 days", "TODAY!")
-			$tDiscordPlayersMsg = StringReplace($tDiscordPlayersMsg, "0 day", "TODAY!")
-			_SendDiscordMsg($tDiscordPlayersMsg, $aServerDiscordWHSelPlayers)
-		EndIf
+		If $sUseDiscordBotPlayerChangeYN = "yes" Then _SendDiscordMsg(_SendMsgSubs($sDiscordPlayersMsg), $aServerDiscordWHSelPlayers)
 	EndIf
 EndFunc   ;==>_SendDiscordPlayer
-Func _DiscordPlayersJoined()
+Func _MsgPlayersJoined($tMsg6, $tDest = "D") ; "D" = Discord, "I" = InGame
 	Local $tTxt2 = ""
-	If StringLen($aPlayersJoined) > 1 Then
-		$tTxt2 &= StringReplace($sDiscordPlayerJoinMsg, "\p", $aPlayersJoined)
-		$aPlayersJoined = ""
+	If $tDest = "D" Then
+		If StringLen($aPlayersJoinedDiscord) > 1 Then
+			$tTxt2 &= StringReplace($tMsg6, "\y", $aPlayersJoinedDiscord)
+			$aPlayersJoinedDiscord = ""
+		EndIf
+	ElseIf $tDest = "I" Then
+		If StringLen($aPlayersJoinedInGame) > 1 Then
+			$tTxt2 &= StringReplace($tMsg6, "\y", $aPlayersJoinedInGame)
+			$aPlayersJoinedInGame = ""
+		EndIf
+	Else
+		$tTxt2 = $tMsg6
 	EndIf
 	Return $tTxt2
-EndFunc   ;==>_DiscordPlayersJoined
-Func _DiscordPlayersLeft()
+EndFunc   ;==>_MsgPlayersJoined
+Func _MsgPlayersLeft($tMsg6, $tDest = "D") ; "D" = Discord, "I" = InGame
 	Local $tTxt2 = ""
-	If StringLen($aPlayersLeft) > 1 Then
-		$tTxt2 &= StringReplace($sDiscordPlayerLeftMsg, "\p", $aPlayersLeft)
-		$aPlayersLeft = ""
+	If $tDest = "D" Then
+		If StringLen($aPlayersLeftDiscord) > 1 Then
+			$tTxt2 &= StringReplace($tMsg6, "\q", $aPlayersLeftDiscord)
+			$aPlayersLeftDiscord = ""
+		EndIf
+	ElseIf $tDest = "I" Then
+		If StringLen($aPlayersLeftInGame) > 1 Then
+			$tTxt2 &= StringReplace($tMsg6, "\q", $aPlayersLeftInGame)
+			$aPlayersLeftInGame = ""
+		EndIf
+	Else
+		$tTxt2 = $tMsg6
 	EndIf
 	Return $tTxt2
-EndFunc   ;==>_DiscordPlayersLeft
-Func _DiscordPlayersOnline()
+EndFunc   ;==>_MsgPlayersLeft
+Func _MsgPlayersOnline($tMsg6)
 	Local $tTxt2 = ""
 	If StringLen($aPlayersName) > 1 Then
-		$tTxt2 &= StringReplace($sDiscordPlayerOnlineMsg, "\p", $aPlayersName)
+		$tTxt2 &= StringReplace($tMsg6, "\p", $aPlayersName)
 	Else
-		$tTxt2 &= StringReplace($sDiscordPlayerOnlineMsg, "\p", "[None]")
+		$tTxt2 &= StringReplace($tMsg6, "\p", "[None]")
 	EndIf
 	Return $tTxt2
-EndFunc   ;==>_DiscordPlayersOnline
+EndFunc   ;==>_MsgPlayersOnline
 Func _SendDiscordStatus($tMsg)
 	_SendDiscordMsg($tMsg, $aServerDiscordWHSelStatus)
 EndFunc   ;==>_SendDiscordStatus
@@ -1884,6 +2047,10 @@ Func _UpdateTray()
 		EndIf
 	EndIf
 EndFunc   ;==>_UpdateTray
+Func _FileNameFromPath($tPath)
+	Local $xFileName = _PathSplit($tPath, "", "", "", "")
+	Return $xFileName[3] & $xFileName[4]
+EndFunc   ;==>_FileNameFromPath
 Func _GetServerNameFromLog($tSplash = 0)
 	Local $tReturn = ""
 	Local $sLogPath = IniRead($aUtilCFGFile, "CFG", "Last Log Time Stamp", $aServerDirLocal & '\7DaysToDieServer_Data\output_log_dedi' & StringRegExpReplace(_NowCalc(), "[\\\/\: ]", "_") & ".txt")
@@ -1967,16 +2134,6 @@ EndFunc   ;==>CloseServer
 
 ; -----------------------------------------------------------------------------------------------------------------------
 
-#Region ;**** Function to Send Message In Game ****
-Func SendInGame($ip, $port, $pass, $tMsg)
-	$tMsg = "say """ & $tMsg & """"
-	$aReply = _PlinkSend($tMsg)
-	LogWrite(" [Telnet] In-game message sent (" & $tMsg & ") " & $aReply)
-EndFunc   ;==>SendInGame
-#EndRegion ;**** Function to Send Message In Game ****
-
-; -----------------------------------------------------------------------------------------------------------------------
-
 #Region ;**** Function to Send Message to Discord ****
 Func _Discord_ErrFunc($oError)
 	LogWrite(" [" & $aServerName & " (PID: " & $aServerPID & ")] Error: 0x" & Hex($oError.number) & " While Sending Discord Bot Message.")
@@ -2000,7 +2157,7 @@ Func SendDiscordMsg($sHookURL, $sBotMessage, $sBotName = "", $sBotTTS = False, $
 			Local $xStr6 = StringSplit($sBotMessage, "] **", 3)
 			If UBound($xStr6) > 1 Then
 				Local $tStr2 = StringRegExpReplace($xStr6[1], "\[.*\]", "**")
-				$sBotMessage = $xStr6[0] & "] " & StringReplace($tStr2, "[]ServerTools", "ServerTools") ;kim125er!
+				$sBotMessage = $xStr6[0] & "] " & StringReplace($tStr2, "[]ServerTools", "ServerTools")
 			EndIf
 		EndIf
 		Local $sJsonMessage = '{"username": "' & $sBotName & '", "avatar_url": "' & $sBotAvatar & '", "content": "' & $sBotMessage & '", "tts": "' & $sBotTTS & '"}'
@@ -3155,23 +3312,37 @@ Func ReadUini($aIniFile, $sLogFile)
 	Global $aBackupInGame = IniRead($aIniFile, " --------------- BACKUP --------------- ", "In-Game announcement when backup initiated (Leave blank to disable) ###", $iniCheck)
 	Global $aBackupDiscord = IniRead($aIniFile, " --------------- BACKUP --------------- ", "Discord announcement when backup initiated ###", $iniCheck)
 	Global $aBackupTwitch = IniRead($aIniFile, " --------------- BACKUP --------------- ", "Twitch announcement when backup initiated ###", $iniCheck)
+
 	Global $aRemoteRestartUse = IniRead($aIniFile, " --------------- REMOTE RESTART OPTIONS --------------- ", "Use Remote Restart? (yes/no) ###", $iniCheck)
 	Global $aRemoteRestartPort = IniRead($aIniFile, " --------------- REMOTE RESTART OPTIONS --------------- ", "Restart Port ###", $iniCheck)
 	Global $aRemoteRestartKey = IniRead($aIniFile, " --------------- REMOTE RESTART OPTIONS --------------- ", "Restart Key ###", $iniCheck)
 	Global $aRemoteRestartCode = IniRead($aIniFile, " --------------- REMOTE RESTART OPTIONS --------------- ", "Restart Code ###", $iniCheck)
+
 	Global $aCheckForUpdate = IniRead($aIniFile, " --------------- CHECK FOR UPDATE --------------- ", "Check for server updates? (yes/no) ###", $iniCheck)
 	Global $aUpdateCheckInterval = IniRead($aIniFile, " --------------- CHECK FOR UPDATE --------------- ", "Update check interval in Minutes (05-59) ###", $iniCheck)
+
 	Global $aRestartDaily = IniRead($aIniFile, " --------------- SCHEDULED RESTARTS --------------- ", "Use scheduled restarts? (yes/no) ###", $iniCheck)
 	Global $aRestartDays = IniRead($aIniFile, " --------------- SCHEDULED RESTARTS --------------- ", "Restart days (comma separated 0-Everyday 1-Sunday 7-Saturday 0-7 ex.2,4,6) ###", $iniCheck)
 	Global $bRestartHours = IniRead($aIniFile, " --------------- SCHEDULED RESTARTS --------------- ", "Restart hours (comma separated 00-23 ex.04,16) ###", $iniCheck)
 	Global $bRestartMin = IniRead($aIniFile, " --------------- SCHEDULED RESTARTS --------------- ", "Restart minute (00-59) ###", $iniCheck)
+
 	Global $sAnnounceNotifyTime1 = IniRead($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before DAILY reboot (comma separated 0-60) ###", $iniCheck)
 	Global $sAnnounceNotifyTime2 = IniRead($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before UPDATES reboot (comma separated 0-60) ###", $iniCheck)
 	Global $sAnnounceNotifyTime3 = IniRead($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before REMOTE RESTART reboot (comma separated 0-60) ###", $iniCheck)
-	Global $sInGameAnnounce = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce messages in-game? (Requires telnet) (yes/no) ###", $iniCheck)
-	Global $sInGameDailyMessage = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement DAILY (\m - minutes) ###", $iniCheck)
+	Global $sAnnounceBloodMoonOffset = IniRead($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Blood Moon Day Announcement Offset +(0-99) days (Use when horde day msg gets off sync) ###", $iniCheck)
+
+	Global $sInGameAnnounceRestartsDailyYN = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce DAILY RESTARTS messages in-game? (Requires telnet) (yes/no) ###", $iniCheck)
+	Global $sInGameAnnounceRestartsUpdateYN = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce UPDATES messages in-game? (Requires telnet) (yes/no) ###", $iniCheck)
+	Global $sInGameAnnounceRestartsRemoteYN = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce REMOTE RESTARTS messages in-game? (Requires telnet) (yes/no) ###", $iniCheck)
+	Global $sInGameAnnounceDailyYN = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce DAILY messages in-game? (Requires telnet) (yes/no) ###", $iniCheck)
+	Global $sInGameAnnounceDailyHour = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce DAILY messages in-game Hour to Send? (Requires telnet) (0-23) ###", $iniCheck)
+	Global $sInGameAnnouncePlayerJoinYN = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce PLAYER JOIN messages in-game? (Requires telnet) (yes/no) ###", $iniCheck)
+	Global $sInGameAnnounceBackupYN = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce BACKUP STARTED messages in-game? (Requires telnet) (yes/no) ###", $iniCheck)
+	Global $sInGameDailyRestartMessage = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement DAILY RESTART (\m - minutes) ###", $iniCheck)
 	Global $sInGameUpdateMessage = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement UPDATES (\m - minutes) ###", $iniCheck)
 	Global $sInGameRemoteRestartMessage = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement REMOTE RESTART (\m - minutes) ###", $iniCheck)
+	Global $sInGameDailyMessage = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement DAILY (\m - minutes) ###", $iniCheck)
+	Global $sInGamePlayerJoinMessage = IniRead($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement PLAYER JOIN (\o Player Count, \m Max Players, \t Game Time, \h Days to Next Horde, \n Next Line, \p Online Player Names, \y Player Joined Name, \q Player Left Name) ###", $iniCheck)
 
 	Global $aServerDiscord1URL = IniRead($aIniFile, " --------------- DISCORD WEBHOOK --------------- ", "Discord #1 Webhook URL ###", $iniCheck)
 	Global $aServerDiscord1BotName = IniRead($aIniFile, " --------------- DISCORD WEBHOOK --------------- ", "Discord #1 Bot Name (optional) ###", $iniCheck)
@@ -3215,8 +3386,8 @@ Func ReadUini($aIniFile, $sLogFile)
 	Global $sDiscordRemoteRestartMessage = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement REMOTE RESTART (\m - minutes) ###", $iniCheck)
 	Global $sDiscordServersUpMessage = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement when server is back online ###", $iniCheck)
 	Global $sDiscordPlayersMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Online Player Message (see above for substitutions) ###", $iniCheck)
-	Global $sDiscordPlayerJoinMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Join Player Sub-Message (\p - Player Name(s) of player(s) that joined server, \n Next Line) ###", $iniCheck)
-	Global $sDiscordPlayerLeftMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Left Player Sub-Message (\p - Player Name(s) of player(s) that left server, \n Next Line) ###", $iniCheck)
+	Global $sDiscordPlayerJoinMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Join Player Sub-Message (\y - Player Name(s) of player(s) that joined server, \n Next Line) ###", $iniCheck)
+	Global $sDiscordPlayerLeftMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Left Player Sub-Message (\q - Player Name(s) of player(s) that left server, \n Next Line) ###", $iniCheck)
 	Global $sDiscordPlayerOnlineMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Online Player Sub-Message (\p - Player Name(s) of player(s) online, \n Next Line) ###", $iniCheck)
 	Global $sDiscordPlayerDiedMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Died Message (\p - Player Name, \n Next Line) ###", $iniCheck)
 	Global $sDiscordPlayerChatMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Chat (\p - Player Name, \m Message, \t Msg type (ex. Global,Friend)", $iniCheck)
@@ -3253,6 +3424,9 @@ Func ReadUini($aIniFile, $sLogFile)
 	Global $aExternalScriptRemoteYN = IniRead($aIniFile, " --------------- EXECUTE EXTERNAL SCRIPT DURING RESTART WHEN REMOTE RESTART REQUEST IS MADE --------------- ", "6-Execute external script during restart when a remote restart request is made? (yes/no) ###", $iniCheck)
 	Global $aExternalScriptRemoteFile = IniRead($aIniFile, " --------------- EXECUTE EXTERNAL SCRIPT DURING RESTART WHEN REMOTE RESTART REQUEST IS MADE --------------- ", "6-Script to execute ###", $iniCheck)
 	Global $aExternalScriptRemoteWait = IniRead($aIniFile, " --------------- EXECUTE EXTERNAL SCRIPT DURING RESTART WHEN REMOTE RESTART REQUEST IS MADE --------------- ", "6-Wait for script to complete? (yes/no) ###", $iniCheck)
+
+	Global $aSendTelnetMaxAttempts = IniRead($aIniFile, " --------------- ADVANCED HIDDEN OPTIONS --------------- ", "Send Telnet Command: Number of attempts (1-5) ###", $iniCheck)
+	Global $aRestartServerNowPause = IniRead($aIniFile, " --------------- ADVANCED HIDDEN OPTIONS --------------- ", "Restart Now pause (Delay between Restart Now message being sent and Server Reboot) (0-60) seconds ###", $iniCheck)
 
 	Global $aLogQuantity = IniRead($aIniFile, " --------------- LOG FILE OPTIONS --------------- ", "Number of logs ###", $iniCheck)
 	Global $aValidate = IniRead($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Validate files with SteamCMD update? (yes/no) ###", $iniCheck)
@@ -3642,22 +3816,36 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniFail += 1
 		$iIniError = $iIniError & "AnnounceNotifyTime3, "
 	EndIf
-	If $iniCheck = $sInGameDailyMessage Then
-		$sInGameDailyMessage = "Daily server restart begins in \m minute(s)."
+	If $iniCheck = $sAnnounceNotifyTime3 Then
+		$sAnnounceNotifyTime3 = "1,3"
 		$iIniFail += 1
-		$iIniError = $iIniError & "InGameDailyMessage, "
+		$iIniError = $iIniError & "AnnounceNotifyTime3, "
+	EndIf
+	If $iniCheck = $sAnnounceBloodMoonOffset Then
+		$sAnnounceBloodMoonOffset = 0
+		$iIniFail += 1
+		$iIniError = $iIniError & "AnnounceBloodMoonOffset, "
 	EndIf
 	If $iniCheck = $sInGameUpdateMessage Then
-		$sInGameUpdateMessage = "Fun Pimps have released a new update. Server is rebooting in \m minute(s)."
+		$sInGameUpdateMessage = "[FF8C00]Fun Pimps have released a new update. Server is rebooting in \m minute(s)."
 		$iIniFail += 1
 		$iIniError = $iIniError & "InGameUpdateMessage, "
 	EndIf
 	If $iniCheck = $sInGameRemoteRestartMessage Then
-		$sInGameRemoteRestartMessage = "Admin has requested a server reboot. Server is rebooting in \m minute(s)."
+		$sInGameRemoteRestartMessage = "[FF8C00]Admin has requested a server reboot. Server is rebooting in \m minute(s)."
 		$iIniFail += 1
 		$iIniError = $iIniError & "InGameRemoteRestartMessage, "
 	EndIf
-
+	If $iniCheck = $sInGameDailyMessage Then
+		$sInGameDailyMessage = "[FF8C00]Next Horde: \h days Players: \o"
+		$iIniFail += 1
+		$iIniError = $iIniError & "InGameDailyMessage, "
+	EndIf
+	If $iniCheck = $sInGamePlayerJoinMessage Then
+		$sInGamePlayerJoinMessage = "[FF8C00]Welcome \y! Next Horde: \h days Players: \o"
+		$iIniFail += 1
+		$iIniError = $iIniError & "InGamePlayerJoinMessage, "
+	EndIf
 	If $iniCheck = $aServerDiscord1URL Then
 		$aServerDiscord1URL = "https://discordapp.com/api/webhooks/012345678901234567/abcdefghijklmnopqrstuvwxyz01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcde"
 		$iIniFail += 1
@@ -3803,10 +3991,40 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniFail += 1
 		$iIniError = $iIniError & "TwitchRemoteRestartMessage, "
 	EndIf
-	If $iniCheck = $sInGameAnnounce Then
-		$sInGameAnnounce = "yes"
+	If $iniCheck = $sInGameAnnounceRestartsDailyYN Then
+		$sInGameAnnounceRestartsDailyYN = "yes"
 		$iIniFail += 1
-		$iIniError = $iIniError & "InGameAnnounce, "
+		$iIniError = $iIniError & "InGameAnnounceRestartsDailyYN, "
+	EndIf
+	If $iniCheck = $sInGameAnnounceRestartsUpdateYN Then
+		$sInGameAnnounceRestartsUpdateYN = "yes"
+		$iIniFail += 1
+		$iIniError = $iIniError & "InGameAnnounceRestartsUpdateYN, "
+	EndIf
+	If $iniCheck = $sInGameAnnounceRestartsRemoteYN Then
+		$sInGameAnnounceRestartsRemoteYN = "yes"
+		$iIniFail += 1
+		$iIniError = $iIniError & "InGameAnnounceRestartsRemoteYN, "
+	EndIf
+	If $iniCheck = $sInGameAnnounceDailyYN Then
+		$sInGameAnnounceDailyYN = "yes"
+		$iIniFail += 1
+		$iIniError = $iIniError & "InGameAnnounceDailyYN, "
+	EndIf
+	If $iniCheck = $sInGameAnnounceDailyHour Then
+		$sInGameAnnounceDailyHour = 7
+		$iIniFail += 1
+		$iIniError = $iIniError & "InGameAnnounceDailyHour, "
+	EndIf
+	If $iniCheck = $sInGameAnnouncePlayerJoinYN Then
+		$sInGameAnnouncePlayerJoinYN = "yes"
+		$iIniFail += 1
+		$iIniError = $iIniError & "InGameAnnouncePlayerJoinYN, "
+	EndIf
+	If $iniCheck = $sInGameAnnounceBackupYN Then
+		$sInGameAnnounceBackupYN = "yes"
+		$iIniFail += 1
+		$iIniError = $iIniError & "InGameAnnounceBackupYN, "
 	EndIf
 	If $iniCheck = $sUseDiscordBotDaily Then
 		$sUseDiscordBotDaily = "yes"
@@ -3874,12 +4092,12 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniError = $iIniError & "DiscordPlayersMsg, "
 	EndIf
 	If $iniCheck = $sDiscordPlayerJoinMsg Then
-		$sDiscordPlayerJoinMsg = ':white_check_mark: Joined: ***\p***'
+		$sDiscordPlayerJoinMsg = ':white_check_mark: Joined: ***\y***'
 		$iIniFail += 1
 		$iIniError = $iIniError & "DiscordPlayerJoinedMsg, "
 	EndIf
 	If $iniCheck = $sDiscordPlayerLeftMsg Then
-		$sDiscordPlayerLeftMsg = ':x: Left: ***\p***'
+		$sDiscordPlayerLeftMsg = ':x: Left: ***\q***'
 		$iIniFail += 1
 		$iIniError = $iIniError & "DiscordPlayerLeftMsg, "
 	EndIf
@@ -4038,6 +4256,24 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniFail += 1
 		$iIniError = $iIniError & "ExternalScriptRemoteWait, "
 	EndIf
+	If $iniCheck = $aSendTelnetMaxAttempts Then
+		$aSendTelnetMaxAttempts = "3"
+		$iIniFail += 1
+		$iIniError = $iIniError & "SendInGameMsgMaxAttempts, "
+	ElseIf $aSendTelnetMaxAttempts < 1 Then
+		$aSendTelnetMaxAttempts = 1
+	ElseIf $aSendTelnetMaxAttempts > 5 Then
+		$aSendTelnetMaxAttempts = 5
+	EndIf
+	If $iniCheck = $aRestartServerNowPause Then
+		$aRestartServerNowPause = "5"
+		$iIniFail += 1
+		$iIniError = $iIniError & "RestartServerNowPause, "
+	ElseIf $aRestartServerNowPause < 0 Then
+		$aRestartServerNowPause = 0
+	ElseIf $aRestartServerNowPause > 60 Then
+		$aRestartServerNowPause = 60
+	EndIf
 	If $iniCheck = $aExternalScriptHideYN Then
 		$aExternalScriptHideYN = "no"
 		$iIniFail += 1
@@ -4145,8 +4381,9 @@ Func ReadUini($aIniFile, $sLogFile)
 	$aSteamCMDDir = RemoveTrailingSlash($aSteamCMDDir)
 	$aConfigFile = RemoveInvalidCharacters($aConfigFile)
 
-	If $sUseDiscordBotRemoteRestart = "yes" Or $sUseDiscordBotDaily = "yes" Or $sUseDiscordBotUpdate = "yes" Or $sUseTwitchBotRemoteRestart = "yes" Or $sUseTwitchBotDaily = "yes" Or $sUseTwitchBotUpdate = "yes" Or $sInGameAnnounce = "yes" Then
-		Global $aDailyMsgInGame = AnnounceReplaceTime($sAnnounceNotifyTime1, $sInGameDailyMessage)
+	If $sUseDiscordBotRemoteRestart = "yes" Or $sUseDiscordBotDaily = "yes" Or $sUseDiscordBotUpdate = "yes" Or $sUseTwitchBotRemoteRestart = "yes" Or $sUseTwitchBotDaily = "yes" Or _
+			$sUseTwitchBotUpdate = "yes" Or $sInGameAnnounceRestartsUpdateYN = "yes" Or $sInGameAnnounceRestartsDailyYN = "yes" Or $sInGameAnnounceRestartsRemoteYN = "yes" Then
+		Global $aDailyMsgInGame = AnnounceReplaceTime($sAnnounceNotifyTime1, $sInGameDailyRestartMessage)
 		Global $aDailyMsgDiscord = AnnounceReplaceTime($sAnnounceNotifyTime1, $sDiscordDailyMessage)
 		Global $aDailyMsgTwitch = AnnounceReplaceTime($sAnnounceNotifyTime1, $sTwitchDailyMessage)
 		$sAnnounceNotifyTime1 = AddZero($sAnnounceNotifyTime1)
@@ -4326,11 +4563,20 @@ Func UpdateIni($aIniFile)
 	IniWrite($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before DAILY reboot (comma separated 0-60) ###", $sAnnounceNotifyTime1)
 	IniWrite($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before UPDATES reboot (comma separated 0-60) ###", $sAnnounceNotifyTime2)
 	IniWrite($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before REMOTE RESTART reboot (comma separated 0-60) ###", $sAnnounceNotifyTime3)
+	IniWrite($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Blood Moon Day Announcement Offset +(0-99) days (Use when horde day msg gets off sync) ###", $sAnnounceBloodMoonOffset)
 	FileWriteLine($aIniFile, @CRLF)
-	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnounce)
-	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement DAILY (\m - minutes) ###", $sInGameDailyMessage)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce DAILY RESTARTS messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnounceRestartsDailyYN)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce UPDATES messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnounceRestartsUpdateYN)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce REMOTE RESTARTS messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnounceRestartsRemoteYN)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce DAILY messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnounceDailyYN)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce DAILY messages in-game Hour to Send? (Requires telnet) (0-23) ###", $sInGameAnnounceDailyHour)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce PLAYER JOIN messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnouncePlayerJoinYN)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce BACKUP STARTED messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnounceBackupYN)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement DAILY RESTART (\m - minutes) ###", $sInGameDailyRestartMessage)
 	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement UPDATES (\m - minutes) ###", $sInGameUpdateMessage)
 	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement REMOTE RESTART (\m - minutes) ###", $sInGameRemoteRestartMessage)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement DAILY (\m - minutes) ###", $sInGameDailyMessage)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement PLAYER JOIN (\o Player Count, \m Max Players, \t Game Time, \h Days to Next Horde, \n Next Line, \p Online Player Names, \y Player Joined Name, \q Player Left Name) ###", $sInGamePlayerJoinMessage)
 	FileWriteLine($aIniFile, @CRLF)
 	IniWrite($aIniFile, " --------------- DISCORD WEBHOOK --------------- ", "Discord #1 Webhook URL ###", $aServerDiscord1URL)
 	IniWrite($aIniFile, " --------------- DISCORD WEBHOOK --------------- ", "Discord #1 Bot Name (optional) ###", $aServerDiscord1BotName)
@@ -4375,8 +4621,8 @@ Func UpdateIni($aIniFile)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement when server is back online ###", $sDiscordServersUpMessage)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "__ Online Player message substitutions (\o Online Player Count, \m Max Players, \t Game Time, \h Days to Next Horde, \j Joined Sub-Msg, \l Left Sub-Msn, \a Online Players Sub-Msg) \n Next Line) __", "")
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Online Player Message (see above for substitutions) ###", $sDiscordPlayersMsg)
-	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Join Player Sub-Message (\p - Player Name(s) of player(s) that joined server, \n Next Line) ###", $sDiscordPlayerJoinMsg)
-	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Left Player Sub-Message (\p - Player Name(s) of player(s) that left server, \n Next Line) ###", $sDiscordPlayerLeftMsg)
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Join Player Sub-Message (\y - Player Name(s) of player(s) that joined server, \n Next Line) ###", $sDiscordPlayerJoinMsg)
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Left Player Sub-Message (\q - Player Name(s) of player(s) that left server, \n Next Line) ###", $sDiscordPlayerLeftMsg)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Online Player Sub-Message (\p - Player Name(s) of player(s) online, \n Next Line) ###", $sDiscordPlayerOnlineMsg)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Died Message (\p - Player Name, \n Next Line) ###", $sDiscordPlayerDiedMsg)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Player Chat (\p - Player Name, \m Message, \t Msg type (ex. Global,Friend)", $sDiscordPlayerChatMsg)
@@ -4420,6 +4666,9 @@ Func UpdateIni($aIniFile)
 	IniWrite($aIniFile, " --------------- EXECUTE EXTERNAL SCRIPT DURING RESTART WHEN REMOTE RESTART REQUEST IS MADE --------------- ", "6-Wait for script to complete? (yes/no) ###", $aExternalScriptRemoteWait)
 	FileWriteLine($aIniFile, @CRLF)
 	IniWrite($aIniFile, " --------------- LOG FILE OPTIONS --------------- ", "Number of logs ###", $aLogQuantity)
+	FileWriteLine($aIniFile, @CRLF)
+	IniWrite($aIniFile, " --------------- ADVANCED HIDDEN OPTIONS --------------- ", "Send Telnet Command: Number of attempts (1-5) ###", $aSendTelnetMaxAttempts)
+	IniWrite($aIniFile, " --------------- ADVANCED HIDDEN OPTIONS --------------- ", "Restart Now pause (Delay between Restart Now message being sent and Server Reboot) (0-60) seconds ###", $aRestartServerNowPause)
 	FileWriteLine($aIniFile, @CRLF)
 	IniWrite($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Validate files with SteamCMD update? (yes/no) ###", $aValidate)
 	IniWrite($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Telnet: Stay Connected (Required for chat and death messaging) (yes/no) ###", $aTelnetStayConnectedYN)
@@ -4510,10 +4759,8 @@ Func _CheckForExistingServer()
 	Return $tReturn2
 EndFunc   ;==>_CheckForExistingServer
 Func _CheckForExistingPlink()
-	Local $xFileName = _PathSplit($aFilePlink, "", "", "", "")
-	Local $tFileName = $xFileName[3] & $xFileName[4]
 	Local $tReturn2 = 0
-	Local $tProcess = ProcessList($tFileName)
+	Local $tProcess = ProcessList(_FileNameFromPath($aFilePlink))
 	For $x = 1 To $tProcess[0][0]
 		Local $tProcessFolder = _ProcessGetLocation($tProcess[$x][1])
 		If $tProcessFolder = $aFilePlink Then
@@ -4609,17 +4856,6 @@ EndFunc   ;==>TrayExitCloseY
 
 Func TrayRestartNow()
 	W2_RestartServer()
-;~ 	LogWrite(" [Server] Restart Server Now requested by user via tray icon (Restart Server Now).")
-;~ 	$tMB = MsgBox($MB_YESNOCANCEL, $aUtilName, "Do you wish to Restart Server Now?" & @CRLF & @CRLF & _
-;~ 			"Click (YES) to Restart Server Now." & @CRLF & _
-;~ 			"Click (NO) or (CANCEL) to cancel.", 15)
-;~ 	If $tMB = 6 Then ; (YES)
-;~ 		LogWrite(" [Server] Restart Server Now request initiated by user.")
-;~ 		CloseServer($aTelnetIP, $aTelnetPort, $aTelnetPass)
-;~ 	Else
-;~ 		LogWrite(" [Server] Restart Server Now request canceled by user.")
-;~ 		$aSplash = _Splash("Restart Server Now canceled. Resuming utility . . .", 2000)
-;~ 	EndIf
 EndFunc   ;==>TrayRestartNow
 
 Func TrayRemoteRestart()
@@ -4660,7 +4896,8 @@ Func TrayRemoteRestart()
 		If $tMB = 6 Then ; (YES)
 			If $aBeginDelayedShutdown = 0 Then
 				LogWrite(" [Remote Restart] Remote Restart request initiated by user.")
-				If ($sUseDiscordBotDaily = "yes") Or ($sUseDiscordBotUpdate = "yes") Or ($sUseTwitchBotDaily = "yes") Or ($sUseTwitchBotUpdate = "yes") Or ($sInGameAnnounce = "yes") Then
+				If ($sUseDiscordBotDaily = "yes") Or ($sUseDiscordBotUpdate = "yes") Or ($sUseTwitchBotDaily = "yes") Or ($sUseTwitchBotUpdate = "yes") Or _
+						($sInGameAnnounceRestartsRemoteYN = "yes") Or ($sInGameAnnounceRestartsDailyYN = "yes") Or ($sInGameAnnounceRestartsUpdateYN = "yes") Then
 					$aRebootReason = "remoterestart"
 					$aBeginDelayedShutdown = 1
 					$aTimeCheck0 = _NowCalc
@@ -4690,11 +4927,13 @@ Func TraySendMessage()
 		LogWrite(" [Telnet] Global chat message canceled by user.")
 		$aSplash = _Splash("Global chat Message canceled. Resuming utility . . .", 2000)
 	Else
-		$tMsg = "say """ & $tMsg & """"
-		$aSplash = _Splash("Sending global chat message:" & @CRLF & $tMsg)
-		$aReply1 = _PlinkSend($tMsg)
-		$aReply = _PlinkMsgTrim($aReply1)
-		LogWrite(" [Telnet] Global chat Message sent (" & $tMsg & ") " & $aReply)
+		$aReply = _SendInGameMsg($tMsg, True)
+;~ 		$tMsg = "say """ & $tMsg & """"
+;~ 		$aSplash = _Splash("Sending global chat message:" & @CRLF & $tMsg)
+;~ 		$aReply1 = _PlinkSend($tMsg)
+;~ 		_TelnetLookForAll($aReply1)
+;~ 		$aReply = _PlinkMsgTrim($aReply1)
+;~ 		LogWrite(" [Telnet] Global chat Message sent (" & $tMsg & ") " & $aReply)
 		SplashOff()
 		MsgBox($MB_OKCANCEL, $aUtilityVer, "Global chat Message sent:" & @CRLF & $tMsg & @CRLF & @CRLF & "Response:" & @CRLF & $aReply, 10)
 	EndIf
@@ -4703,7 +4942,7 @@ EndFunc   ;==>TraySendMessage
 Func _PlinkMsgTrim($tMsg5)
 	Local $tRead4 = ""
 	Local $xRead3 = StringSplit($tMsg5, @CRLF, BitOR($STR_NOCOUNT, $STR_ENTIRESPLIT))
-	For $x2 = 0 To (UBound($xRead3) - 1)     ;kim125er!
+	For $x2 = 0 To (UBound($xRead3) - 1)
 		If StringInStr($xRead3[$x2], "Executing command") Then
 			For $x3 = $x2 To (UBound($xRead3) - 1)
 				If StringLen($xRead3[$x3]) > 2 Then $tRead4 &= $xRead3[$x3] & @CRLF
@@ -4724,8 +4963,11 @@ Func TraySendInGame()
 	Else
 		;		LogWrite(" [Telnet] Sending Telnet command to server: " & $tMsg)
 		$aSplash = _Splash("Sending Telnet command. " & @CRLF & $tMsg)
-		$aReply1 = _PlinkSend($tMsg)
-		$aReply = _PlinkMsgTrim($aReply1)
+		Local $tReply1 = ""
+		$tReply1 &= _PlinkSend($tMsg)
+		Sleep(250)
+		$tReply1 &= _PlinkRead()
+		$aReply = _PlinkMsgTrim($tReply1)
 		LogWrite(" [Telnet] Telnet command sent (" & $tMsg & ") " & $aReply)
 		SplashOff()
 		MsgBox($MB_OKCANCEL, $aUtilityVer, "Telnet command sent: " & @CRLF & $tMsg & @CRLF & @CRLF & "Response:" & @CRLF & $aReply, 15)
@@ -4779,9 +5021,9 @@ Func GetPlayerCount($tSplash)
 			EndIf
 			$aGameTime = "Day " & $tDay & ", " & $tTime9
 		EndIf
-		Local $t2 = Int($tDay / $aHordeFreq) * $aHordeFreq
-		$aNextHorde = $aHordeFreq - ($tDay - $t2)
-		If Int($aNextHorde) = Int($aHordeFreq) Then $aNextHorde = 0
+		Local $t2 = (Int(($tDay + Number($sAnnounceBloodMoonOffset)) / $aHordeFreq) * $aHordeFreq)
+		$aNextHorde = $aHordeFreq - ((($tDay + Number($sAnnounceBloodMoonOffset))) - $t2)
+		If Number($aNextHorde) = Number($aHordeFreq) Then $aNextHorde = 0
 		$tOnlinePlayers[1] = "Game Time: " & $aGameTime & @CRLF & "Total Players " ; Screen version with @CRLF
 		$tOnlinePlayers[2] = "Game Time(" & $aGameTime & ") Total Players " ; Log version without @CRLF
 		If StringInStr($sMsg[1], "Total of 0 in the game") <> 0 Then
@@ -4816,13 +5058,21 @@ Func GetPlayerCount($tSplash)
 		TraySetToolTip(@ScriptName)
 		TraySetIcon(@ScriptName, 99)
 		$tPlayersBeforeString = IniRead($aUtilCFGFile, "CFG", "Players Name", "")
+		Local $tPlayersAfterArray = StringSplit($aPlayersOnlineName, Chr(238), 2)
+		$aPlayersName = _ArrayToString($tPlayersAfterArray, " , ")
 		If ($tPlayersBeforeString <> $aPlayersOnlineName) And $aGameTime <> "Day 1, 00:00" Then
 			Local $tPlayersBeforeArray = StringSplit($tPlayersBeforeString, Chr(238), 2)
-			Local $tPlayersAfterArray = StringSplit($aPlayersOnlineName, Chr(238), 2)
+;~ 			Local $tPlayersAfterArray = StringSplit($aPlayersOnlineName, Chr(238), 2)
 			$tTempArray = _ArrayCompare($tPlayersBeforeArray, $tPlayersAfterArray)
-			$aPlayersJoined = _ArrayToString($tTempArray[1], " , ")
-			$aPlayersLeft = _ArrayToString($tTempArray[0], " , ")
-			$aPlayersName = _ArrayToString($tPlayersAfterArray, " , ")
+			Local $tPlayersJoined = _ArrayToString($tTempArray[1], " , ")
+			Local $tPlayersLeft = _ArrayToString($tTempArray[0], " , ")
+			$aPlayersJoinedInGame = $tPlayersJoined
+			$aPlayersJoinedDiscord = $tPlayersJoined
+			$aPlayersLeftInGame = $tPlayersLeft
+			$aPlayersLeftDiscord = $tPlayersLeft
+			$aPlayersJoinedTxt = $tPlayersJoined
+			$aPlayersLeftTxt = $tPlayersLeft
+;~ 			$aPlayersName = _ArrayToString($tPlayersAfterArray, " , ")
 			$tOnlinePlayers[0] = True
 			LogWrite(" [Online Players] " & _PlayersChangedText() & $tOnlinePlayers[2])
 			WriteOnlineLog(_PlayersChangedText() & $tOnlinePlayers[2])
@@ -4844,8 +5094,14 @@ Func GetPlayerCount($tSplash)
 EndFunc   ;==>GetPlayerCount
 Func _PlayersChangedText()
 	Local $tTxt2 = ""
-	If StringLen($aPlayersJoined) > 1 Then $tTxt2 &= "Joined:[" & $aPlayersJoined & "] "
-	If StringLen($aPlayersLeft) > 1 Then $tTxt2 &= "Left:[" & $aPlayersLeft & "] "
+	If StringLen($aPlayersJoinedTxt) > 1 Then
+		$tTxt2 &= "Joined:[" & $aPlayersJoinedTxt & "] "
+		$aPlayersJoinedTxt = ""
+	EndIf
+	If StringLen($aPlayersLeftTxt) > 1 Then
+		$tTxt2 &= "Left:[" & $aPlayersLeftTxt & "] "
+		$aPlayersLeftTxt = ""
+	EndIf
 	Return $tTxt2
 EndFunc   ;==>_PlayersChangedText
 Func _PlayersOnlineText()
@@ -4857,7 +5113,7 @@ Func TelnetOnlinePlayers($ip, $port, $pwd)
 	Local $sReturn[2]
 	Local $tTxt0 = ""
 	$tErr = False
-	$tRead1 = _PlinkSend("listplayers")
+	Local $tRead1 = _SendTelnetSafe("listplayers")
 	Local $tArray3 = StringSplit($tRead1, @CRLF)
 	$sReturn[1] = "Error"
 	If IsArray($tArray3) Then
@@ -4877,7 +5133,8 @@ Func TelnetOnlinePlayers($ip, $port, $pwd)
 			EndIf
 		Next
 	EndIf
-	Local $tRead2 = _PlinkSend("gettime")
+;~ 	_TelnetLookForAll($tRead1)
+	Local $tRead2 = _SendTelnetSafe("gettime")
 	Local $tArray3 = StringSplit($tRead2, @CRLF)
 	$sReturn[0] = "Day 1, 00:00"
 	If IsArray($tArray3) Then
@@ -4892,9 +5149,30 @@ Func TelnetOnlinePlayers($ip, $port, $pwd)
 			EndIf
 		Next
 	EndIf
+	_TelnetLookForAll($tRead2)
 	If $aTelnetStayConnectedYN = "no" Then _PlinkDisconnect()
 	Return $sReturn
 EndFunc   ;==>TelnetOnlinePlayers
+
+Func _SendTelnetSafe($tMsgt, $tSkipLookForAllTF = False, $tLogSEN = "E") ; S = Success, E = Error, N = None
+	$aTelnetCheckInProgressTF = True
+	For $tRetry = 1 To $aSendTelnetMaxAttempts
+		Local $tReplyT = ""
+		$tReplyT &= _PlinkSend($tMsgt)
+		$tReplyT &= _PlinkSend("version")
+		Sleep(500)
+		$tReplyT &= _PlinkRead()
+		If $tSkipLookForAllTF = False Then _TelnetLookForAll($tReplyT)
+		If StringInStr($tReplyT, $tMsgt) = 0 Then
+			If StringInStr($tLogSEN, "E") Then LogWrite(" [Telnet] Error! Telnet command (" & $tMsgt & ") failed to send. Retry attempt " & $tRetry & " of " & $aSendTelnetMaxAttempts & " (" & $tMsgt & ") " & $tReplyT)
+		Else
+			If StringInStr($tLogSEN, "S") Then LogWrite(" [Telnet] Telnet command sent (" & $tMsgt & ") " & $tReplyT)
+			ExitLoop
+		EndIf
+	Next
+	$aTelnetCheckInProgressTF = False
+	Return $tReplyT
+EndFunc   ;==>_SendTelnetSafe
 
 Func ShowOnlineGUI($tForceOnTopTF = False)
 	If $aServerOnlinePlayerYN = "yes" Then
@@ -5268,7 +5546,7 @@ Func _TelnetLookForJoin($tTxt4)
 	If $tMsg4 <> "" Then
 		If StringRegExp($tTxt4, "Player '.*' joined the game") Then
 			Local $tName = _ArrayToString(_StringBetween($tTxt4, "'", "'"))
-			$tMsg4 = StringReplace($tMsg4, "\p", $tName)
+			$tMsg4 = StringReplace($tMsg4, "\y", $tName)
 			$tMsg4 = StringReplace($tMsg4, "\n", @CRLF)
 			_SendDiscordJoin($tMsg4)
 			_PlayersOnlineCheck()
@@ -5280,7 +5558,7 @@ Func _TelnetLookForLeave($tTxt4)
 	If $tMsg4 <> "" Then
 		If StringRegExp($tTxt4, "Player '.*' left the game") Then
 			Local $tName = _ArrayToString(_StringBetween($tTxt4, "'", "'"))
-			$tMsg4 = StringReplace($tMsg4, "\p", $tName)
+			$tMsg4 = StringReplace($tMsg4, "\q", $tName)
 			$tMsg4 = StringReplace($tMsg4, "\n", @CRLF)
 			_SendDiscordJoin($tMsg4)
 			_PlayersOnlineCheck()
@@ -5289,17 +5567,33 @@ Func _TelnetLookForLeave($tTxt4)
 EndFunc   ;==>_TelnetLookForLeave
 Func _TelnetLookForChat($tTxt4)
 	Local $tMsg4 = $sDiscordPlayerChatMsg
+	Local $tArray[0]
 	If $tMsg4 <> "" Then
 		If StringInStr($tTxt4, " INF Chat (from") Or StringInStr($tTxt4, " INF Chat handled by mod") Then
 			Local $tName = _ArrayToString(_StringBetween($tTxt4, "'): '", "': "))
 			Local $tChat = StringMid($tTxt4, StringInStr($tTxt4, $tName & "': ") + StringLen($tName & "': "))
 			Local $tType = _ArrayToString(_StringBetween($tTxt4, "', to '", "'):"))
-			$tMsg4 = StringReplace($tMsg4, "\p", $tName)
-			$tMsg4 = StringReplace($tMsg4, "\m", $tChat)
-			$tMsg4 = StringReplace($tMsg4, "\n", @CRLF)
-			$tMsg4 = StringReplace($tMsg4, "\t", $tType)
-			If $tType = "Global" Then _SendDiscordChat($tMsg4)
-			_SendDiscordAllChat($tMsg4)
+			Local $tAnyCustomTF = False
+			If StringInStr($tChat, $aCustomCommands) Then
+			Else
+				If UBound($xCustomCommands) > 0 Then
+					For $t5 = 0 To (UBound($xCustomCommands) - 1)
+						If $tChat = $xCustomCommands[$t5] Then _ArrayAdd($tArray, _SendMsgSubs($xCustomReponses[$t5], "I"))
+					Next
+				EndIf
+				$tMsg4 = StringReplace($tMsg4, "\p", $tName)
+				$tMsg4 = StringReplace($tMsg4, "\m", $tChat)
+				$tMsg4 = StringReplace($tMsg4, "\n", "|")
+				$tMsg4 = StringReplace($tMsg4, "\t", $tType)
+				If $tType = "Global" Then _SendDiscordChat($tMsg4)
+				_SendDiscordAllChat($tMsg4)
+				If UBound($tArray) > 0 Then
+					For $t5 = 0 To (UBound($tArray) - 1)
+						_SendInGameMsg($tArray[$t5])
+					Next
+				EndIf
+			EndIf
+;~ 			EndIf
 		EndIf
 	EndIf
 EndFunc   ;==>_TelnetLookForChat
@@ -6021,7 +6315,8 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Pic3Click")
 		Global $Tab4 = GUICtrlCreateTabItem("4 Announcements")
-		Global $Group9 = GUICtrlCreateGroup("Announcement Intervals (Applies to all methods)", 20, 235, 863, 119)
+		GUICtrlSetState(-1, $GUI_SHOW)
+		Global $Group9 = GUICtrlCreateGroup("Announcement Intervals (Applies to all methods)", 20, 235, 659, 119)
 		GUICtrlSetFont(-1, 10, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		Global $Label12 = GUICtrlCreateLabel("Announcement _ minutes before DAILY restarts", 33, 265, 282, 20)
@@ -6124,46 +6419,80 @@ Func GUI_Config($tNewInstallTF = False)
 		Global $Group10 = GUICtrlCreateGroup("In-Game Announcements", 20, 363, 865, 193)
 		GUICtrlSetFont(-1, 10, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-		Global $W1_T4_C_AnnounceInGame = GUICtrlCreateCheckbox("Announce Messages In-Game", 30, 387, 211, 17)
-		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
-		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-		GUICtrlSetOnEvent(-1, "W1_T4_C_AnnounceInGameClick")
-		Global $Label51 = GUICtrlCreateLabel("DAILY Restarts", 96, 424, 95, 20, $SS_RIGHT)
-		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
-		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-		GUICtrlSetOnEvent(-1, "Label51Click")
-		Global $W1_T4_I_AnnounceDaily = GUICtrlCreateInput("W1_T4_I_AnnounceDaily", 195, 421, 677, 22)
+		Global $W1_T4_I_AnnounceDaily = GUICtrlCreateInput("W1_T4_I_AnnounceDaily", 195, 406, 677, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T4_I_AnnounceDailyChange")
-		Global $Label52 = GUICtrlCreateLabel("Text substitution: \m - minutes", 314, 383, 176, 20)
-		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+		Global $Label52 = GUICtrlCreateLabel("Text substitution: \m - minutes", 28, 387, 145, 17)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label52Click")
-		Global $Label53 = GUICtrlCreateLabel("UPDATE Restarts", 78, 452, 113, 20, $SS_RIGHT)
-		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
-		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-		GUICtrlSetOnEvent(-1, "Label53Click")
-		Global $W1_T4_I_AnnounceUpdate = GUICtrlCreateInput("W1_T4_I_AnnounceUpdate", 195, 449, 677, 22)
+		Global $W1_T4_I_AnnounceUpdate = GUICtrlCreateInput("W1_T4_I_AnnounceUpdate", 195, 432, 677, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T4_I_AnnounceUpdateChange")
-		Global $Label54 = GUICtrlCreateLabel("REMOTE RESTART", 61, 480, 130, 20, $SS_RIGHT)
-		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
-		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-		GUICtrlSetOnEvent(-1, "Label54Click")
-		Global $W1_T4_I_AnnounceRemote = GUICtrlCreateInput("W1_T4_I_AnnounceRemote", 195, 477, 677, 22)
+		Global $W1_T4_I_AnnounceRemote = GUICtrlCreateInput("W1_T4_I_AnnounceRemote", 195, 458, 677, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T4_I_AnnounceRemoteChange")
-		Global $Label84 = GUICtrlCreateLabel("BACKUP started", 88, 523, 102, 20, $SS_RIGHT)
-		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
-		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-		GUICtrlSetOnEvent(-1, "Label84Click")
-		Global $W1_T4_I_BackupStarted = GUICtrlCreateInput("W1_T4_I_BackupStarted", 195, 520, 677, 22)
+		Global $W1_T4_I_BackupStarted = GUICtrlCreateInput("W1_T4_I_BackupStarted", 707, 528, 165, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T4_I_BackupStartedChange")
+		Global $W1_T4_C_AnnounceDaily = GUICtrlCreateCheckbox("DAILY Restarts", 32, 408, 157, 17)
+		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T4_C_AnnounceDailyClick")
+		Global $W1_T4_C_AnnounceUpdate = GUICtrlCreateCheckbox("UPDATE Restarts", 32, 435, 157, 17)
+		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T4_C_AnnounceUpdateClick")
+		Global $W1_T4_C_AnnounceRemote = GUICtrlCreateCheckbox("REMOTE RESTART", 32, 460, 157, 17)
+		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T4_C_AnnounceRemoteClick")
+		Global $W1_T4_C_BackupStarted = GUICtrlCreateCheckbox("BACKUP Started", 586, 531, 119, 17)
+		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T4_C_BackupStartedClick")
+		Global $W1_T4_C_DailyMsg = GUICtrlCreateCheckbox("Daily Announcement", 32, 502, 145, 17)
+		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T4_C_DailyMsgClick")
+		Global $W1_T4_I_DailyMsg = GUICtrlCreateInput("W1_T4_I_DailyMsg", 195, 500, 444, 22)
+		GUICtrlSetFont(-1, 8, 400, 0, "arial")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T4_I_DailyMsgChange")
+		Global $Label51 = GUICtrlCreateLabel("Hour To Send Msg", 661, 501, 117, 20)
+		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+		GUICtrlSetOnEvent(-1, "Label51Click")
+		Global $W1_T4_I_DailyMsgTriggerHour = GUICtrlCreateInput("7", 782, 500, 47, 22)
+		GUICtrlSetFont(-1, 8, 400, 0, "arial")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T4_I_DailyMsgTriggerHourChange")
+		Global $W1_T4_U_DailyMsgTriggerHour = GUICtrlCreateUpdown($W1_T4_I_DailyMsgTriggerHour)
+		GUICtrlSetLimit(-1, 23, 0)
+		GUICtrlSetOnEvent(-1, "W1_T4_U_DailyMsgTriggerHourChange")
+		Global $Label53 = GUICtrlCreateLabel("(0-23)", 833, 503, 31, 17)
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "Label53Click")
+		Global $Label108 = GUICtrlCreateLabel("Daily & Player Join Subs: \o Player Count, \m Max Players, \t Game Time, \h Days to Next Horde, \n Next Line, \p Online Player Names, \y Joined Player Name, \q Left Player Name", 47, 483, 810, 15)
+		GUICtrlSetFont(-1, 7, 800, 0, "Arial")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "Label108Click")
+		Global $W1_T4_C_PlayerJoin = GUICtrlCreateCheckbox("Player Join (Privt Msg)", 32, 528, 161, 17)
+		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T4_C_PlayerJoinClick")
+		Global $W1_T4_I_PlayerJoinMsg = GUICtrlCreateInput("W1_T4_I_PlayerJoinMsg", 195, 526, 380, 22)
+		GUICtrlSetFont(-1, 8, 400, 0, "arial")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T4_I_PlayerJoinMsgChange")
+		Global $W1_T4_B_CustomChat = GUICtrlCreateButton("Open Custom Chat", 194, 377, 123, 25)
+		GUICtrlSetBkColor(-1, 0x99B4D1)
+		GUICtrlSetOnEvent(-1, "W1_T4_B_CustomChatClick")
+		Global $Label54 = GUICtrlCreateLabel("Create chat commands with custom responses. Opens in your default .txt editor.", 320, 382, 378, 17)
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "Label54Click")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		Global $Group18 = GUICtrlCreateGroup("Online Players Check", 20, 149, 533, 77)
 		GUICtrlSetFont(-1, 10, 400, 0, "arial")
@@ -6198,7 +6527,7 @@ Func GUI_Config($tNewInstallTF = False)
 		Global $Label97 = GUICtrlCreateLabel("Check telnet traffic every", 236, 115, 148, 20)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetOnEvent(-1, "Label97Click")
-		Global $W1_T4_I_TelnetCheckEverySec = GUICtrlCreateInput("0", 389, 112, 49, 24)
+		Global $W1_T4_I_TelnetCheckEverySec = GUICtrlCreateInput("5", 389, 112, 49, 24)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetOnEvent(-1, "W1_T4_I_TelnetCheckEverySecChange")
 		Global $W1_T4_U_TelnetCheckEverySec = GUICtrlCreateUpdown($W1_T4_I_TelnetCheckEverySec)
@@ -6208,8 +6537,28 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetOnEvent(-1, "Label100Click")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
+		Global $Group21 = GUICtrlCreateGroup("Blood Moon Day Announcement", 685, 235, 199, 119)
+		GUICtrlSetFont(-1, 10, 400, 0, "Arial")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		Global $Label106 = GUICtrlCreateLabel("Offset Day by +", 690, 256, 94, 20)
+		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
+		GUICtrlSetOnEvent(-1, "Label106Click")
+		Global $W1_T4_I_BloodMoonOffset = GUICtrlCreateInput("0", 783, 255, 39, 22)
+		GUICtrlSetFont(-1, 8, 400, 0, "arial")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "W1_T4_I_BloodMoonOffsetChange")
+		Global $W1_T4_U_BloodMoonOffset = GUICtrlCreateUpdown($W1_T4_I_BloodMoonOffset)
+		GUICtrlSetLimit(-1, 99, 0)
+		GUICtrlSetOnEvent(-1, "W1_T4_U_BloodMoonOffsetChange")
+		Global $Label107 = GUICtrlCreateLabel("(0-99) days", 826, 260, 56, 17)
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "Label107Click")
+		Global $Label109 = GUICtrlCreateLabel("(Use when horde day msg gets off sync)", 690, 278, 186, 15, $SS_CENTER)
+		GUICtrlSetFont(-1, 7, 800, 0, "Arial")
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+		GUICtrlSetOnEvent(-1, "Label109Click")
+		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		Global $Tab5 = GUICtrlCreateTabItem("5 Discord Webhooks")
-		GUICtrlSetState(-1, $GUI_SHOW)
 		Global $Group3 = GUICtrlCreateGroup("Discord Webhooks", 38, 65, 831, 325)
 		GUICtrlSetFont(-1, 10, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
@@ -6445,7 +6794,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHAllChat4Click")
-		Global $Label105 = GUICtrlCreateLabel("Webhook(s) to send New Day && Horde Messages to:", 57, 525, 330, 20)
+		Global $Label105 = GUICtrlCreateLabel("Webhook(s) to send New Day && Horde Messages to:", 57, 525, 329, 20)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label105Click")
@@ -6550,14 +6899,14 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 8, 400, 0, "Arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_I_SubJoinedChange")
-		Global $Label21 = GUICtrlCreateLabel("(\j) Joined Player Sub-Message ( \p players joined)", 42, 288, 241, 17)
+		Global $Label21 = GUICtrlCreateLabel("(\j) Joined Player Sub-Message ( \y players joined)", 42, 288, 240, 17)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label21Click")
 		Global $W1_T6_I_SubLeft = GUICtrlCreateInput("W1_T6_I_SubLeft", 291, 313, 576, 22)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_I_SubLeftChange")
-		Global $Label67 = GUICtrlCreateLabel("(\l) Left Player Sub-Message ( \p players left)", 70, 315, 214, 17)
+		Global $Label67 = GUICtrlCreateLabel("(\l) Left Player Sub-Message ( \x players left)", 70, 315, 213, 17)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label67Click")
 		Global $Label68 = GUICtrlCreateLabel("(\o) Online Player Sub-Message ( \p online players)", 40, 342, 244, 17)
@@ -6588,7 +6937,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T6_I_HordeDayMsgChange")
-		Global $Label103 = GUICtrlCreateLabel("Hour To Trigger Msg", 644, 406, 129, 20)
+		Global $Label103 = GUICtrlCreateLabel("Hour To Send Msg", 657, 406, 117, 20)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetOnEvent(-1, "Label103Click")
 		Global $W1_T6_I_HordeHour = GUICtrlCreateInput("0", 777, 405, 47, 22)
@@ -7089,16 +7438,45 @@ Func _UpdateWindowConfig()
 	Else
 		GUICtrlSetState($W1_T3_C_EnableRestart, $GUI_UNCHECKED)
 	EndIf
-	If $sInGameAnnounce = "yes" Then
-		GUICtrlSetState($W1_T4_C_AnnounceInGame, $GUI_CHECKED)
-	Else
-		GUICtrlSetState($W1_T4_C_AnnounceInGame, $GUI_UNCHECKED)
-	EndIf
 	If $aServerOnlinePlayerYN = "yes" Then
 		GUICtrlSetState($W1_T4_C_LogOnlinePlayers, $GUI_CHECKED)
 	Else
 		GUICtrlSetState($W1_T4_C_LogOnlinePlayers, $GUI_UNCHECKED)
 	EndIf
+	If $sInGameAnnounceRestartsDailyYN = "yes" Then
+		GUICtrlSetState($W1_T4_C_AnnounceDaily, $GUI_CHECKED)
+	Else
+		GUICtrlSetState($W1_T4_C_AnnounceDaily, $GUI_UNCHECKED)
+	EndIf
+	If $sInGameAnnounceRestartsUpdateYN = "yes" Then
+		GUICtrlSetState($W1_T4_C_AnnounceUpdate, $GUI_CHECKED)
+	Else
+		GUICtrlSetState($W1_T4_C_AnnounceUpdate, $GUI_UNCHECKED)
+	EndIf
+	If $sInGameAnnounceRestartsRemoteYN = "yes" Then
+		GUICtrlSetState($W1_T4_C_AnnounceRemote, $GUI_CHECKED)
+	Else
+		GUICtrlSetState($W1_T4_C_AnnounceRemote, $GUI_UNCHECKED)
+	EndIf
+	If $sInGameAnnounceDailyYN = "yes" Then
+		GUICtrlSetState($W1_T4_C_DailyMsg, $GUI_CHECKED)
+	Else
+		GUICtrlSetState($W1_T4_C_DailyMsg, $GUI_UNCHECKED)
+	EndIf
+	If $sInGameAnnounceBackupYN = "yes" Then
+		GUICtrlSetState($W1_T4_C_BackupStarted, $GUI_CHECKED)
+	Else
+		GUICtrlSetState($W1_T4_C_BackupStarted, $GUI_UNCHECKED)
+	EndIf
+	If $sInGameAnnouncePlayerJoinYN = "yes" Then
+		GUICtrlSetState($W1_T4_C_PlayerJoin, $GUI_CHECKED)
+	Else
+		GUICtrlSetState($W1_T4_C_PlayerJoin, $GUI_UNCHECKED)
+	EndIf
+	GUICtrlSetData($W1_T4_I_BloodMoonOffset, $sAnnounceBloodMoonOffset)
+	GUICtrlSetData($W1_T4_I_DailyMsgTriggerHour, $sInGameAnnounceDailyHour)
+	GUICtrlSetData($W1_T4_I_DailyMsg, $sInGameDailyMessage)
+	GUICtrlSetData($W1_T4_I_PlayerJoinMsg, $sInGamePlayerJoinMessage)
 	Local $tArray = StringSplit($sAnnounceNotifyTime1, ",")
 	If @error Then
 		If $sAnnounceNotifyTime1 = "1" Then GUICtrlSetState($W1_T4_C_Daily01, $GUI_CHECKED)
@@ -7156,12 +7534,13 @@ Func _UpdateWindowConfig()
 	GUICtrlSetData($W1_T4_I_UpdateMins, $sAnnounceNotifyTime2)
 	GUICtrlSetData($W1_T4_I_UpdateRemote, $sAnnounceNotifyTime3)
 	GUICtrlSetData($W1_T4_I_DailyMins, $sAnnounceNotifyTime1)
-	GUICtrlSetData($W1_T4_I_AnnounceDaily, $sInGameDailyMessage)
+	GUICtrlSetData($W1_T4_I_AnnounceDaily, $sInGameDailyRestartMessage)
 	GUICtrlSetData($W1_T4_I_AnnounceRemote, $sInGameRemoteRestartMessage)
 	GUICtrlSetData($W1_T4_I_AnnounceUpdate, $sInGameUpdateMessage)
 	GUICtrlSetData($W1_T4_I_BackupStarted, $aBackupInGame)
 	GUICtrlSetData($W1_T4_I_LogOnlinePlaySeconds, $aServerOnlinePlayerSec)
 	GUICtrlSetData($W1_T4_I_TelnetCheckEverySec, $aTelnetTrafficCheckSec)
+
 	If $aServerDiscord1TTSYN = "yes" Then
 		GUICtrlSetState($W1_T5_C_D1TTS, $GUI_CHECKED)
 	Else
@@ -8168,14 +8547,6 @@ Func W1_T3_R_AppendShortClick()
 EndFunc   ;==>W1_T3_R_AppendShortClick
 Func W1_T3_U_RestartMinuteChange()
 EndFunc   ;==>W1_T3_U_RestartMinuteChange
-Func W1_T4_C_AnnounceInGameClick()
-	If GUICtrlRead($W1_T4_C_AnnounceInGame) = $GUI_CHECKED Then
-		$sInGameAnnounce = "yes"
-	Else
-		$sInGameAnnounce = "no"
-	EndIf
-	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnounce)
-EndFunc   ;==>W1_T4_C_AnnounceInGameClick
 Func _AnnounceDailyCB($tCID, $tTxt)
 	If GUICtrlRead($tCID) = $GUI_CHECKED Then
 		$sAnnounceNotifyTime1 = IniRead($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before DAILY reboot (comma separated 0-60) ###", "1,3,5,10")
@@ -8324,9 +8695,12 @@ EndFunc   ;==>W1_T4_C_Update10Click
 Func W1_T4_C_Update15Click()
 	_AnnounceUpdateCB($W1_T4_C_Update15, "15")
 EndFunc   ;==>W1_T4_C_Update15Click
+Func W1_T4_B_CustomChatClick()
+	ShellExecute($aCustomChatFile)
+EndFunc   ;==>W1_T4_B_CustomChatClick
 Func W1_T4_I_AnnounceDailyChange()
-	$sInGameDailyMessage = GUICtrlRead($W1_T4_I_AnnounceDaily)
-	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement DAILY (\m - minutes) ###", $sInGameDailyMessage)
+	$sInGameDailyRestartMessage = GUICtrlRead($W1_T4_I_AnnounceDaily)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement DAILY RESTART (\m - minutes) ###", $sInGameDailyRestartMessage)
 EndFunc   ;==>W1_T4_I_AnnounceDailyChange
 Func W1_T4_I_AnnounceRemoteChange()
 	$sInGameRemoteRestartMessage = GUICtrlRead($W1_T4_I_AnnounceRemote)
@@ -8356,6 +8730,70 @@ Func W1_T4_I_UpdateRemoteChange()
 	$sAnnounceNotifyTime3 = GUICtrlRead($W1_T4_I_UpdateRemote)
 	IniWrite($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before REMOTE RESTART reboot (comma separated 0-60) ###", $sAnnounceNotifyTime3)
 EndFunc   ;==>W1_T4_I_UpdateRemoteChange
+Func W1_T4_C_AnnounceDailyClick()
+	If GUICtrlRead($W1_T4_C_AnnounceDaily) = $GUI_CHECKED Then
+		$sInGameAnnounceRestartsDailyYN = "yes"
+	Else
+		$sInGameAnnounceRestartsDailyYN = "no"
+	EndIf
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce DAILY RESTARTS messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnounceRestartsDailyYN)
+EndFunc   ;==>W1_T4_C_AnnounceDailyClick
+Func W1_T4_C_AnnounceUpdateClick()
+	If GUICtrlRead($W1_T4_C_AnnounceUpdate) = $GUI_CHECKED Then
+		$sInGameAnnounceRestartsUpdateYN = "yes"
+	Else
+		$sInGameAnnounceRestartsUpdateYN = "no"
+	EndIf
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce UPDATES messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnounceRestartsUpdateYN)
+EndFunc   ;==>W1_T4_C_AnnounceUpdateClick
+Func W1_T4_C_AnnounceRemoteClick()
+	If GUICtrlRead($W1_T4_C_AnnounceRemote) = $GUI_CHECKED Then
+		$sInGameAnnounceRestartsRemoteYN = "yes"
+	Else
+		$sInGameAnnounceRestartsRemoteYN = "no"
+	EndIf
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce REMOTE RESTARTS messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnounceRestartsRemoteYN)
+EndFunc   ;==>W1_T4_C_AnnounceRemoteClick
+Func W1_T4_C_DailyMsgClick()
+	If GUICtrlRead($W1_T4_C_DailyMsg) = $GUI_CHECKED Then
+		$sInGameAnnounceDailyYN = "yes"
+	Else
+		$sInGameAnnounceDailyYN = "no"
+	EndIf
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce DAILY messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnounceDailyYN)
+EndFunc   ;==>W1_T4_C_DailyMsgClick
+Func W1_T4_C_PlayerJoinClick()
+	If GUICtrlRead($W1_T4_C_PlayerJoin) = $GUI_CHECKED Then
+		$sInGameAnnouncePlayerJoinYN = "yes"
+	Else
+		$sInGameAnnouncePlayerJoinYN = "no"
+	EndIf
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce PLAYER JOIN messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnouncePlayerJoinYN)
+EndFunc   ;==>W1_T4_C_PlayerJoinClick
+Func W1_T4_I_BloodMoonOffsetChange()
+	$sAnnounceBloodMoonOffset = GUICtrlRead($W1_T4_I_BloodMoonOffset)
+	IniWrite($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Blood Moon Day Announcement Offset +(0-99) days (Use when horde day msg gets off sync) ###", $sAnnounceBloodMoonOffset)
+EndFunc   ;==>W1_T4_I_BloodMoonOffsetChange
+Func W1_T4_I_DailyMsgTriggerHourChange()
+	$sInGameAnnounceDailyHour = GUICtrlRead($W1_T4_I_DailyMsgTriggerHour)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce DAILY messages in-game Hour to Send? (Requires telnet) (0-23) ###", $sInGameAnnounceDailyHour)
+EndFunc   ;==>W1_T4_I_DailyMsgTriggerHourChange
+Func W1_T4_I_DailyMsgChange()
+	$sInGameDailyMessage = GUICtrlRead($W1_T4_I_DailyMsg)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement DAILY (\m - minutes) ###", $sInGameDailyMessage)
+EndFunc   ;==>W1_T4_I_DailyMsgChange
+Func W1_T4_I_PlayerJoinMsgChange()
+	$sInGamePlayerJoinMessage = GUICtrlRead($W1_T4_I_PlayerJoinMsg)
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement PLAYER JOIN (\o Player Count, \m Max Players, \t Game Time, \h Days to Next Horde, \n Next Line, \p Online Player Names, \y Player Joined Name, \q Player Left Name) ###", $sInGamePlayerJoinMessage)
+EndFunc   ;==>W1_T4_I_PlayerJoinMsgChange
+Func W1_T4_C_BackupStartedClick()
+	If GUICtrlRead($W1_T4_C_BackupStarted) = $GUI_CHECKED Then
+		$sInGameAnnounceBackupYN = "yes"
+	Else
+		$sInGameAnnounceBackupYN = "no"
+	EndIf
+	IniWrite($aIniFile, " --------------- IN-GAME ANNOUNCEMENT CONFIGURATION --------------- ", "Announce BACKUP STARTED messages in-game? (Requires telnet) (yes/no) ###", $sInGameAnnounceBackupYN)
+EndFunc   ;==>W1_T4_C_BackupStartedClick
 Func W1_T5_C_D1TTSClick()
 	If GUICtrlRead($W1_T5_C_D1TTS) = $GUI_CHECKED Then
 		$aServerDiscord1TTSYN = "yes"
@@ -8666,11 +9104,11 @@ Func W1_T6_I_RemoteChange()
 EndFunc   ;==>W1_T6_I_RemoteChange
 Func W1_T6_I_SubJoinedChange()
 	$sDiscordPlayerJoinMsg = GUICtrlRead($W1_T6_I_SubJoined)
-	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Join Player Sub-Message (\p - Player Name(s) of player(s) that joined server, \n Next Line) ###", $sDiscordPlayerJoinMsg)
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Join Player Sub-Message (\y - Player Name(s) of player(s) that joined server, \n Next Line) ###", $sDiscordPlayerJoinMsg)
 EndFunc   ;==>W1_T6_I_SubJoinedChange
 Func W1_T6_I_SubLeftChange()
 	$sDiscordPlayerLeftMsg = GUICtrlRead($W1_T6_I_SubLeft)
-	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Left Player Sub-Message (\p - Player Name(s) of player(s) that left server, \n Next Line) ###", $sDiscordPlayerLeftMsg)
+	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Left Player Sub-Message (\q - Player Name(s) of player(s) that left server, \n Next Line) ###", $sDiscordPlayerLeftMsg)
 EndFunc   ;==>W1_T6_I_SubLeftChange
 Func W1_T6_I_SubOnlinePlayerChange()
 	$sDiscordPlayerOnlineMsg = GUICtrlRead($W1_T6_I_SubOnlinePlayer)
@@ -9274,15 +9712,15 @@ Func W2_B_RestartServer()
 		$aBeginDelayedShutdown = 1
 		_Splash("Restart server with announcements initiated.")
 	ElseIf StringInStr($tR1_UserRadioSettings, "b") Then
-		_Splash("Restarting server with announcement(s) now.", 2500)
 		Local $sRestartMsg = "Admin has requested a server reboot. Server will reboot now."
 		If StringInStr($tR1_UserRadioSettings, "g") Then $sRestartMsg = IniRead($aUtilCFGFile, "CFG", "W2_I2_MsgNowCustom", $sDiscordRemoteRestartMessage)
-		SendInGame($aTelnetIP, $aTelnetPort, $aTelnetPass, $sRestartMsg)
+		_SendInGameMsg($sRestartMsg)
 		If $sUseDiscordBotRestartServer = "yes" Then _SendDiscordStatus($sRestartMsg)
 		If $sUseTwitchBotRestartServer = "yes" Then TwitchMsgLog($sRestartMsg)
+		_Splash("Restarting server with announcement(s) in " & $aRestartServerNowPause & " seconds.", $aRestartServerNowPause * 1000)
 		CloseServer($aTelnetIP, $aTelnetPort, $aTelnetPass, "yes")
 	Else
-		_Splash("Restarting server now.", 2500)
+		_Splash("Restarting server in " & $aRestartServerNowPause & " seconds.", $aRestartServerNowPause * 1000)
 		CloseServer($aTelnetIP, $aTelnetPort, $aTelnetPass, "yes")
 	EndIf
 	If TimerDiff($tTimer8) < 3000 Then Sleep(3000 - TimerDiff($tTimer8))
@@ -9724,3 +10162,79 @@ Func _ErrorCode($tError)
 	Next
 	Return "Error code [" & $tError & "] Not Found."
 EndFunc   ;==>_ErrorCode
+Func _CustomCommandsWriteDefault($tFile)
+	Local $xArray[1]
+	$xArray[0] = '------------------'
+	_ArrayAdd($xArray, ' Custom Chat File')
+	_ArrayAdd($xArray, '------------------')
+	_ArrayAdd($xArray, 'Directions:')
+	_ArrayAdd($xArray, '{Chat Command},{Response}')
+	_ArrayAdd($xArray, '*Note: Command cannot contain a comma, but response can.')
+	_ArrayAdd($xArray, '')
+	_ArrayAdd($xArray, '--- Substitutions ---')
+	_ArrayAdd($xArray, '\o Count of Online Players')
+	_ArrayAdd($xArray, '\m Max Players')
+	_ArrayAdd($xArray, '\t Game Time')
+	_ArrayAdd($xArray, '\h Days to Next Horde')
+	_ArrayAdd($xArray, '\y Names of Players Joined')
+	_ArrayAdd($xArray, '\q Names of Players Left')
+	_ArrayAdd($xArray, '\j Joined Sub-Msg (Discord)')
+	_ArrayAdd($xArray, '\l Left Sub-Msg (Discord)')
+	_ArrayAdd($xArray, '\a Online Players Sub-Msg (Discord)')
+	_ArrayAdd($xArray, '\p Names of all Online Players')
+	_ArrayAdd($xArray, '\c Lists all custom commands below')
+	_ArrayAdd($xArray, '\n Next Line')
+	_ArrayAdd($xArray, '')
+	_ArrayAdd($xArray, 'Common Color commands:')
+	_ArrayAdd($xArray, '[FF8C00] = Orange')
+	_ArrayAdd($xArray, '[FFCC00] = Yellow')
+	_ArrayAdd($xArray, '[00FF00] = Green')
+	_ArrayAdd($xArray, '[FF00FF] = Purple')
+	_ArrayAdd($xArray, '[FF0000] = Red')
+	_ArrayAdd($xArray, '')
+	_ArrayAdd($xArray, 'Examples:')
+	_ArrayAdd($xArray, '/help,[FF8C00]Commands: \c')
+	_ArrayAdd($xArray, '/players,[FF8C00]Players Online (\o) \p')
+	_ArrayAdd($xArray, '/horde,[FF8C00]Next Horde in \h days.')
+	_ArrayAdd($xArray, '/discord,[FF8C00]discord.gg/EU7pzPs')
+	_ArrayAdd($xArray, '/rules,[FF8C00]Don`t be a jerk. No building in POIs')
+	_ArrayAdd($xArray, '/mods,[FF8C00]Alloc`s, Server Tools')
+	_ArrayAdd($xArray, '/map,[FF8C00]px125.com:28082')
+	_ArrayAdd($xArray, '/website,[FF8C00]Phoenix125.com')
+	_ArrayAdd($xArray, '/manager,[FF8C00]7DTDServerUpdateUtility by Phoenix125.com')
+	_ArrayAdd($xArray, '')
+	_ArrayAdd($xArray, '[--- Begin Custom Chat ---]')
+	_ArrayAdd($xArray, '/help,[FF8C00]Commands: \c')
+	_ArrayAdd($xArray, '/players,[FF8C00]Players Online (\o) \p')
+	_ArrayAdd($xArray, '/horde,[FF8C00]Next Horde in \h days.')
+	_FileWriteFromArray($tFile, $xArray)
+EndFunc   ;==>_CustomCommandsWriteDefault
+Func _CustomCommandsRead($tFile)
+	Local $xArray[0]
+	Global $aCustomCommands = ""
+	_FileReadToArray($tFile, $xArray)
+	Global $xCustomCommands[0]
+	Global $xCustomReponses[0]
+	For $t1 = 1 To ($xArray[0] - 1)
+		If StringInStr($xArray[$t1], "[--- Begin Custom Chat ---]") Then
+			For $t2 = ($t1 + 1) To ($xArray[0])
+				Local $tCmd = ""
+				Local $tRpy = ""
+				For $t3 = 1 To StringLen($xArray[$t2])
+					Local $tStr = StringMid($xArray[$t2], $t3, 1)
+					If $tStr = "," Then
+						$tRpy = StringTrimLeft($xArray[$t2], $t3)
+						ExitLoop
+					Else
+						$tCmd &= $tStr
+					EndIf
+				Next
+				If $tCmd <> "" Then
+					_ArrayAdd($xCustomCommands, $tCmd)
+					_ArrayAdd($xCustomReponses, $tRpy, Default, Default, Default, 1)
+					$aCustomCommands &= $tCmd & " "
+				EndIf
+			Next
+		EndIf
+	Next
+EndFunc   ;==>_CustomCommandsRead
