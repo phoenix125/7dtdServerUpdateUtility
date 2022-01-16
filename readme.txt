@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.6.2 (2020-12-24) (Beta and Stable are the same version)
+- Latest version: 7dtdServerUpdateUtility_v2.6.4 (2022-01-15) (Beta and Stable are the same version)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -141,6 +141,18 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2022-01-15) v2.6.4 Added CPU Affinity and minor announcement bug fixes
+- Fixed: Fix announcements when next horde is in 10 days. (Thanks to @LucTussi for reporting)
+- Change: Changed horde is in 1 day, anouncement now says "tomorrow" instead of "in 1 day"
+- Added: CPU Affinity. In the "Advanced" section of the config file... NOT available in in the config window. (Thanks to @Doublee for requesting)
+- Fixed: Images were not showing in config window
+
+(2021-12-09) v2.6.3 A20 Beta compatible. Fixed error when player log in. Still need to fix 
+- Fixed: A20(b218) Line 20845 Error when clicking "Import Settings" from the Config window. (Thanks to @Zee for reporting)
+- Fixed: A20(b218) Error getting server version number fixed.
+- Fixed: Improved reliability of Announcement Intervals in Config
+- Fixed: Line 23939 Error when players are online. (Thanks to @Egdelwonk & @Fervid for reporting)
+
 (2020-12-24) v2.6.2 New In-Game Message features!
 - Added: In-Game Message: Custom Chat Reponses.
 - Added: In-Game Message: Customizable Player Join Message.

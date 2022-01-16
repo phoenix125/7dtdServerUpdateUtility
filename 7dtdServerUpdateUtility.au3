@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.2.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.4.exe
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.6.2.0
+#AutoIt3Wrapper_Res_Fileversion=2.6.4.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.6.2
+#AutoIt3Wrapper_Res_ProductVersion=2.6.4
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -38,6 +38,7 @@
 #include <StringConstants.au3>
 #include <TabConstants.au3>
 #include <TrayConstants.au3>
+#include <WinAPIProc.au3>
 #include <WinAPISysWin.au3>
 #include <WindowsConstants.au3>
 
@@ -46,10 +47,10 @@ Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
 
 ; *** End added by AutoIt3Wrapper ***
 
-$aUtilVerStable = "v2.6.2" ; (2020-12-12)
-$aUtilVerBeta = "v2.6.2" ; (2020-12-12)
+$aUtilVerStable = "v2.6.4" ; (2021-12-09)
+$aUtilVerBeta = "v2.6.4" ; (2021-12-09)
 $aUtilVersion = $aUtilVerStable
-Global $aUtilVerNumber = 11
+Global $aUtilVerNumber = 13
 ; 1 = v2.3.3
 ; 2 = v2.3.4
 ; 3 = v2.5.0
@@ -61,6 +62,8 @@ Global $aUtilVerNumber = 11
 ; 9 = 2.6.0
 ;10 = 2.6.1
 ;11 = 2.6.2
+;12 = 2.6.3
+;13 = 2.6.4
 
 ;**** Directives created by AutoIt3Wrapper_GUI ****
 ;Originally written by Dateranoth for use and modified for 7DTD by Phoenix125.com
@@ -487,6 +490,10 @@ If $aCFGLastVerNumber < 11 Then
 	IniWrite($aIniFile, " --------------- ADVANCED HIDDEN OPTIONS --------------- ", "Restart Now pause (Delay between Restart Now message being sent and Server Reboot) (0-60) seconds ###", $aRestartServerNowPause)
 	$tUpdateINI = True
 EndIf
+If $aCFGLastVerNumber < 13 Then
+	IniWrite($aIniFile, " --------------- ADVANCED HIDDEN OPTIONS --------------- ", "CPU Affinity in Hex (Adds /AFFNITY x to commandline. Ex 0000001 for CPU 0, 000005 For CPU 1&3) ###", "")
+	$tUpdateINI = True
+EndIf
 If $tUpdateINI Then
 	ReadUini($aIniFile, $aLogFile)
 	FileDelete($aIniFile)
@@ -768,10 +775,28 @@ While True ;**** Loop Until Closed ****
 				EndIf
 				$LogTimeStamp = $aServerDirLocal & '\7DaysToDieServer_Data\output_log_dedi' & StringRegExpReplace(_NowCalc(), "[\\\/\: ]", "_") & ".txt"
 				IniWrite($aUtilCFGFile, "CFG", "Last Log Time Stamp", $LogTimeStamp)
-				Local $tRun = "" & $aServerDirLocal & "\" & $aServerEXE & ' -logfile "' & $LogTimeStamp & '" -quit -batchmode -nographics ' & $aServerExtraCMD & " -configfile=" & $aConfigFileTemp & " -dedicated"
+				If $aServerAffinity <> "" Then $aServerAffinity = "/AFFINITY " & $aServerAffinity & " "
+				Local $tRun = @ComSpec & " /c " & 'start "7DaysToDieServer" ' & $aServerAffinity & '"' & $aServerDirLocal & "\" & $aServerEXE & '" -logfile "' & $LogTimeStamp & '" -quit -batchmode -nographics ' & $aServerExtraCMD & " -configfile=" & $aConfigFileTemp & " -dedicated"
 				PurgeLogFile()
 				_ImportServerConfig()
-				$aServerPID = Run($tRun, $aServerDirLocal, @SW_HIDE)
+				Run($tRun, $aServerDirLocal, @SW_HIDE)
+				For $x = 1 To 5
+					Sleep(500)
+					$aServerPID = _CheckForExistingServer() ;kim125er!
+					If $aServerPID > 0 Then ExitLoop
+				Next
+
+;~ 				Local $tReturn = "Not Found"
+;~ 				Local $tProcess = ProcessList($aServerEXE)
+;~ 				For $x = 1 To $tProcess[0][0]
+;~ 					Local $tTmpPID = Number($tProcess[$x][1])
+;~ 					Local $tProcessName = WinGetTitle(_WinGetByPID($tTmpPID))
+;~ 					$tPath = _WinAPI_GetProcessFileName($tTmpPID)
+;~ 					If $tPath = $aServerDirLocal & "\" & $aServerEXE Then
+;~ 						$aServerPID = ProcessExists($tTmpPID)
+;~ 						ExitLoop
+;~ 					EndIf
+;~ 				Next
 				LogWrite(" [Server] **** Server Started **** PID(" & $aServerPID & ")", " [Server] **** Server Started **** PID(" & $aServerPID & ") [" & $tRun & "]")
 				$gWatchdogServerStartTimeCheck = _NowCalc()
 				IniWrite($aUtilCFGFile, "CFG", "Last Server Start", $gWatchdogServerStartTimeCheck)
@@ -786,14 +811,14 @@ While True ;**** Loop Until Closed ****
 				ControlSetText($aSplash, "", "Static1", "Server Started." & @CRLF & @CRLF & "Retrieving server version from log.")
 				Local $sLogPath = $LogTimeStamp
 				Local $sLogPathOpen = FileOpen($sLogPath, 0)
-				Local $sLogRead = StringLeft(FileRead($sLogPathOpen), 2500)
+				Local $sLogRead = StringLeft(FileRead($sLogPathOpen), 10000)
 				$aGameVer = _ArrayToString(_StringBetween($sLogRead, "INF Version: ", " Compatibility Version"))
 				FileClose($sLogPath)
 				If $aGameVer = "-1" Then
 					Sleep(2000)
 					Local $sLogPath = $LogTimeStamp
 					Local $sLogPathOpen = FileOpen($sLogPath, 0)
-					Local $sLogRead = StringLeft(FileRead($sLogPathOpen), 2500)
+					Local $sLogRead = StringLeft(FileRead($sLogPathOpen), 10000)
 					$xGameVer = _StringBetween($sLogRead, "INF Version: ", " Compatibility Version")
 					If @error Then
 						ControlSetText($aSplash, "", "Static1", "Server Started." & @CRLF & @CRLF & "Unable to retrieve server version from log.")
@@ -1446,8 +1471,8 @@ Func _SteamCMDCreate()
 	EndIf
 	Local $tCmd = 'SET steampath=' & $aSteamCMDDir & @CRLF & _
 			'SET gamepath=' & $aServerDirLocal & @CRLF & _
-			'"%steampath%\steamcmd.exe" +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login ' & $tLogin & ' ' & $aSteamCMDPassword & _
-			' +force_install_dir "%gamepath%" +app_update ' & $aSteamAppID & ' ' & $ServExp
+			'"%steampath%\steamcmd.exe" +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +force_install_dir "%gamepath%" +login ' & $tLogin & ' ' & $aSteamCMDPassword & _
+			' +app_update ' & $aSteamAppID & ' ' & $ServExp
 	If $aValidate = "yes" Then
 		$tCmd &= " validate +quit"
 	Else
@@ -1653,7 +1678,7 @@ Func _ImportServerConfig()
 	Local $kMaxPlayers = "}ServerMaxPlayerCount}value=}"
 	Local $kFPServerLoginConfirmationText = "}ServerLoginConfirmationText}value=}"
 	Local $kHordeFreq = "}BloodMoonFrequency}value=}"
-	Local $sConfigPathOpen = FileOpen($sConfigPath, 0)
+	Local $sConfigPathOpen = FileOpen($sConfigPath, 0) ;kim125er!
 	Local $sConfigRead4 = FileRead($sConfigPathOpen)
 	Local $sConfigRead3 = StringRegExpReplace($sConfigRead4, """", "}")
 	Local $sConfigRead2 = StringRegExpReplace($sConfigRead3, "\t", "")
@@ -1740,7 +1765,7 @@ Func _ImportServerConfig()
 		$aServerTelnetReboot = "yes"
 		$aServerRebootReason = $aServerRebootReason & "Terminal window was enabled." & @CRLF
 	EndIf
-	LogWrite(" [Config] Retrieving data from " & $aConfigFile & ".")
+	LogWrite(" [Config] Retrieving data from " & $sConfigPath & ".")
 	LogWrite("", " . . . Server Port = " & $aServerPort)
 	LogWrite("", " . . . Server Name = " & $aServerName)
 	LogWrite("", " . . . Server Telnet Port = " & $aTelnetPort)
@@ -1952,10 +1977,10 @@ Func _SendMsgSubs($tMsg3, $tDest = "D") ; $tDest D = Discord , I = InGame
 		$tMsg4 = StringReplace($tMsg4, "\p", "[None]")
 	EndIf
 	If $tDest = "D" Then $tMsg4 = StringReplace($tMsg4, "\n", @CRLF)
-	$tMsg4 = StringReplace($tMsg4, "0 days", "TODAY")
-	$tMsg4 = StringReplace($tMsg4, "0 day", "TODAY")
+	$tMsg4 = StringReplace($tMsg4, "in 0 days", "TODAY")
+	$tMsg4 = StringReplace($tMsg4, "in 0 day", "TODAY")
 	$tMsg4 = StringReplace($tMsg4, "in TODAY!", "TODAY")
-	$tMsg4 = StringReplace($tMsg4, "1 days", "1 day")
+	$tMsg4 = StringReplace($tMsg4, "in 1 days", "tomorrow")
 
 	Return $tMsg4
 EndFunc   ;==>_SendMsgSubs
@@ -3427,6 +3452,7 @@ Func ReadUini($aIniFile, $sLogFile)
 
 	Global $aSendTelnetMaxAttempts = IniRead($aIniFile, " --------------- ADVANCED HIDDEN OPTIONS --------------- ", "Send Telnet Command: Number of attempts (1-5) ###", $iniCheck)
 	Global $aRestartServerNowPause = IniRead($aIniFile, " --------------- ADVANCED HIDDEN OPTIONS --------------- ", "Restart Now pause (Delay between Restart Now message being sent and Server Reboot) (0-60) seconds ###", $iniCheck)
+	Global $aServerAffinity = IniRead($aIniFile, " --------------- ADVANCED HIDDEN OPTIONS --------------- ", "CPU Affinity in Hex (Adds /AFFNITY x to commandline. Ex 0000001 for CPU 0, 000005 For CPU 1&3) ###", $iniCheck)
 
 	Global $aLogQuantity = IniRead($aIniFile, " --------------- LOG FILE OPTIONS --------------- ", "Number of logs ###", $iniCheck)
 	Global $aValidate = IniRead($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Validate files with SteamCMD update? (yes/no) ###", $iniCheck)
@@ -4274,6 +4300,11 @@ Func ReadUini($aIniFile, $sLogFile)
 	ElseIf $aRestartServerNowPause > 60 Then
 		$aRestartServerNowPause = 60
 	EndIf
+	If $iniCheck = $aServerAffinity Then
+		$aServerAffinity = ""
+		$iIniFail += 1
+		$iIniError = $iIniError & "ServerAffinity, "
+	EndIf
 	If $iniCheck = $aExternalScriptHideYN Then
 		$aExternalScriptHideYN = "no"
 		$iIniFail += 1
@@ -4380,9 +4411,30 @@ Func ReadUini($aIniFile, $sLogFile)
 	$aSteamCMDDir = RemoveInvalidCharacters($aSteamCMDDir)
 	$aSteamCMDDir = RemoveTrailingSlash($aSteamCMDDir)
 	$aConfigFile = RemoveInvalidCharacters($aConfigFile)
-
+	$tReWriteTF = _UpdateAnnouncements()
+	If $tReWriteTF Then UpdateIni($aIniFile)
+	LogWrite("", " . . . Server Folder = " & $aServerDirLocal)
+	LogWrite("", " . . . SteamCMD Folder = " & $aSteamCMDDir)
+	_SteamCMDCommandlineRead()
+	If StringLen($aSteamUpdateCommandline) < 20 Then _SteamCMDCreate()
+	If FileExists($aBackupOutputFolder) = 0 Then DirCreate($aBackupOutputFolder)
+	If $iIniFail > 0 Then
+		iniFileCheck($aIniFile, $iIniFail, $iIniError)
+	EndIf
+EndFunc   ;==>ReadUini
+Func _UpdateAnnouncements()
+	Local $tReWriteTF = False
 	If $sUseDiscordBotRemoteRestart = "yes" Or $sUseDiscordBotDaily = "yes" Or $sUseDiscordBotUpdate = "yes" Or $sUseTwitchBotRemoteRestart = "yes" Or $sUseTwitchBotDaily = "yes" Or _
 			$sUseTwitchBotUpdate = "yes" Or $sInGameAnnounceRestartsUpdateYN = "yes" Or $sInGameAnnounceRestartsDailyYN = "yes" Or $sInGameAnnounceRestartsRemoteYN = "yes" Then
+		$sAnnounceNotifyTime1 = _SortString($sAnnounceNotifyTime1)
+		If @error Then $tReWriteTF = True
+		$sAnnounceNotifyTime2 = _SortString($sAnnounceNotifyTime2)
+		If @error Then $tReWriteTF = True
+		$sAnnounceNotifyTime3 = _SortString($sAnnounceNotifyTime3)
+		If @error Then $tReWriteTF = True
+		$tAnnounceNotifyTime1 = AddZero($sAnnounceNotifyTime1)
+		$tAnnounceNotifyTime2 = AddZero($sAnnounceNotifyTime2)
+		$tAnnounceNotifyTime3 = AddZero($sAnnounceNotifyTime3)
 		Global $aDailyMsgInGame = AnnounceReplaceTime($sAnnounceNotifyTime1, $sInGameDailyRestartMessage)
 		Global $aDailyMsgDiscord = AnnounceReplaceTime($sAnnounceNotifyTime1, $sDiscordDailyMessage)
 		Global $aDailyMsgTwitch = AnnounceReplaceTime($sAnnounceNotifyTime1, $sTwitchDailyMessage)
@@ -4406,15 +4458,8 @@ Func ReadUini($aIniFile, $sLogFile)
 	Else
 		Global $aDelayShutdownTime = 0
 	EndIf
-	LogWrite("", " . . . Server Folder = " & $aServerDirLocal)
-	LogWrite("", " . . . SteamCMD Folder = " & $aSteamCMDDir)
-	_SteamCMDCommandlineRead()
-	If StringLen($aSteamUpdateCommandline) < 20 Then _SteamCMDCreate()
-	If FileExists($aBackupOutputFolder) = 0 Then DirCreate($aBackupOutputFolder)
-	If $iIniFail > 0 Then
-		iniFileCheck($aIniFile, $iIniFail, $iIniError)
-	EndIf
-EndFunc   ;==>ReadUini
+	Return $tReWriteTF
+EndFunc   ;==>_UpdateAnnouncements
 Func _RestartUtil($fQuickRebootTF = True, $tAdmin = False) ; Thanks Yashied!  https://www.autoitscript.com/forum/topic/111215-restart-udf/
 	Local $Pid
 	Local $xArray[13]
@@ -4669,6 +4714,7 @@ Func UpdateIni($aIniFile)
 	FileWriteLine($aIniFile, @CRLF)
 	IniWrite($aIniFile, " --------------- ADVANCED HIDDEN OPTIONS --------------- ", "Send Telnet Command: Number of attempts (1-5) ###", $aSendTelnetMaxAttempts)
 	IniWrite($aIniFile, " --------------- ADVANCED HIDDEN OPTIONS --------------- ", "Restart Now pause (Delay between Restart Now message being sent and Server Reboot) (0-60) seconds ###", $aRestartServerNowPause)
+	IniWrite($aIniFile, " --------------- ADVANCED HIDDEN OPTIONS --------------- ", "CPU Affinity in Hex (Adds /AFFNITY x to commandline. Ex 0000001 for CPU 0, 000005 For CPU 1&3) ###", $aServerAffinity)
 	FileWriteLine($aIniFile, @CRLF)
 	IniWrite($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Validate files with SteamCMD update? (yes/no) ###", $aValidate)
 	IniWrite($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Telnet: Stay Connected (Required for chat and death messaging) (yes/no) ###", $aTelnetStayConnectedYN)
@@ -4982,7 +5028,7 @@ Func TrayUpdateServCheck()
 EndFunc   ;==>TrayUpdateServCheck
 
 Func GetPlayerCount($tSplash)
-	Local $aCMD = "listplayers"
+;~ 	Local $aCMD = "listplayers"
 	$tOnlinePlayerReady = True
 ;~ 	Global $aServerPlayers[2]
 	Global $tOnlinePlayers[4]
@@ -5037,7 +5083,13 @@ Func GetPlayerCount($tSplash)
 			Local $tUser1 = _StringBetween($sMsg[1], ". id=", "pos=")
 			Global $tUserCnt = UBound($tUser1)
 			$aPlayersCount = $tUserCnt
-			Local $tSteamIDArray = _StringBetween($sMsg[1], "steamid=", ",")
+			;			Local $tSteamIDArray = _StringBetween($sMsg[1], "Steam_", ",")
+			Local $tSteamIDArray = _StringBetween($sMsg[1], "Steamid_", ",")
+			If IsArray($tSteamIDArray) Then
+				If UBound($tSteamIDArray) <> $tUserCnt Then ReDim $tSteamIDArray[$tUserCnt]
+			Else
+				Local $tSteamIDArray[$tUserCnt]
+			EndIf
 			Local $tUserAll[$tUserCnt]
 			$tOnlinePlayers[1] = $tOnlinePlayers[1] & "(" & $tUserCnt & ") " & @CRLF
 			$tOnlinePlayers[2] = $tOnlinePlayers[2] & "(" & $tUserCnt & ") "
@@ -5972,7 +6024,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label83Click")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		Global $Pic1 = GUICtrlCreatePic("" & $aFolderTemp & "zombiehorde.jpg""", 614, 193, 274, 165)
+		Global $Pic1 = GUICtrlCreatePic($aFolderTemp & "zombiehorde.jpg", 614, 193, 274, 165)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Pic1Click")
 		Global $Tab2 = GUICtrlCreateTabItem("2 Watchdog")
@@ -6094,7 +6146,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetOnEvent(-1, "W1_T2_I_RestartExcessiveMemoryAmtChange")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		Global $Pic2 = GUICtrlCreatePic("" & $aFolderTemp & "zombiedog.jpg""", 610, 359, 222, 180)
+		Global $Pic2 = GUICtrlCreatePic($aFolderTemp & "zombiedog.jpg", 610, 359, 222, 180)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Pic2Click")
 		Global $Tab3 = GUICtrlCreateTabItem("3 Restarts")
@@ -6311,7 +6363,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T3_R_AppendLongClick")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		Global $Pic3 = GUICtrlCreatePic("" & $aFolderTemp & "zombie1.jpg""", 702, 187, 173, 251)
+		Global $Pic3 = GUICtrlCreatePic($aFolderTemp & "zombie1.jpg", 702, 187, 173, 251)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Pic3Click")
 		Global $Tab4 = GUICtrlCreateTabItem("4 Announcements")
@@ -6512,7 +6564,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 2, "arial")
 		GUICtrlSetOnEvent(-1, "Label92Click")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		Global $Pic6 = GUICtrlCreatePic("" & $aFolderTemp & "zombie6.jpg""", 586, 69, 263, 161)
+		Global $Pic6 = GUICtrlCreatePic($aFolderTemp & "zombie6.jpg", 586, 69, 263, 161)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Pic6Click")
 		Global $Group19 = GUICtrlCreateGroup("Telnet", 20, 63, 533, 83)
@@ -6815,7 +6867,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T5_C_WHHorde4Click")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		Global $Pic4 = GUICtrlCreatePic("" & $aFolderTemp & "zombie2.jpg""", 690, 399, 85, 153)
+		Global $Pic4 = GUICtrlCreatePic($aFolderTemp & "zombie2.jpg", 690, 399, 85, 153)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Pic4Click")
 		Global $Tab6 = GUICtrlCreateTabItem("6 Discord Announcements")
@@ -7141,7 +7193,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T8_B_ExecuteRemoteRestartClick")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		Global $Pic5 = GUICtrlCreatePic("" & $aFolderTemp & "zombie3.jpg""", 696, 117, 125, 353)
+		Global $Pic5 = GUICtrlCreatePic($aFolderTemp & "zombie3.jpg", 696, 117, 125, 353)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Pic5Click")
 		Global $Tab9 = GUICtrlCreateTabItem("9 Future-Proof")
@@ -7183,7 +7235,7 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetOnEvent(-1, "W1_T9_C_RenameModFolderClick")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		Global $Tab10 = GUICtrlCreateTabItem("10 FINISH / SAVE")
-		Global $Pic7 = GUICtrlCreatePic("" & $aFolderTemp & "zombieGroup.jpg""", 104, 337, 637, 197)
+		Global $Pic7 = GUICtrlCreatePic($aFolderTemp & "zombieGroup.jpg", 104, 337, 637, 197)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Pic7Click")
 		Global $Label98 = GUICtrlCreateLabel("Click to restart the utility with your new settings.", 213, 125, 459, 29)
@@ -7970,6 +8022,7 @@ Func W1_T1_B_DIRClick()
 	IniWrite($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", $aServerShort & " DIR ###", $aServerDirLocal)
 EndFunc   ;==>W1_T1_B_DIRClick
 Func W1_T1_B_ImportSettingsClick()
+	Global $sConfigPath = $aServerDirLocal & "\" & $aConfigFile
 	_ImportServerConfig()
 ;~ 	ConfigClose()
 	_Splash("7DTD Config Import Updated.", 750)
@@ -8548,12 +8601,23 @@ EndFunc   ;==>W1_T3_R_AppendShortClick
 Func W1_T3_U_RestartMinuteChange()
 EndFunc   ;==>W1_T3_U_RestartMinuteChange
 Func _AnnounceDailyCB($tCID, $tTxt)
-	If GUICtrlRead($tCID) = $GUI_CHECKED Then
-		$sAnnounceNotifyTime1 = IniRead($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before DAILY reboot (comma separated 0-60) ###", "1,3,5,10")
-		$sAnnounceNotifyTime1 = _SortString($sAnnounceNotifyTime1 & "," & $tTxt)
-	Else
-		$sAnnounceNotifyTime1 = _RemoveFromStringCommaSeparated($sAnnounceNotifyTime1, $tTxt, "0SND")
-	EndIf
+	Local $tChecked = ""
+	If GUICtrlRead($W1_T4_C_Daily01) = $GUI_CHECKED Then $tChecked = "1"
+	If GUICtrlRead($W1_T4_C_Daily02) = $GUI_CHECKED Then $tChecked &= ",2"
+	If GUICtrlRead($W1_T4_C_Daily03) = $GUI_CHECKED Then $tChecked &= ",3"
+	If GUICtrlRead($W1_T4_C_Daily05) = $GUI_CHECKED Then $tChecked &= ",5"
+	If GUICtrlRead($W1_T4_C_Daily10) = $GUI_CHECKED Then $tChecked &= ",10"
+	If GUICtrlRead($W1_T4_C_Daily15) = $GUI_CHECKED Then $tChecked &= ",15"
+	If StringLeft($tChecked, 1) = "," Then $tChecked = StringTrimLeft($tChecked, 1)
+	If $tChecked = "" Then $tChecked = "1"
+	$sAnnounceNotifyTime1 = $tChecked
+	_UpdateAnnouncements()
+;~ 	If GUICtrlRead($tCID) = $GUI_CHECKED Then
+;~ 		$sAnnounceNotifyTime1 = IniRead($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before DAILY reboot (comma separated 0-60) ###", "1,3,5,10")
+;~ 		$sAnnounceNotifyTime1 = _SortString($sAnnounceNotifyTime1 & "," & $tTxt)
+;~ 	Else
+;~ 		$sAnnounceNotifyTime1 = _RemoveFromStringCommaSeparated($sAnnounceNotifyTime1, $tTxt, "0SND")
+;~ 	EndIf
 	GUICtrlSetData($W1_T4_I_DailyMins, $sAnnounceNotifyTime1)
 	IniWrite($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before DAILY reboot (comma separated 0-60) ###", $sAnnounceNotifyTime1)
 EndFunc   ;==>_AnnounceDailyCB
@@ -8584,12 +8648,23 @@ Func W1_T4_C_LogOnlinePlayersClick()
 	IniWrite($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "Check for, and log, online players? (yes/no) ###", $aServerOnlinePlayerYN)
 EndFunc   ;==>W1_T4_C_LogOnlinePlayersClick
 Func _AnnounceRemoteCB($tCID, $tTxt)
-	If GUICtrlRead($tCID) = $GUI_CHECKED Then
-		$sAnnounceNotifyTime3 = IniRead($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before REMOTE RESTART reboot (comma separated 0-60) ###", "1,3,5,10")
-		$sAnnounceNotifyTime3 = _SortString($sAnnounceNotifyTime3 & "," & $tTxt)
-	Else
-		$sAnnounceNotifyTime3 = _RemoveFromStringCommaSeparated($sAnnounceNotifyTime3, $tTxt, "0SND")
-	EndIf
+	Local $tChecked = ""
+	If GUICtrlRead($W1_T4_C_Remote01) = $GUI_CHECKED Then $tChecked = "1"
+	If GUICtrlRead($W1_T4_C_Remote02) = $GUI_CHECKED Then $tChecked &= ",2"
+	If GUICtrlRead($W1_T4_C_Remote03) = $GUI_CHECKED Then $tChecked &= ",3"
+	If GUICtrlRead($W1_T4_C_Remote05) = $GUI_CHECKED Then $tChecked &= ",5"
+	If GUICtrlRead($W1_T4_C_Remote10) = $GUI_CHECKED Then $tChecked &= ",10"
+	If GUICtrlRead($W1_T4_C_Remote15) = $GUI_CHECKED Then $tChecked &= ",15"
+	If StringLeft($tChecked, 1) = "," Then $tChecked = StringTrimLeft($tChecked, 1)
+	If $tChecked = "" Then $tChecked = "1"
+	$sAnnounceNotifyTime3 = $tChecked
+	_UpdateAnnouncements()
+;~ 	If GUICtrlRead($tCID) = $GUI_CHECKED Then
+;~ 		$sAnnounceNotifyTime3 = IniRead($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before REMOTE RESTART reboot (comma separated 0-60) ###", "1,3,5,10")
+;~ 		$sAnnounceNotifyTime3 = _SortString($sAnnounceNotifyTime3 & "," & $tTxt)
+;~ 	Else
+;~ 		$sAnnounceNotifyTime3 = _RemoveFromStringCommaSeparated($sAnnounceNotifyTime3, $tTxt, "0SND")
+;~ 	EndIf
 	GUICtrlSetData($W1_T4_I_UpdateRemote, $sAnnounceNotifyTime3)
 	IniWrite($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before REMOTE RESTART reboot (comma separated 0-60) ###", $sAnnounceNotifyTime3)
 EndFunc   ;==>_AnnounceRemoteCB
@@ -8612,12 +8687,23 @@ Func W1_T4_C_Remote15Click()
 	_AnnounceRemoteCB($W1_T4_C_Remote15, "15")
 EndFunc   ;==>W1_T4_C_Remote15Click
 Func _AnnounceUpdateCB($tCID, $tTxt)
-	If GUICtrlRead($tCID) = $GUI_CHECKED Then
-		$sAnnounceNotifyTime2 = IniRead($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before UPDATES reboot (comma separated 0-60) ###", "1,3,5,10")
-		$sAnnounceNotifyTime2 = _SortString($sAnnounceNotifyTime2 & "," & $tTxt)
-	Else
-		$sAnnounceNotifyTime2 = _RemoveFromStringCommaSeparated($sAnnounceNotifyTime2, $tTxt, "0SND")
-	EndIf
+	Local $tChecked = ""
+	If GUICtrlRead($W1_T4_C_Update01) = $GUI_CHECKED Then $tChecked = "1"
+	If GUICtrlRead($W1_T4_C_Update02) = $GUI_CHECKED Then $tChecked &= ",2"
+	If GUICtrlRead($W1_T4_C_Update03) = $GUI_CHECKED Then $tChecked &= ",3"
+	If GUICtrlRead($W1_T4_C_Update05) = $GUI_CHECKED Then $tChecked &= ",5"
+	If GUICtrlRead($W1_T4_C_Update10) = $GUI_CHECKED Then $tChecked &= ",10"
+	If GUICtrlRead($W1_T4_C_Update15) = $GUI_CHECKED Then $tChecked &= ",15"
+	If StringLeft($tChecked, 1) = "," Then $tChecked = StringTrimLeft($tChecked, 1)
+	If $tChecked = "" Then $tChecked = "1"
+	$sAnnounceNotifyTime2 = $tChecked
+	_UpdateAnnouncements()
+;~ 	If GUICtrlRead($tCID) = $GUI_CHECKED Then
+;~ 		$sAnnounceNotifyTime2 = IniRead($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before UPDATES reboot (comma separated 0-60) ###", "1,3,5,10")
+;~ 		$sAnnounceNotifyTime2 = _SortString($sAnnounceNotifyTime2 & "," & $tTxt)
+;~ 	Else
+;~ 		$sAnnounceNotifyTime2 = _RemoveFromStringCommaSeparated($sAnnounceNotifyTime2, $tTxt, "0SND")
+;~ 	EndIf
 	GUICtrlSetData($W1_T4_I_UpdateMins, $sAnnounceNotifyTime2)
 	IniWrite($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before UPDATES reboot (comma separated 0-60) ###", $sAnnounceNotifyTime2)
 EndFunc   ;==>_AnnounceUpdateCB
@@ -8716,6 +8802,7 @@ Func W1_T4_I_BackupStartedChange()
 EndFunc   ;==>W1_T4_I_BackupStartedChange
 Func W1_T4_I_DailyMinsChange()
 	$sAnnounceNotifyTime1 = GUICtrlRead($W1_T4_I_DailyMins)
+	_UpdateAnnouncements()
 	IniWrite($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before DAILY reboot (comma separated 0-60) ###", $sAnnounceNotifyTime1)
 EndFunc   ;==>W1_T4_I_DailyMinsChange
 Func W1_T4_I_LogOnlinePlaySecondsChange()
@@ -8724,10 +8811,12 @@ Func W1_T4_I_LogOnlinePlaySecondsChange()
 EndFunc   ;==>W1_T4_I_LogOnlinePlaySecondsChange
 Func W1_T4_I_UpdateMinsChange()
 	$sAnnounceNotifyTime2 = GUICtrlRead($W1_T4_I_UpdateMins)
+	_UpdateAnnouncements()
 	IniWrite($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before UPDATES reboot (comma separated 0-60) ###", $sAnnounceNotifyTime2)
 EndFunc   ;==>W1_T4_I_UpdateMinsChange
 Func W1_T4_I_UpdateRemoteChange()
 	$sAnnounceNotifyTime3 = GUICtrlRead($W1_T4_I_UpdateRemote)
+	_UpdateAnnouncements()
 	IniWrite($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before REMOTE RESTART reboot (comma separated 0-60) ###", $sAnnounceNotifyTime3)
 EndFunc   ;==>W1_T4_I_UpdateRemoteChange
 Func W1_T4_C_AnnounceDailyClick()
@@ -10238,3 +10327,22 @@ Func _CustomCommandsRead($tFile)
 		EndIf
 	Next
 EndFunc   ;==>_CustomCommandsRead
+Func _WinGetByPID($iPID, $iArray = 1) ; 0 Will Return 1 Base Array & 1 Will Return The First Window.
+	Local $aError[1] = [0], $aWinList, $sReturn
+	If IsString($iPID) Then
+		$iPID = ProcessExists($iPID)
+	EndIf
+	$aWinList = WinList()
+	For $A = 1 To $aWinList[0][0]
+		If WinGetProcess($aWinList[$A][1]) = $iPID And BitAND(WinGetState($aWinList[$A][1]), 2) Then
+			If $iArray Then
+				Return $aWinList[$A][1]
+			EndIf
+			$sReturn &= $aWinList[$A][1] & Chr(1)
+		EndIf
+	Next
+	If $sReturn Then
+		Return StringSplit(StringTrimRight($sReturn, 1), Chr(1))
+	EndIf
+	Return SetError(1, 0, $aError)
+EndFunc   ;==>_WinGetByPID
