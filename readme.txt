@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.6.4 (2022-01-15) (Beta and Stable are the same version)
+- Latest version: 7dtdServerUpdateUtility_v2.6.5 (2022-01-17) (Beta and Stable are the same version)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -141,6 +141,11 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2022-01-17) v2.6.5 Added CPU Affinity and minor announcement bug fixes
+- Fixed: Fixed issues from v2.6.4 with next horde days annoucements.
+- Added: Disable watchdog is now visible in config GUI window. (Thanks to @BeatyBeatz for suggesting)
+- Added: CPU Affinity is now visible in config GUI window.
+
 (2022-01-15) v2.6.4 Added CPU Affinity and minor announcement bug fixes
 - Fixed: Fix announcements when next horde is in 10 days. (Thanks to @LucTussi for reporting)
 - Change: Changed horde is in 1 day, anouncement now says "tomorrow" instead of "in 1 day"

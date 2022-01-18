@@ -1,0 +1,43 @@
+------------------
+ Custom Chat File
+------------------
+Directions:
+{Chat Command},{Response}
+*Note: Command cannot contain a comma, but response can.
+
+--- Substitutions ---
+\o Count of Online Players
+\m Max Players
+\t Game Time
+\h Days to Next Horde
+\y Names of Players Joined
+\q Names of Players Left
+\j Joined Sub-Msg (Discord)
+\l Left Sub-Msg (Discord)
+\a Online Players Sub-Msg (Discord)
+\p Names of all Online Players
+\c Lists all custom commands below
+\n Next Line
+
+Common Color commands:
+[FF8C00] = Orange
+[FFCC00] = Yellow
+[00FF00] = Green
+[FF00FF] = Purple
+[FF0000] = Red
+
+Examples:
+/help,[FF8C00]Commands: \c
+/players,[FF8C00]Players Online (\o) \p
+/horde,[FF8C00]Next Horde in \h days.
+/discord,[FF8C00]discord.gg/EU7pzPs
+/rules,[FF8C00]Don`t be a jerk. No building in POIs
+/mods,[FF8C00]Alloc`s, Server Tools
+/map,[FF8C00]px125.com:28082
+/website,[FF8C00]Phoenix125.com
+/manager,[FF8C00]7DTDServerUpdateUtility by Phoenix125.com
+
+[--- Begin Custom Chat ---]
+/help,[FF8C00]Commands: \c
+/players,[FF8C00]Players Online (\o) \p
+/horde,[FF8C00]Next Horde in \h days.

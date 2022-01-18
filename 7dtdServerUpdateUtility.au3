@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.4.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.5.exe
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.6.4.0
+#AutoIt3Wrapper_Res_Fileversion=2.6.5.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.6.4
+#AutoIt3Wrapper_Res_ProductVersion=2.6.5
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -47,10 +47,10 @@ Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
 
 ; *** End added by AutoIt3Wrapper ***
 
-$aUtilVerStable = "v2.6.4" ; (2021-12-09)
-$aUtilVerBeta = "v2.6.4" ; (2021-12-09)
+$aUtilVerStable = "v2.6.5" ; (2022-01-17)
+$aUtilVerBeta = "v2.6.5" ; (2022-01-17)
 $aUtilVersion = $aUtilVerStable
-Global $aUtilVerNumber = 13
+Global $aUtilVerNumber = 14
 ; 1 = v2.3.3
 ; 2 = v2.3.4
 ; 3 = v2.5.0
@@ -64,6 +64,7 @@ Global $aUtilVerNumber = 13
 ;11 = 2.6.2
 ;12 = 2.6.3
 ;13 = 2.6.4
+;14 = 2.6.5
 
 ;**** Directives created by AutoIt3Wrapper_GUI ****
 ;Originally written by Dateranoth for use and modified for 7DTD by Phoenix125.com
@@ -507,6 +508,7 @@ OnAutoItExitRegister("Gamercide")
 Global $aSplash = _Splash("7dtdServerUpdateUtility started.")
 LogWrite(" ============================ " & $aUtilityVer & " Started ============================")
 FileDelete($aUtilUpdateFile)
+If FileExists($aIniFile) Then _FileWriteToLine($aIniFile, 3, "Version  :  " & $aUtilityVer, True)
 Global $aServerPID = PIDReadServer($aSplash)
 Global $gWatchdogServerStartTimeCheck = IniRead($aUtilCFGFile, "CFG", "Last Server Start", "no")
 If $gWatchdogServerStartTimeCheck = "no" Then
@@ -782,7 +784,7 @@ While True ;**** Loop Until Closed ****
 				Run($tRun, $aServerDirLocal, @SW_HIDE)
 				For $x = 1 To 5
 					Sleep(500)
-					$aServerPID = _CheckForExistingServer() ;kim125er!
+					$aServerPID = _CheckForExistingServer()
 					If $aServerPID > 0 Then ExitLoop
 				Next
 
@@ -1678,7 +1680,7 @@ Func _ImportServerConfig()
 	Local $kMaxPlayers = "}ServerMaxPlayerCount}value=}"
 	Local $kFPServerLoginConfirmationText = "}ServerLoginConfirmationText}value=}"
 	Local $kHordeFreq = "}BloodMoonFrequency}value=}"
-	Local $sConfigPathOpen = FileOpen($sConfigPath, 0) ;kim125er!
+	Local $sConfigPathOpen = FileOpen($sConfigPath, 0)
 	Local $sConfigRead4 = FileRead($sConfigPathOpen)
 	Local $sConfigRead3 = StringRegExpReplace($sConfigRead4, """", "}")
 	Local $sConfigRead2 = StringRegExpReplace($sConfigRead3, "\t", "")
@@ -1976,12 +1978,45 @@ Func _SendMsgSubs($tMsg3, $tDest = "D") ; $tDest D = Discord , I = InGame
 	Else
 		$tMsg4 = StringReplace($tMsg4, "\p", "[None]")
 	EndIf
-	If $tDest = "D" Then $tMsg4 = StringReplace($tMsg4, "\n", @CRLF)
-	$tMsg4 = StringReplace($tMsg4, "in 0 days", "TODAY")
-	$tMsg4 = StringReplace($tMsg4, "in 0 day", "TODAY")
-	$tMsg4 = StringReplace($tMsg4, "in TODAY!", "TODAY")
-	$tMsg4 = StringReplace($tMsg4, "in 1 days", "tomorrow")
-
+	If $tDest = "D" Then $tMsg4 = StringReplace($tMsg4, "\n", @CRLF) ;kim125er!
+	If StringInStr($tMsg4, "10 day") Or StringInStr($tMsg4, "11 day") _
+			Or StringInStr($tMsg4, "20 day") Or StringInStr($tMsg4, "21 day") _
+			Or StringInStr($tMsg4, "30 day") Or StringInStr($tMsg4, "31 day") _
+			Or StringInStr($tMsg4, "40 day") Or StringInStr($tMsg4, "41 day") _
+			Or StringInStr($tMsg4, "50 day") Or StringInStr($tMsg4, "51 day") _
+			Or StringInStr($tMsg4, "60 day") Or StringInStr($tMsg4, "61 day") _
+			Or StringInStr($tMsg4, "70 day") Or StringInStr($tMsg4, "71 day") _
+			Or StringInStr($tMsg4, "80 day") Or StringInStr($tMsg4, "81 day") _
+			Or StringInStr($tMsg4, "90 day") Or StringInStr($tMsg4, "91 day") _
+			Or StringInStr($tMsg4, "100 day") Or StringInStr($tMsg4, "100 day") _
+			Or StringInStr($tMsg4, "110 day") Or StringInStr($tMsg4, "110 day") Then
+	Else
+		$tMsg4 = StringReplace($tMsg4, "0 days", "TODAY")
+		$tMsg4 = StringReplace($tMsg4, "0 day", "TODAY")
+		$tMsg4 = StringReplace($tMsg4, "in TODAY", "TODAY")
+		$tMsg4 = StringReplace($tMsg4, "1 days", "tomorrow")
+		$tMsg4 = StringReplace($tMsg4, "1 day", "tomorrow")
+		$tMsg4 = StringReplace($tMsg4, "intomorrow", "tomorrow")
+		$tMsg4 = StringReplace($tMsg4, "in tomorrow", "tomorrow")
+	EndIf
+;~ 	If StringInStr($tMsg4, "10 day") Then
+;~ 	Else
+;~ 		$tMsg4 = StringReplace($tMsg4, " 0 days", " TODAY")
+;~ 		$tMsg4 = StringReplace($tMsg4, " 0 day", " TODAY")
+;~ 		$tMsg4 = StringReplace($tMsg4, "*0 days", "*TODAY")
+;~ 		$tMsg4 = StringReplace($tMsg4, "*0 day", "*TODAY")
+;~ 		$tMsg4 = StringReplace($tMsg4, ":0 days", ":TODAY")
+;~ 		$tMsg4 = StringReplace($tMsg4, ":0 day", ":TODAY")
+;~ 		$tMsg4 = StringReplace($tMsg4, "in TODAY", "TODAY")
+;~ 		$tMsg4 = StringReplace($tMsg4, " 1 days", " tomorrow")
+;~ 		$tMsg4 = StringReplace($tMsg4, " 1 day", " tomorrow")
+;~ 		$tMsg4 = StringReplace($tMsg4, "*1 days", "*tomorrow")
+;~ 		$tMsg4 = StringReplace($tMsg4, "*1 day", "*tomorrow")
+;~ 		$tMsg4 = StringReplace($tMsg4, ":1 days", ":tomorrow")
+;~ 		$tMsg4 = StringReplace($tMsg4, ":1 day", ":tomorrow")
+;~ 		$tMsg4 = StringReplace($tMsg4, "intomorrow", "tomorrow")
+;~ 		$tMsg4 = StringReplace($tMsg4, "in tomorrow", "tomorrow")
+;~ 	EndIf
 	Return $tMsg4
 EndFunc   ;==>_SendMsgSubs
 Func _SendDiscordPlayer()
@@ -3863,12 +3898,12 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniError = $iIniError & "InGameRemoteRestartMessage, "
 	EndIf
 	If $iniCheck = $sInGameDailyMessage Then
-		$sInGameDailyMessage = "[FF8C00]Next Horde: \h days Players: \o"
+		$sInGameDailyMessage = "[FF8C00]Next Horde: \h days. Players: \o"
 		$iIniFail += 1
 		$iIniError = $iIniError & "InGameDailyMessage, "
 	EndIf
 	If $iniCheck = $sInGamePlayerJoinMessage Then
-		$sInGamePlayerJoinMessage = "[FF8C00]Welcome \y! Next Horde: \h days Players: \o"
+		$sInGamePlayerJoinMessage = "[FF8C00]Welcome \y! Next Horde: \h days. Players: \o"
 		$iIniFail += 1
 		$iIniError = $iIniError & "InGamePlayerJoinMessage, "
 	EndIf
@@ -5763,11 +5798,18 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T1_I_SteamPasswordChange")
-		Global $W1_T1_E_Commandline = GUICtrlCreateEdit("", 122, 276, 471, 74, BitOR($ES_AUTOVSCROLL, $ES_AUTOHSCROLL, $ES_WANTRETURN))
+		Global $W1_T1_E_Commandline = GUICtrlCreateEdit("", 122, 276, 349, 74, BitOR($ES_AUTOVSCROLL, $ES_AUTOHSCROLL, $ES_WANTRETURN))
 		GUICtrlSetData(-1, "Edit3")
 		GUICtrlSetFont(-1, 8, 400, 0, "arial")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T1_E_CommandlineChange")
+		Global $W1_T1_G_CPUAffinity = GUICtrlCreateGroup("CPU Affinity", 480, 278, 113, 73)
+		Global $W1_T1_I_CPUAffinity = GUICtrlCreateInput("", 486, 299, 101, 24)
+		GUICtrlSetOnEvent(-1, "W1_T1_I_CPUAffinityChange")
+		Global $W1_T1_L_CPUAffinity = GUICtrlCreateLabel("HEX: ex. 000003", 486, 327, 101, 20)
+		GUICtrlSetOnEvent(-1, "W1_T1_L_CPUAffinityClick")
+		GUICtrlCreateGroup("", -99, -99, 1, 1)
+		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		Global $Label32 = GUICtrlCreateLabel("Username", 125, 249, 67, 20)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
@@ -6056,29 +6098,29 @@ Func GUI_Config($tNewInstallTF = False)
 		Global $W1_T2_U_FailedResponse = GUICtrlCreateUpdown($W1_T2_I_FailedResponses)
 		GUICtrlSetLimit(-1, 10, 1)
 		GUICtrlSetOnEvent(-1, "W1_T2_U_FailedResponseChange")
-		Global $W1_T2_C_UseQuery = GUICtrlCreateCheckbox("Use QUERY PORT to check if server is alive", 97, 235, 287, 17)
+		Global $W1_T2_C_UseQuery = GUICtrlCreateCheckbox("Use QUERY PORT to check if server is alive", 61, 213, 287, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T2_C_UseQueryClick")
-		Global $W1_T2_I_QueryIP = GUICtrlCreateInput("127.0.0.1", 453, 231, 86, 24)
+		Global $W1_T2_I_QueryIP = GUICtrlCreateInput("127.0.0.1", 417, 209, 86, 24)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T2_I_QueryIPChange")
-		Global $W1_T2_I_QueryCheckEvery = GUICtrlCreateInput("0", 651, 230, 49, 24)
+		Global $W1_T2_I_QueryCheckEvery = GUICtrlCreateInput("0", 615, 208, 49, 24)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T2_I_QueryCheckEveryChange")
 		Global $W1_T2_U_QueryCheck = GUICtrlCreateUpdown($W1_T2_I_QueryCheckEvery)
 		GUICtrlSetLimit(-1, 900, 30)
 		GUICtrlSetOnEvent(-1, "W1_T2_U_QueryCheckChange")
-		Global $W1_T2_C_UseTelnet = GUICtrlCreateCheckbox("Use TELNET to check if server is alive", 97, 268, 277, 17)
+		Global $W1_T2_C_UseTelnet = GUICtrlCreateCheckbox("Use TELNET to check if server is alive", 61, 246, 277, 17)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T2_C_UseTelnetClick")
-		Global $W1_T2_I_TelnetIP = GUICtrlCreateInput("127.0.0.1", 453, 264, 86, 24)
+		Global $W1_T2_I_TelnetIP = GUICtrlCreateInput("127.0.0.1", 417, 242, 86, 24)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T2_I_TelnetIPChange")
-		Global $W1_T2_I_TelnetCheckEvery = GUICtrlCreateInput("0", 651, 263, 49, 24)
+		Global $W1_T2_I_TelnetCheckEvery = GUICtrlCreateInput("0", 615, 241, 49, 24)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "W1_T2_I_TelnetCheckEveryChange")
 		Global $W1_T2_U_TelnetCheck = GUICtrlCreateUpdown($W1_T2_I_TelnetCheckEvery)
@@ -6104,30 +6146,30 @@ Func GUI_Config($tNewInstallTF = False)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label38Click")
-		Global $Label39 = GUICtrlCreateLabel("Query IP", 394, 235, 55, 20)
+		Global $Label39 = GUICtrlCreateLabel("Query IP", 358, 213, 55, 20)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label39Click")
-		Global $Label40 = GUICtrlCreateLabel("Check Every", 570, 233, 80, 20)
+		Global $Label40 = GUICtrlCreateLabel("Check Every", 534, 211, 80, 20)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label40Click")
-		Global $Label41 = GUICtrlCreateLabel("seconds (30-900)", 708, 233, 104, 20)
+		Global $Label41 = GUICtrlCreateLabel("seconds (30-900)", 672, 211, 104, 20)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label41Click")
-		Global $Label42 = GUICtrlCreateLabel("Telnet IP", 394, 268, 57, 20)
+		Global $Label42 = GUICtrlCreateLabel("Telnet IP", 358, 246, 57, 20)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label42Click")
-		Global $Label43 = GUICtrlCreateLabel("Check Every", 570, 266, 80, 20)
+		Global $Label43 = GUICtrlCreateLabel("Check Every", 534, 244, 80, 20)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label43Click")
-		Global $Label44 = GUICtrlCreateLabel("seconds (30-900)", 708, 266, 106, 20)
+		Global $Label44 = GUICtrlCreateLabel("seconds (30-900)", 672, 244, 106, 20)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 		GUICtrlSetOnEvent(-1, "Label44Click")
-		Global $Label101 = GUICtrlCreateLabel("Used when [monitor all telnet traffic] is disabled", 114, 290, 279, 20)
+		Global $Label101 = GUICtrlCreateLabel("Used when [monitor all telnet traffic] is disabled", 78, 268, 279, 20)
 		GUICtrlSetFont(-1, 10, 400, 2, "arial")
 		GUICtrlSetOnEvent(-1, "Label101Click")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
@@ -6145,6 +6187,9 @@ Func GUI_Config($tNewInstallTF = False)
 		Global $W1_T2_I_RestartExcessiveMemoryAmt = GUICtrlCreateInput("W1_T2_I_RestartExcessiveMemoryAmt", 216, 483, 137, 24)
 		GUICtrlSetFont(-1, 10, 400, 0, "MS Sans Serif")
 		GUICtrlSetOnEvent(-1, "W1_T2_I_RestartExcessiveMemoryAmtChange")
+		GUICtrlCreateGroup("", -99, -99, 1, 1)
+		Global $W1_T2_C_DisableWatchdog = GUICtrlCreateCheckbox("Disable Watchdog. WARNING! Server will shutdown but NOT RESTART. You must use other script or program to restart server.", 61, 304, 763, 21)
+		GUICtrlSetOnEvent(-1, "W1_T2_C_DisableWatchdogClick")
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		Global $Pic2 = GUICtrlCreatePic($aFolderTemp & "zombiedog.jpg", 610, 359, 222, 180)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
@@ -7370,6 +7415,7 @@ Func _UpdateWindowConfig()
 		GUICtrlSetState($W1_T1_R_Validate, $GUI_CHECKED)
 	EndIf
 	GUICtrlSetData($W1_T1_E_Commandline, $aSteamUpdateCommandline)
+	GUICtrlSetData($W1_T1_I_CPUAffinity, $aServerAffinity)
 	GUICtrlSetData($W1_T2_I_RestartExcessiveMemoryAmt, $aExMemAmt)
 	If $aExMemRestart = "yes" Then
 		GUICtrlSetState($W1_T2_C_RestartExcessiveMemory, $GUI_CHECKED)
@@ -7402,6 +7448,11 @@ Func _UpdateWindowConfig()
 		GUICtrlSetState($W1_T2_C_UseTelnet, $GUI_CHECKED)
 	Else
 		GUICtrlSetState($W1_T2_C_UseTelnet, $GUI_UNCHECKED)
+	EndIf
+	If $aDisableWatchdog = "yes" Then
+		GUICtrlSetState($W1_T2_C_DisableWatchdog, $GUI_CHECKED)
+	Else
+		GUICtrlSetState($W1_T2_C_DisableWatchdog, $GUI_UNCHECKED)
 	EndIf
 	GUICtrlSetData($W1_T2_E_PauseForMapGeneration, $aWatchdogWaitServerUpdate)
 	GUICtrlSetData($W1_T2_I_QueryCheckEvery, $aQueryCheckSec)
@@ -8211,6 +8262,9 @@ Func W1_T1_I_BackupOutFolderChange()
 	GUICtrlSetData($tCtrlID, $aBackupOutputFolder)
 	IniWrite($aIniFile, " --------------- BACKUP --------------- ", "Output folder ###", $aBackupOutputFolder)
 EndFunc   ;==>W1_T1_I_BackupOutFolderChange
+Func W1_T1_L_CPUAffinityClick()
+	ShellExecute("https://bitsum.com/tools/cpu-affinity-calculator/")
+EndFunc   ;==>W1_T1_L_CPUAffinityClick
 Func W1_T1_I_ConfigFileChange()
 	Local $tCtrlID = $W1_T1_I_ConfigFile
 	$aConfigFile = GUICtrlRead($tCtrlID)
@@ -8255,6 +8309,12 @@ Func W1_T1_I_SteamUsernameChange()
 	_SteamCMDCommandlineWrite()
 	GUICtrlSetData($W1_T1_E_Commandline, $aSteamUpdateCommandline)
 EndFunc   ;==>W1_T1_I_SteamUsernameChange
+Func W1_T1_I_CPUAffinityChange()
+	$aServerAffinity = GUICtrlRead($W1_T1_I_CPUAffinity)
+	If $aServerAffinity = "(optional)" Then $aServerAffinity = ""
+	IniWrite($aIniFile, " --------------- ADVANCED HIDDEN OPTIONS --------------- ", "CPU Affinity in Hex (Adds /AFFNITY x to commandline. Ex 0000001 for CPU 0, 000005 For CPU 1&3) ###", $aServerAffinity)
+	GUICtrlSetData($W1_T1_I_CPUAffinity, $aServerAffinity)
+EndFunc   ;==>W1_T1_I_CPUAffinityChange
 Func W1_T1_I_UpdateMinutesChange()
 	$aUpdateCheckInterval = GUICtrlRead($W1_T1_I_UpdateMinutes)
 	IniWrite($aIniFile, " --------------- CHECK FOR UPDATE --------------- ", "Update check interval in Minutes (05-59) ###", $aUpdateCheckInterval)
@@ -8332,6 +8392,14 @@ Func W1_T2_C_UseTelnetClick()
 	EndIf
 	IniWrite($aIniFile, " --------------- KEEP ALIVE WATCHDOG ---------------", "Use telnet to check if server is alive? (yes/no) ###", $aTelnetCheckYN)
 EndFunc   ;==>W1_T2_C_UseTelnetClick
+Func W1_T2_C_DisableWatchdogClick()
+	If GUICtrlRead($W1_T2_C_DisableWatchdog) = $GUI_CHECKED Then
+		$aDisableWatchdog = "yes"
+	Else
+		$aDisableWatchdog = "no"
+	EndIf
+	IniWrite($aIniFile, " --------------- KEEP ALIVE WATCHDOG ---------------", "Disable watchdog. Util will NOT start server (but can shut it down)? (yes/no) ###", $aDisableWatchdog)
+EndFunc   ;==>W1_T2_C_DisableWatchdogClick
 Func W1_T2_E_PauseForMapGenerationChange()
 	$aWatchdogWaitServerUpdate = GUICtrlRead($W1_T2_E_PauseForMapGeneration)
 	IniWrite($aIniFile, " --------------- KEEP ALIVE WATCHDOG ---------------", "Pause watchdog for _ minutes after server updated to allow map generation (1-360) ###", $aWatchdogWaitServerUpdate)
