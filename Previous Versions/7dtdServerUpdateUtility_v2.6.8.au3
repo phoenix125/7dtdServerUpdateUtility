@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.7.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.8.exe
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.6.7.0
+#AutoIt3Wrapper_Res_Fileversion=2.6.8.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.6.7
+#AutoIt3Wrapper_Res_ProductVersion=2.6.8
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -47,8 +47,8 @@ Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
 
 ; *** End added by AutoIt3Wrapper ***
 
-$aUtilVerStable = "v2.6.7" ; (2023-07-01)
-$aUtilVerBeta = "v2.6.7" ; (2023-07-01)
+$aUtilVerStable = "v2.6.8" ; (2023-07-01)
+$aUtilVerBeta = "v2.6.8" ; (2023-07-01)
 $aUtilVersion = $aUtilVerStable
 Global $aUtilVerNumber = 16
 ; 1 = v2.3.3
@@ -67,6 +67,7 @@ Global $aUtilVerNumber = 16
 ;14 = 2.6.5
 ;15 = 2.6.6
 ;16 = 2.6.7
+;17 = 2.6.8
 
 ;**** Directives created by AutoIt3Wrapper_GUI ****
 ;Originally written by Dateranoth for use and modified for 7DTD by Phoenix125.com
@@ -1889,7 +1890,7 @@ Func _QueryCheck($tRestart1 = True)
 	Local $tDiffStart = _DateDiff('n', $gWatchdogServerStartTimeCheck, _NowCalc())
 	If $tDiffUpdate <= $aWatchdogWaitServerUpdate Then
 		$tSkipUpdateCheckTF = True
-		Local $tTxt = IntInt($aWatchdogWaitServerUpdate - $tDiffUpdate)
+		Local $tTxt = Int($aWatchdogWaitServerUpdate - $tDiffUpdate)
 		If $tTxt = 0 Then $tTxt = "<1"
 		If $tRestart1 Then LogWrite("", " [Query ] KeepAlive check SKIPPED due to server update: " & $tTxt & " minute(s) remain.")
 	EndIf

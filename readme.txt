@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.6.7 (2023-07-13) (Beta and Stable are the same version)
+- Latest version: 7dtdServerUpdateUtility_v2.6.8 (2023-07-13) (Beta and Stable are the same version)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -141,6 +141,9 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2023-07-13) v2.6.8 Fixed error Line 22456
+- Fixed: Unknown function name error in Line 22456.  (Thanks to @BloodRven for reporting!)
+
 (2023-07-13) v2.6.7 Fixed Watchdog server restarts and added Discord announcements for it
 - Fixed: Query & telnet Watchdog was detecting server crashes but often failing to restart the server.  It is now fixed.
 - Added: Discord: Watchdog can announce when a server crash is first detected and when it peforms the restart.

@@ -47,10 +47,10 @@ Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
 
 ; *** End added by AutoIt3Wrapper ***
 
-$aUtilVerStable = "v2.6.8" ; (2023-07-01)
-$aUtilVerBeta = "v2.6.8" ; (2023-07-01)
+$aUtilVerStable = "v2.6.8" ; (2023-07-14)
+$aUtilVerBeta = "v2.6.8" ; (2023-07-14)
 $aUtilVersion = $aUtilVerStable
-Global $aUtilVerNumber = 16
+Global $aUtilVerNumber = 17
 ; 1 = v2.3.3
 ; 2 = v2.3.4
 ; 3 = v2.5.0
