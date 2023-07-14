@@ -1,12 +1,12 @@
 #Region
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.5.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.6.exe
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.6.5.0
+#AutoIt3Wrapper_Res_Fileversion=2.6.6.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.6.5
+#AutoIt3Wrapper_Res_ProductVersion=2.6.6
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -20785,10 +20785,11 @@ EndFunc
 #EndRegion Internal Functions
 Opt("GUIOnEventMode", 1)
 Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
-$aUtilVerStable = "v2.6.5"
-$aUtilVerBeta = "v2.6.5"
+$aUtilVerStable = "v2.6.6"
+$aUtilVerBeta = "v2.6.6"
 $aUtilVersion = $aUtilVerStable
-Global $aUtilVerNumber = 14
+Global $aUtilVerNumber = 15
+Global $aServerNameVer, $aGameName, $aSplash, $aRestartDaily, $aRestartDays, $aRestartHours, $aRestartMin, $aBeginDelayedShutdown, $aServerPID, $aQueryYN, $gWatchdogServerStartTimeCheck, $aExMemAmt, $aExMemRestart, $aTimeCheck1, $aServerName
 Global Const $aUtilName = "7dtdServerUpdateUtility"
 Global Const $aServerEXE = "7DaysToDieServer.exe"
 Global Const $aServerShort = "7DTD"
@@ -21452,7 +21453,7 @@ Local $tRun = @ComSpec & " /c " & 'start "7DaysToDieServer" ' & $aServerAffinity
 PurgeLogFile()
 _ImportServerConfig()
 Run($tRun, $aServerDirLocal, @SW_HIDE)
-For $x = 1 To 5
+For $x = 1 To 10
 Sleep(500)
 $aServerPID = _CheckForExistingServer()
 If $aServerPID > 0 Then ExitLoop
@@ -23112,56 +23113,60 @@ $aReturn[1] = $hBuildID
 Return $aReturn
 EndFunc
 Func GetLatestVersion($sCmdDir)
-$hBuildID = "0"
+Local $hBuildID = "0"
 Local $aReturn[2] = [False, ""]
-DirRemove($sCmdDir & "\appcache", 1)
-DirRemove($sCmdDir & "\depotcache", 1)
-$sAppInfoTemp = "app_info_" & StringRegExpReplace(_NowCalc(), "[\\\/\: ]", "_") & ".tmp"
-$aSteamUpdateCheck = '"' & @ComSpec & '" /c "' & $sCmdDir & "\steamcmd.exe"" +login anonymous +app_info_update 1 +app_info_print " & $aSteamAppID & " +app_info_print " & $aSteamAppID & " +app_info_print " & $aSteamAppID & " +exit > " & $sAppInfoTemp
-RunWait($aSteamUpdateCheck, $aSteamCMDDir, @SW_MINIMIZE)
-Local Const $sFilePath = $sCmdDir & "\" & $sAppInfoTemp
-Local $hFileOpen = FileOpen($sFilePath, 0)
-Local $hFileRead1 = FileRead($hFileOpen)
-If $hFileOpen = -1 Then
-$aReturn[0] = False
-LogWrite(" [Update] SteamCMD update check FAILED to create update file. Skipping this update check.")
-Else
+$aSteamBranch = $aServerVer
+Local $aSteamUpdateCheck = 'curl https://api.steamcmd.net/v1/info/' & $aSteamAppID
+LogWrite("", " [Update] Getting latest buildID: " & $aSteamUpdateCheck)
+Local $hFileRead1 = _getHTTPOutput($aSteamUpdateCheck)
+$hFileRead1 = StringReplace($hFileRead1, @CRLF, "")
+$hFileRead1 = StringReplace($hFileRead1, @TAB, "")
+$hFileRead1 = StringReplace($hFileRead1, " ", "")
 If StringInStr($hFileRead1, "buildid") > 0 Then
-Local $hFileReadArray = _StringBetween($hFileRead1, "branches", "AppID")
-Local $hFileRead = _ArrayToString($hFileReadArray)
-Local $hString1 = _StringBetween($hFileRead, $aServerVer, "timeupdated")
-If @error Then
-LogWrite(" [Update] ERROR!!! " & $aServerVer & " branch not found by SteamCMD")
-SplashOff()
-For $x1 = 0 To 5
-$tSplash = _Splash("ERROR! " & $aServerVer & " branch not found by SteamCMD.", 0, 300, 75)
-Sleep(850)
-ControlSetText($tSplash, "", "Static1", "")
-Sleep(150)
+Local $tLoc = StringInStr($hFileRead1, '"Branches"') + 10
+Local $hString1 = StringTrimLeft($hFileRead1, $tLoc)
+Local $tTxt = StringReplace($hString1, '{"', '') / 2
+Local $tCount = @extended - 1
+Local $hString2 = $hString1
+For $ti = 0 To $tCount
+Local $tLoc = StringInStr($hString2, '"')
+If $tLoc > 1 Then $hString2 = StringTrimLeft($hString2, $tLoc - 1)
+If StringLeft($hString2, 1) = '"' Then
+$hString2 = StringTrimLeft($hString2, 1)
+Local $hBranch = StringLeft($hString2, StringInStr($hString2, '"') - 1)
+$hString2 = StringTrimLeft($hString2, StringLen($hBranch) + 3)
+Local $hString3 = StringLeft($hString2, StringInStr($hString2, '"}') + 1)
+$hString3 = StringTrimLeft($hString3, StringInStr($hString3, '"Buildid":"') + 10)
+Local $hBuildID1 = StringLeft($hString3, StringInStr($hString3, '"') - 1)
+$hString2 = StringTrimLeft($hString2, StringInStr($hString2, '"}') + 1)
+If $tLoc > 1 Then $hString2 = StringTrimLeft($hString2, StringInStr($hString2, '"') - 1)
+If $hBranch = $aSteamBranch Then
+$hBuildID = $hBuildID1
+ExitLoop
+EndIf
+EndIf
 Next
-SplashOff()
-Else
-Local $hString2 = StringSplit($hString1[0], '"', 2)
-$hString3 = _ArrayToString($hString2)
-Local $hString4 = StringRegExpReplace($hString3, "\t", "")
-Local $hString5 = StringRegExpReplace($hString4, @CR & @LF, ".")
-Local $hString6 = StringRegExpReplace($hString5, "{", "")
-Local $hBuildIDArray = _StringBetween($hString6, "buildid||", "|.")
-Local $hBuildID = _ArrayToString($hBuildIDArray)
-LogWrite("", " [Update] Update Check via " & $aServerVer & " Branch. Latest version: " & $hBuildID)
-If FileExists($sFilePath) Then
-FileDelete($sFilePath)
 EndIf
-$aReturn[0] = True
-EndIf
-Else
+If $hBuildID = 0 Then
 $aReturn[0] = False
-LogWrite(" [Update] SteamCMD update check returned a FAILURE reponse. Skipping this update check.")
-EndIf
-FileClose($hFileOpen)
+LogWrite(" [Update] Update Check via " & $aSteamBranch & " branch returned a FAILURE response. Skipping this update check [" & $hBuildID & "]")
+Else
+LogWrite("", " [Update] Update Check via " & $aSteamBranch & " branch. Latest version: " & $hBuildID)
+$aReturn[0] = True
 EndIf
 $aReturn[1] = $hBuildID
 Return $aReturn
+EndFunc
+Func _getHTTPOutput($hURL)
+Local $sFilePath = $aFolderTemp & "GetHTTP.tmp"
+Local $tInet = InetGet($hURL, $sFilePath, 1)
+$tErr = _InetGetErrorText(@error, 3)
+Sleep(100)
+Local $hFileOpen = FileOpen($sFilePath, 0)
+Local $hFileRead1 = FileRead($hFileOpen, 100000000)
+FileClose($hFileOpen)
+FileDelete($sFilePath)
+Return $hFileRead1
 EndFunc
 Func GetInstalledVersion($sGameDir)
 Local $aReturn[2] = [False, ""]
@@ -25111,9 +25116,9 @@ EndFunc
 Func _CheckForExistingServer()
 Local $tReturn2 = 0
 Local $tProcess = ProcessList($aServerEXE)
-For $x = 1 To $tProcess[0][0]
-Local $tProcessFolder = _ProcessGetLocation($tProcess[$x][1])
 Global $aServerDirLocal = IniRead($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", $aServerShort & " DIR ###", @ScriptDir)
+For $x = 1 To $tProcess[0][0]
+Local $tProcessFolder = _PidGetPath($tProcess[$x][1])
 If $tProcessFolder = $aServerDirLocal & "\" & $aServerEXE Then
 $tReturn2 = $tProcess[$x][1]
 IniWrite($aUtilCFGFile, "CFG", "PID", $tReturn2)
@@ -25126,7 +25131,7 @@ Func _CheckForExistingPlink()
 Local $tReturn2 = 0
 Local $tProcess = ProcessList(_FileNameFromPath($aFilePlink))
 For $x = 1 To $tProcess[0][0]
-Local $tProcessFolder = _ProcessGetLocation($tProcess[$x][1])
+Local $tProcessFolder = _PidGetPath($tProcess[$x][1])
 If $tProcessFolder = $aFilePlink Then
 $tReturn2 = $tProcess[$x][1]
 If $tReturn2 <> $aPlinkPID Then
@@ -25137,6 +25142,19 @@ EndIf
 EndIf
 Next
 Return $tReturn2
+EndFunc
+Func _PidGetPath($Pid = "", $strComputer = 'localhost')
+If $Pid = "" Then $Pid = WinGetProcess(WinGetTitle(""))
+$wbemFlagReturnImmediately = 0x10
+$wbemFlagForwardOnly = 0x20
+$colItems = ""
+$objWMIService = ObjGet("winmgmts:\\" & $strComputer & "\")
+$colItems = $objWMIService.ExecQuery("SELECT * FROM Win32_Process WHERE ProcessId = " & $Pid, "WQL", $wbemFlagReturnImmediately + $wbemFlagForwardOnly)
+If IsObj($colItems) Then
+For $objItem In $colItems
+If $objItem.ExecutablePath Then Return $objItem.ExecutablePath
+Next
+EndIf
 EndFunc
 Func PIDReadServer($tSplash = 0)
 Local $tReturn = IniRead($aUtilCFGFile, "CFG", "PID", "0")
@@ -30479,6 +30497,289 @@ For $x7 = 0 To (UBound($xErrorCodes) - 1)
 If $tError = $xErrorCodes[$x7][0] Then Return $xErrorCodes[$x7][1]
 Next
 Return "Error code [" & $tError & "] Not Found."
+EndFunc
+Func _InetGetErrorText($iErrorCode, $iInfoLevel = 1)
+Local $sErrMsg, $sErrDesc
+Switch $iErrorCode
+Case 0
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_SUCCESS"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "Action completed successfully."
+Case 12001
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_OUT_OF_HANDLES"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "No more handles could be generated at this time."
+Case 12002
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_TIMEOUT"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The request has timed out."
+Case 12003
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_EXTENDED_ERROR"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "An extended error was returned from the server [may be 'file not found']. This is typically a string or buffer containing a verbose error message. Call InternetGetLastResponseInfo to retrieve the error text."
+Case 12004
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_INTERNAL_ERROR"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "An internal error has occurred."
+Case 12005
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_INVALID_URL"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The URL is invalid."
+Case 12006
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_UNRECOGNIZED_SCHEME"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The URL scheme could not be recognized or is not supported."
+Case 12007
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_NAME_NOT_RESOLVED"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The server name could not be resolved."
+Case 12008
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_PROTOCOL_NOT_FOUND"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The requested protocol could not be located."
+Case 12009
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_INVALID_OPTION"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "A request to InternetQueryOption or InternetSetOption specified an invalid option value."
+Case 12010
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_BAD_OPTION_LENGTH"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The length of an option supplied to InternetQueryOption or InternetSetOption is incorrect for the type of option specified."
+Case 12011
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_OPTION_NOT_SETTABLE"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The request option cannot be set, only queried."
+Case 12012
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_SHUTDOWN"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The Win32 Internet function support is being shut down or unloaded."
+Case 12013
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_INCORRECT_USER_NAME"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The request to connect and log on to an FTP server could not be completed because the supplied user name is incorrect."
+Case 12014
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_INCORRECT_PASSWORD"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The request to connect and log on to an FTP server could not be completed because the supplied password is incorrect."
+Case 12015
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_LOGIN_FAILURE"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The request to connect to and log on to an FTP server failed."
+Case 12016
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_INVALID_OPERATION"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The requested operation is invalid."
+Case 12017
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_OPERATION_CANCELLED"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The operation was canceled, usually because the handle on which the request was operating was closed before the operation completed."
+Case 12018
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_INCORRECT_HANDLE_TYPE"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The type of handle supplied is incorrect for this operation."
+Case 12019
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_INCORRECT_HANDLE_STATE"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The requested operation cannot be carried out because the handle supplied is not in the correct state."
+Case 12020
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_NOT_PROXY_REQUEST"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The request cannot be made via a proxy."
+Case 12021
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_REGISTRY_VALUE_NOT_FOUND"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "A required registry value could not be located."
+Case 12022
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_BAD_REGISTRY_PARAMETER"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "A required registry value was located but is an incorrect type or has an invalid value."
+Case 12023
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_NO_DIRECT_ACCESS"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "Direct network access cannot be made at this time."
+Case 12024
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_NO_CONTEXT"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "An asynchronous request could not be made because a zero context value was supplied."
+Case 12025
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_NO_CALLBACK"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "An asynchronous request could not be made because a callback function has not been set."
+Case 12026
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_REQUEST_PENDING"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The required operation could not be completed because one or more requests are pending."
+Case 12027
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_INCORRECT_FORMAT"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The format of the request is invalid."
+Case 12028
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_ITEM_NOT_FOUND"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The requested item could not be located."
+Case 12029
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_CANNOT_CONNECT"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The attempt to connect to the server failed."
+Case 12030
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_CONNECTION_ABORTED"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The connection with the server has been terminated."
+Case 12031
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_CONNECTION_RESET"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The connection with the server has been reset."
+Case 12032
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_FORCE_RETRY"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "Calls for the Win32 Internet function to redo the request."
+Case 12033
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_INVALID_PROXY_REQUEST"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The request to the proxy was invalid."
+Case 12034
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_NEED_UI"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "A user interface or other blocking operation has been requested."
+Case 12036
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_HANDLE_EXISTS"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The request failed because the handle already exists."
+Case 12037
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_SEC_CERT_DATE_INVALID"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "SSL certificate date that was received from the server is bad. The certificate is expired."
+Case 12038
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_SEC_CERT_CN_INVALID"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "SSL certificate common name (host name field) is incorrect. For example, if you entered www.server.com and the common name on the certificate says www.different.com."
+Case 12039
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_HTTP_TO_HTTPS_ON_REDIR"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The application is moving from a non-SSL to an SSL connection because of a redirect."
+Case 12040
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_HTTPS_TO_HTTP_ON_REDIR"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The application is moving from an SSL to an non-SSL connection because of a redirect."
+Case 12041
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_MIXED_SECURITY"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "Indicates that the content is not entirely secure. Some of the content being viewed may have come from unsecured servers."
+Case 12042
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_CHG_POST_IS_NON_SECURE"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The application is posting and attempting to change multiple lines of text on a server that is not secure."
+Case 12043
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "INTERNET_POST_IS_NON_SECURE"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The application is posting data to a server that is not secure."
+Case 12044
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_CLIENT_AUTH_CERT_NEEDED"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The server is requesting client authentication."
+Case 12045
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_INVALID_CA"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The function is unfamiliar with the Certificate Authority that generated the server's certificate."
+Case 12046
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_CLIENT_AUTH_NOT_SETUP"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "Client authorization is not set up on this computer."
+Case 12047
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_ASYNC_THREAD_FAILED"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The application could not start an asynchronous thread."
+Case 12048
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_REDIRECT_SCHEME_CHANGE"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The function could not handle the redirection, because the scheme changed (for example, HTTP to FTP)."
+Case 12049
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_DIALOG_PENDING"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "Another thread has a password dialog box in progress."
+Case 12050
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_RETRY_DIALOG"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The dialog box should be retried."
+Case 12052
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_HTTPS_HTTP_SUBMIT_REDIR"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The data being submitted to an SSL connection is being redirected to a non-SSL connection."
+Case 12053
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_INSERT_CDROM"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The request requires a CD-ROM to be inserted in the CD-ROM drive to locate the resource requested."
+Case 12054
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_FORTEZZA_LOGIN_NEEDED"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The requested resource requires Fortezza authentication."
+Case 12055
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_SEC_CERT_ERRORS"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The SSL certificate contains errors."
+Case 12056
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_SEC_CERT_NO_REV"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The SSL certificate was not revoked."
+Case 12057
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_SEC_CERT_REV_FAILED"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "Revocation of the SSL certificate failed."
+Case 12110
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "FTP_TRANSFER_IN_PROGRESS"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The requested operation cannot be made on the FTP session handle because an operation is already in progress."
+Case 12111
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "FTP_DROPPED"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The FTP operation was not completed because the session was aborted."
+Case 12130
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "GOPHER_PROTOCOL_ERROR"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "An error was detected while parsing data returned from the gopher server."
+Case 12131
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "GOPHER_NOT_FILE"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The request must be made for a file locator."
+Case 12132
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "GOPHER_DATA_ERROR"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "An error was detected while receiving data from the gopher server."
+Case 12133
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "GOPHER_END_OF_DATA"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The end of the data has been reached."
+Case 12134
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "GOPHER_INVALID_LOCATOR"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The supplied locator is not valid."
+Case 12135
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "GOPHER_INCORRECT_LOCATOR_TYPE"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The type of the locator is not correct for this operation."
+Case 12136
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "GOPHER_NOT_GOPHER_PLUS"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The requested operation can only be made against a Gopher+ server or with a locator that specifies a Gopher+ operation."
+Case 12137
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "GOPHER_ATTRIBUTE_NOT_FOUND"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The requested attribute could not be located."
+Case 12138
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "GOPHER_UNKNOWN_LOCATOR"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The locator type is unknown."
+Case 12150
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "HTTP_HEADER_NOT_FOUND"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The requested header could not be located."
+Case 12151
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "HTTP_DOWNLEVEL_SERVER"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The server did not return any headers."
+Case 12152
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "HTTP_INVALID_SERVER_RESPONSE"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The server response could not be parsed."
+Case 12153
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "HTTP_INVALID_HEADER"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The supplied header is invalid."
+Case 12154
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "HTTP_INVALID_QUERY_REQUEST"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The request made to HttpQueryInfo is invalid."
+Case 12155
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "HTTP_HEADER_ALREADY_EXISTS"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The header could not be added because it already exists."
+Case 12156
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "HTTP_REDIRECT_FAILED"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The redirection failed because either the scheme changed (for example, HTTP to FTP) or all attempts made to redirect failed (default is five attempts)."
+Case 12157
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_SECURITY_CHANNEL_ERROR"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The application experienced an internal error loading the SSL libraries."
+Case 12158
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_UNABLE_TO_CACHE_FILE"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The function was unable to cache the file."
+Case 12159
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_TCPIP_NOT_INSTALLED"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The required protocol stack is not loaded and the application cannot start WinSock."
+Case 12160
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_HTTP_NOT_REDIRECTED"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The HTTP request was not redirected."
+Case 12161
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_HTTP_COOKIE_NEEDS_CONFIRMATION"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The HTTP cookie requires confirmation."
+Case 12162
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_HTTP_COOKIE_DECLINED"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The HTTP cookie was declined by the server."
+Case 12163
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_DISCONNECTED"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The Internet connection has been lost."
+Case 12164
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_SERVER_UNREACHABLE"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The Web site or server indicated is unreachable."
+Case 12165
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_PROXY_SERVER_UNREACHABLE"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The designated proxy server cannot be reached."
+Case 12166
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_BAD_AUTO_PROXY_SCRIPT"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "There was an error in the automatic proxy configuration script."
+Case 12167
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_UNABLE_TO_DOWNLOAD_SCRIPT"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The automatic proxy configuration script could not be downloaded. The INTERNET_FLAG_MUST_CACHE_REQUEST flag was set."
+Case 12168
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_HTTP_REDIRECT_NEEDS_CONFIRMATION"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The redirection requires user confirmation."
+Case 12169
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_SEC_INVALID_CERT"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "SSL certificate is invalid."
+Case 12170
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_SEC_CERT_REVOKED"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "SSL certificate was revoked."
+Case 12171
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_FAILED_DUETOSECURITYCHECK"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The function failed due to a security check."
+Case 12172
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_NOT_INITIALIZED"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "Initialization of the WinINet API has not occurred. Indicates that a higher-level function, such as InternetOpen, has not been called yet."
+Case 12174
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_INTERNET_LOGIN_FAILURE_DISPLAY_ENTITY_BODY"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "The MS-Logoff digest header has been returned from the Web site. This header specifically instructs the digest package to purge credentials for the associated realm. This error will only be returned if INTERNET_ERROR_MASK_LOGIN_FAILURE_DISPLAY_ENTITY_BODY has been set."
+Case Else
+If BitAND($iInfoLevel, 1) Then $sErrMsg = "ERROR_UNKNOWN"
+If BitAND($iInfoLevel, 2) Then $sErrDesc = "Unidentified error - no description available."
+EndSwitch
+If $sErrMsg And $sErrDesc Then $sErrMsg &= ": "
+Return $sErrMsg & $sErrDesc
 EndFunc
 Func _CustomCommandsWriteDefault($tFile)
 Local $xArray[1]

@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.7.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.6.exe
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.6.7.0
+#AutoIt3Wrapper_Res_Fileversion=2.6.6.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.6.7
+#AutoIt3Wrapper_Res_ProductVersion=2.6.6
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -47,10 +47,10 @@ Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
 
 ; *** End added by AutoIt3Wrapper ***
 
-$aUtilVerStable = "v2.6.7" ; (2023-07-01)
-$aUtilVerBeta = "v2.6.7" ; (2023-07-01)
+$aUtilVerStable = "v2.6.6" ; (2023-07-01)
+$aUtilVerBeta = "v2.6.6" ; (2023-07-01)
 $aUtilVersion = $aUtilVerStable
-Global $aUtilVerNumber = 16
+Global $aUtilVerNumber = 15
 ; 1 = v2.3.3
 ; 2 = v2.3.4
 ; 3 = v2.5.0
@@ -66,7 +66,6 @@ Global $aUtilVerNumber = 16
 ;13 = 2.6.4
 ;14 = 2.6.5
 ;15 = 2.6.6
-;16 = 2.6.7
 
 ;**** Directives created by AutoIt3Wrapper_GUI ****
 ;Originally written by Dateranoth for use and modified for 7DTD by Phoenix125.com
@@ -194,9 +193,6 @@ $aServerUpdateLinkVerStable = "http://www.phoenix125.com/share/7dtdlatestver.txt
 $aServerUpdateLinkVerBeta = "http://www.phoenix125.com/share/7dtdlatestbeta.txt"
 $aServerUpdateLinkDLStable = "http://www.phoenix125.com/share/7dtdServerUpdateUtility.zip"
 $aServerUpdateLinkDLBeta = "http://www.phoenix125.com/share/7dtdServerUpdateUtilityBeta.zip"
-Global $aServerCrashMsgSentFailedTF = False
-Global $aServerCrashMsgSentRestartTF = False
-Global $aServerShuttingDownTF = False
 Global $aShowUpdate = False
 Global $aTelnetIP, $aTelnetPort, $aTelnetPass
 
@@ -500,13 +496,6 @@ If $aCFGLastVerNumber < 13 Then
 	IniWrite($aIniFile, " --------------- ADVANCED HIDDEN OPTIONS --------------- ", "CPU Affinity in Hex (Adds /AFFNITY x to commandline. Ex 0000001 for CPU 0, 000005 For CPU 1&3) ###", "")
 	$tUpdateINI = True
 EndIf
-If $aCFGLastVerNumber < 16 Then
-	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement when server crash is first detected by Watchdog ###", ":warning: Server crash detected. Server will restart if no response in one minute.")
-	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement when server crash is forcing a server roboot by Watchdog ###", ":exclamation::exclamation: Server crash detected. RESTARTING SERVER :exclamation::exclamation:")
-	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message when Watchdog first detects server crash? (yes/no) ###", "yes")
-	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message when Watchdog detects server crash and will restart server? (yes/no) ###", "yes")
-	$tUpdateINI = True
-EndIf
 If $tUpdateINI Then
 	ReadUini($aIniFile, $aLogFile)
 	FileDelete($aIniFile)
@@ -791,17 +780,15 @@ While True ;**** Loop Until Closed ****
 				IniWrite($aUtilCFGFile, "CFG", "Last Log Time Stamp", $LogTimeStamp)
 				If $aServerAffinity <> "" Then $aServerAffinity = "/AFFINITY " & $aServerAffinity & " "
 				Local $tRun = @ComSpec & " /c " & 'start "7DaysToDieServer" ' & $aServerAffinity & '"' & $aServerDirLocal & "\" & $aServerEXE & '" -logfile "' & $LogTimeStamp & '" -quit -batchmode -nographics ' & $aServerExtraCMD & " -configfile=" & $aConfigFileTemp & " -dedicated"
-				$aServerShuttingDownTF = False
 				PurgeLogFile()
 				_ImportServerConfig()
 				Run($tRun, $aServerDirLocal, @SW_HIDE)
-				LogWrite(" [Server] ******** Server Started ********", " [Server] ******** Server Started ******** [" & $tRun & "]")
 				For $x = 1 To 10
 					Sleep(500)
-					$aServerPID = _CheckForExistingServer(True) ; True = New server... used to clarify log entry
+					$aServerPID = _CheckForExistingServer()
 					If $aServerPID > 0 Then ExitLoop
 				Next
-				$aServerCrashMsgSentFailedTF = False
+
 ;~ 				Local $tReturn = "Not Found"
 ;~ 				Local $tProcess = ProcessList($aServerEXE)
 ;~ 				For $x = 1 To $tProcess[0][0]
@@ -813,6 +800,7 @@ While True ;**** Loop Until Closed ****
 ;~ 						ExitLoop
 ;~ 					EndIf
 ;~ 				Next
+				LogWrite(" [Server] **** Server Started **** PID(" & $aServerPID & ")", " [Server] **** Server Started **** PID(" & $aServerPID & ") [" & $tRun & "]")
 				$gWatchdogServerStartTimeCheck = _NowCalc()
 				IniWrite($aUtilCFGFile, "CFG", "Last Server Start", $gWatchdogServerStartTimeCheck)
 				ControlSetText($aSplash, "", "Static1", "Server Started." & @CRLF & @CRLF & "PID[" & $aServerPID & "]")
@@ -984,7 +972,7 @@ While True ;**** Loop Until Closed ****
 		#EndRegion ;**** If Query Port Disabled, Get Server Name From Log ****
 
 		#Region ;**** Online Player Check & Horde Day Announcements ****
-		If $aServerOnlinePlayerYN = "yes" And $aServerShuttingDownTF = False Then
+		If $aServerOnlinePlayerYN = "yes" Then
 			If ((_DateDiff('s', $aTimeCheck8, _NowCalc())) >= $aServerOnlinePlayerSec) Then _OnlinePlayerCheck()
 ;~ 				_PlayersOnlineCheck()
 ;~ 				Local $tGameHour = Number(StringLeft(StringRight($aGameTime, 5), 2))
@@ -1029,7 +1017,7 @@ While True ;**** Loop Until Closed ****
 		#EndRegion ;**** Online Player Check & Horde Day Announcements ****
 
 		#Region ;**** Restart Server Every X Days and X Hours & Min****
-		If (($aRestartDaily = "yes") And ((_DateDiff('n', $aTimeCheck2, _NowCalc())) >= 1) And (DailyRestartCheck($aRestartDays, $aRestartHours, $aRestartMin)) And ($aBeginDelayedShutdown = 0)) And $aServerShuttingDownTF = False Then
+		If (($aRestartDaily = "yes") And ((_DateDiff('n', $aTimeCheck2, _NowCalc())) >= 1) And (DailyRestartCheck($aRestartDays, $aRestartHours, $aRestartMin)) And ($aBeginDelayedShutdown = 0)) Then
 			If ProcessExists($aServerPID) Then
 				Local $MEM = ProcessGetStats($aServerPID, 0)
 				If @error Then
@@ -1059,58 +1047,48 @@ While True ;**** Loop Until Closed ****
 		#EndRegion ;**** Backup Every X Days and X Hours & Min****
 
 		#Region ;**** KeepServerAlive Telnet Check ****
-		If ($aDisableWatchdog = "no") And ($aTelnetCheckYN = "yes") And (_DateDiff('s', $gTelnetTimeCheck0, _NowCalc()) >= $aTelnetCheckSec) And $aServerShuttingDownTF = False Then
+		If ($aDisableWatchdog = "no") And ($aTelnetCheckYN = "yes") And (_DateDiff('s', $gTelnetTimeCheck0, _NowCalc()) >= $aTelnetCheckSec) Then
 			Local $tSkipUpdateCheckTF = False
 			Local $tSkipStartCheckTF = False
 			Local $tDiffUpdate = _DateDiff('n', $gServerUpdatedTimeCheck0, _NowCalc())
 			Local $tDiffStart = _DateDiff('n', $gWatchdogServerStartTimeCheck, _NowCalc())
 			If $tDiffUpdate <= $aWatchdogWaitServerUpdate Then
 				$tSkipUpdateCheckTF = True
-				Local $tTxt = Int($aWatchdogWaitServerUpdate - $tDiffUpdate)
-				If $tTxt = 0 Then $tTxt = "<1"
-				LogWrite("", " [Telnet] KeepAlive check SKIPPED due to server update: " & $tTxt & " minute(s) remain.")
+				LogWrite("", " [Telnet] KeepAlive check SKIPPED due to Server Update: " & Int($aWatchdogWaitServerUpdate - $tDiffUpdate) & " minutes remain.")
 			EndIf
 			If $tDiffStart <= $aWatchdogWaitServerStart Then
 				$tSkipStartCheckTF = True
-				Local $tTxt = Int($aWatchdogWaitServerStart - $tDiffStart)
-				If $tTxt = 0 Then $tTxt = "<1"
-				LogWrite("", " [Telnet] KeepAlive check SKIPPED due to server start: " & $tTxt & " minute(s) remain.")
+				LogWrite("", " [Telnet] KeepAlive check SKIPPED due to Server Start: " & Int($aWatchdogWaitServerStart - $tDiffStart) & " minutes remain.")
 			EndIf
 			If $tSkipUpdateCheckTF = False And $tSkipStartCheckTF = False Then
-				For $i = 1 To 5
+				For $i = 1 To 6
 					$aReply = _PlinkSend("version")
+					If $i = 6 Then
+						$tFailedCountTelnet += 1
+						If $tFailedCountTelnet > $aWatchdogAttemptsBeforeRestart Then
+							LogWrite(" [Telnet] KeepAlive check FAILED " & $aWatchdogAttemptsBeforeRestart & " attempts. Restarting server.")
+							CloseServer($aTelnetIP, $aTelnetPort, $aTelnetPass)
+							ExitLoop
+						Else
+							LogWrite(" [Telnet] KeepAlive check FAILED. Attempt " & $tFailedCountTelnet & " of " & $aWatchdogAttemptsBeforeRestart & ".")
+						EndIf
+					EndIf
 					If StringInStr($aReply, "Game version") = 0 Then
-						LogWrite("", " [Telnet] KeepAlive check failed. Count:" & $i & " of 5")
 						Sleep(1000)
+						LogWrite("", " [Telnet] KeepAlive check failed. Count:" & $i & " of 5")
 					Else
 						$tFailedCountTelnet = 0
 						ExitLoop
 					EndIf
-					If $i = 5 Then
-						$tFailedCountTelnet += 1
-						If $tFailedCountTelnet = $aWatchdogAttemptsBeforeRestart Then
-							LogWrite(" [Telnet] KeepAlive check (series of 5) FAILED " & $aWatchdogAttemptsBeforeRestart & " attempt(s). RESTARTING SERVER.")
-							If $aServerCrashMsgSentRestartTF = False And $sUseDiscordBotServerCrashMsgRestartYN <> "no" Then _SendDiscordCrash($sDiscordServerCrashMsgRestart)
-							$aServerCrashMsgSentRestartTF = True
-							$tFailedCountTelnet = 0
-;~ 							$aServerShuttingDownTF = True
-							CloseServer($aTelnetIP, $aTelnetPort, $aTelnetPass)
-							ExitLoop
-						Else
-							LogWrite(" [Telnet] KeepAlive check (series of 5) FAILED attempt " & $tFailedCountTelnet & " of " & $aWatchdogAttemptsBeforeRestart & ".")
-							If $aServerCrashMsgSentFailedTF = False And $sUseDiscordBotServerCrashMsgFailedYN <> "no" Then _SendDiscordCrash($sDiscordServerCrashMsgFailed)
-							$aServerCrashMsgSentFailedTF = True
-						EndIf
-					EndIf
 				Next
-				If $i < 6 And $aServerShuttingDownTF = False Then LogWrite("", " [Telnet] KeepAlive check OK.")
+				If $i < 6 Then LogWrite("", " [Telnet] KeepAlive check OK.")
 			EndIf
 			$gTelnetTimeCheck0 = _NowCalc()
 		EndIf
 		#EndRegion ;**** KeepServerAlive Telnet Check ****
 
 		#Region ;**** KeepServerAlive Query Port Check ****
-		If ($aQueryYN = "yes") And (_DateDiff('s', $gQueryTimeCheck0, _NowCalc()) >= $aQueryCheckSec) And $aServerShuttingDownTF = False Then
+		If ($aQueryYN = "yes") And (_DateDiff('s', $gQueryTimeCheck0, _NowCalc()) >= $aQueryCheckSec) Then
 			$tQueryResponseOK = _QueryCheck(True)
 			$gQueryTimeCheck0 = _NowCalc()
 		EndIf
@@ -1130,7 +1108,7 @@ While True ;**** Loop Until Closed ****
 		#EndRegion ;**** If Players Changed, Send Discord Message ****
 
 		#Region ;**** Check for Update every X Minutes ****
-		If ($aCheckForUpdate = "yes") And ((_DateDiff('n', $aTimeCheck0, _NowCalc())) >= $aUpdateCheckInterval) And ($aBeginDelayedShutdown = 0) And $aServerShuttingDownTF = False Then
+		If ($aCheckForUpdate = "yes") And ((_DateDiff('n', $aTimeCheck0, _NowCalc())) >= $aUpdateCheckInterval) And ($aBeginDelayedShutdown = 0) Then
 			Local $bRestart = UpdateCheck(False)
 			If $bRestart And (($sUseDiscordBotDaily = "yes") Or ($sUseDiscordBotUpdate = "yes") Or ($sUseTwitchBotDaily = "yes") Or ($sUseTwitchBotUpdate = "yes") Or ($sInGameAnnounceRestartsUpdateYN = "yes")) Then
 				$aBeginDelayedShutdown = 1
@@ -1331,6 +1309,7 @@ While True ;**** Loop Until Closed ****
 	EndIf
 	Sleep(100)
 WEnd
+
 ; -----------------------------------------------------------------------------------------------------------------------
 #Region ; **** Gamercide Shutdown Protocol ****
 Func Gamercide()
@@ -1343,8 +1322,7 @@ Func Gamercide()
 				"Click (YES) to shutdown server and exit utility." & @CRLF & _
 				"Click (NO) or (CANCEL) to exit utility but leave server running.", 60)
 		; ----------------------------------------------------------
-		If $Shutdown = 6 Then ; Yes
-			LogWrite(" [ Util ] Util exiting with server shutdown - Initiated by User when closing " & $aUtilityVer & " Script")
+		If $Shutdown = 6 Then
 			LogWrite(" [Server] Server Shutdown - Initiated by User when closing " & $aUtilityVer & " Script")
 			CloseServer($aTelnetIP, $aTelnetPort, $aTelnetPass)
 			SplashOff()
@@ -1352,32 +1330,32 @@ Func Gamercide()
 				TCPShutdown()
 			EndIf
 			MsgBox(4096, $aUtilityVer, $aMsg, 20)
-			LogWrite(" [ Util ] Stopped by User")
+			LogWrite(" [Server] Stopped by User")
 			IniWrite($aUtilCFGFile, "CFG", "PID", "0")
 			_ExitUtil()
 			; ----------------------------------------------------------
-		ElseIf $Shutdown = 7 Then ; No
-			LogWrite(" [ Util ] Util exiting but server will remain running - Initiated by User when closing " & $aUtilityVer & " Script")
+		ElseIf $Shutdown = 7 Then
+			LogWrite(" [Server] Server Shutdown - Initiated by User when closing " & $aUtilityVer & " Script")
 			If $aRemoteRestartUse = "yes" Then
 				TCPShutdown()
 			EndIf
 			IniWrite($aUtilCFGFile, "CFG", "PID", $aServerPID)
 			MsgBox(4096, $aUtilityVer, $aMsg, 20)
-			LogWrite(" [ Util ] Stopped by User")
+			LogWrite(" [Server] Stopped by User")
 			_ExitUtil()
 			; ----------------------------------------------------------
-		ElseIf $Shutdown = 2 Then ; Cancel
-			LogWrite(" [ Util ] Util exiting but server will remain running - Initiated by User when closing " & $aUtilityVer & " Script")
+		ElseIf $Shutdown = 2 Then
+			LogWrite(" [Server] Server Shutdown - Initiated by User when closing " & $aUtilityVer & " Script")
 			If $aRemoteRestartUse = "yes" Then
 				TCPShutdown()
 			EndIf
 			IniWrite($aUtilCFGFile, "CFG", "PID", $aServerPID)
 			MsgBox(4096, $aUtilityVer, $aMsg, 20)
-			LogWrite(" [ Util ] Stopped by User")
+			LogWrite(" [Server] Stopped by User")
 			; ----------------------------------------------------------
 		EndIf
 	Else
-		LogWrite(" [ Util ] Util exiting - Initiated by User when closing " & $aUtilityVer & " Script")
+		LogWrite(" [Server] Server Shutdown - Initiated by User when closing " & $aUtilityVer & " Script")
 		SplashOff()
 		_ExitUtil()
 	EndIf
@@ -1762,23 +1740,23 @@ Func _ImportServerConfig()
 		Global $aServerDataFolder = $aServerDirLocal & "\UserData"
 	EndIf
 	If $aServerTelnetEnable = "no" Or $aServerTelnetEnable = "false" Then
-		LogWrite(" [Config] . . . Server telnet was disabled. Telnet required for this utility. TelnetEnabled set to: true")
+		LogWrite(" . . . Server telnet was disabled. Telnet required for this utility. TelnetEnabled set to: true")
 		;	Global $aServerTelnetEnable = "true"
 		$aServerTelnetReboot = "yes"
 		$aServerRebootReason = $aServerRebootReason & "Telnet was disabled." & @CRLF
 	EndIf
 	Global $aServerTelnetEnable = "true"
 	If $aTelnetPort = "" Then
-		LogWrite(" [Config] . . . Server telnet port was blank. Port CHANGED to default value: 8081")
+		LogWrite(" . . . Server telnet port was blank. Port CHANGED to default value: 8081")
 		$aTelnetPort = "8081"
 		$aServerTelnetReboot = "yes"
 		$aServerRebootReason = $aServerRebootReason & "Telnet port was blank." & @CRLF
 	EndIf
 	If $aTelnetPass = "CHANGEME" Or $aTelnetPass = "" Then
 		If $sObfuscatePass = "yes" Then
-			LogWrite(" [Config] . . . Server telnet password was " & $aTelnetPass & ". Password CHANGED to: [hidden]. Recommend change telnet password in " & $aConfigFile)
+			LogWrite(" . . . Server telnet password was " & $aTelnetPass & ". Password CHANGED to: [hidden]. Recommend change telnet password in " & $aConfigFile)
 		Else
-			LogWrite(" [Config] . . . Server telnet password was " & $aTelnetPass & ". Password CHANGED to: 7dtdServerUpdateUtility. Recommend change telnet password in " & $aConfigFile)
+			LogWrite(" . . . Server telnet password was " & $aTelnetPass & ". Password CHANGED to: 7dtdServerUpdateUtility. Recommend change telnet password in " & $aConfigFile)
 		EndIf
 		Global $aTelnetPass = "7dtdServerUpdateUtility"
 		$aServerTelnetReboot = "yes"
@@ -1786,21 +1764,21 @@ Func _ImportServerConfig()
 	EndIf
 	If $aServerTerminalWindow = "false" Then
 	Else
-		LogWrite(" [ Util ] . . . Terminal window was enabled. Utility cannot function with it enabled. Terminal window set to: false")
+		LogWrite(" . . . Terminal window was enabled. Utility cannot function with it enabled. Terminal window set to: false")
 		$aServerTelnetReboot = "yes"
 		$aServerRebootReason = $aServerRebootReason & "Terminal window was enabled." & @CRLF
 	EndIf
 	LogWrite(" [Config] Retrieving data from " & $sConfigPath & ".")
-	LogWrite("", " [Config] . . . Server Port = " & $aServerPort)
-	LogWrite("", " [Config] . . . Server Name = " & $aServerName)
-	LogWrite("", " [Config] . . . Server Telnet Port = " & $aTelnetPort)
+	LogWrite("", " . . . Server Port = " & $aServerPort)
+	LogWrite("", " . . . Server Name = " & $aServerName)
+	LogWrite("", " . . . Server Telnet Port = " & $aTelnetPort)
 	If $sObfuscatePass = "no" Then
-		LogWrite("", " [Config] . . . Server Telnet Password = " & $aTelnetPass)
+		LogWrite("", " . . . Server Telnet Password = " & $aTelnetPass)
 	Else
-		LogWrite("", " [Config] . . . Server Telnet Password = [hidden]" & $aTelnetPass)
+		LogWrite("", " . . . Server Telnet Password = [hidden]" & $aTelnetPass)
 	EndIf
-	LogWrite("", " [Config] . . . Server Save Game Folder = " & $aServerSaveGame)
-	LogWrite("", " [Config] . . . Server UserData Folder = " & $aServerDataFolder)
+	LogWrite("", " . . . Server Save Game Folder = " & $aServerSaveGame)
+	LogWrite("", " . . . Server UserData Folder = " & $aServerDataFolder)
 	FileClose($sConfigRead)
 	AppendConfigSettings()
 EndFunc   ;==>_ImportServerConfig
@@ -1856,6 +1834,7 @@ Func _BackupGame($tMinimizeTF = True, $tFullTF = False, $tRunWait = False)
 	PurgeBackups()
 ;~ 	SetStatusIdle()
 EndFunc   ;==>_BackupGame
+
 Func PurgeBackups()
 	Local $aPurgeBackups = $aFolderTemp & $aUtilName & "_PurgeBackups.bat"
 	Local $sFileExists = FileExists($aPurgeBackups)
@@ -1869,18 +1848,19 @@ EndFunc   ;==>PurgeBackups
 Func _GetPlayerCount()
 	$aOnlinePlayers = GetPlayerCount(False)
 	If $aGameTime = "Day 1, 00:00" Then
-		LogWrite("", " [Player] Failed to get player count. Retry attempt 1 of 2")
+		LogWrite("", " [Players] Failed to get player count. Retry attempt 1 of 2")
 		Sleep(1000)
 		$aOnlinePlayers = GetPlayerCount(False)
 		If $aGameTime = "Day 1, 00:00" Then
-			LogWrite("", " [Player] Failed to get player count. Retry attempt 2 of 2")
+			LogWrite("", " [Players] Failed to get player count. Retry attempt 2 of 2")
 			Sleep(1000)
 			$aOnlinePlayers = GetPlayerCount(False)
-			If $aGameTime = "Day 1, 00:00" Then LogWrite("", " [Player] Failed to get player count.")
+			If $aGameTime = "Day 1, 00:00" Then LogWrite("", " [Players] Failed to get player count.")
 		EndIf
 	EndIf
 	ShowPlayerCount()
 EndFunc   ;==>_GetPlayerCount
+
 Func _QueryCheck($tRestart1 = True)
 	Local $tReturn3 = False
 	Local $tSkipUpdateCheckTF = False
@@ -1889,62 +1869,50 @@ Func _QueryCheck($tRestart1 = True)
 	Local $tDiffStart = _DateDiff('n', $gWatchdogServerStartTimeCheck, _NowCalc())
 	If $tDiffUpdate <= $aWatchdogWaitServerUpdate Then
 		$tSkipUpdateCheckTF = True
-		Local $tTxt = IntInt($aWatchdogWaitServerUpdate - $tDiffUpdate)
-		If $tTxt = 0 Then $tTxt = "<1"
-		If $tRestart1 Then LogWrite("", " [Query ] KeepAlive check SKIPPED due to server update: " & $tTxt & " minute(s) remain.")
+		LogWrite("", " [Query] KeepAlive check SKIPPED due to Server Update: " & Int($aWatchdogWaitServerUpdate - $tDiffUpdate) & " minutes remain.")
 	EndIf
 	If $tDiffStart <= $aWatchdogWaitServerStart Then
 		$tSkipStartCheckTF = True
-		Local $tTxt = Int($aWatchdogWaitServerStart - $tDiffStart)
-		If $tTxt = 0 Then $tTxt = "<1"
-		If $tRestart1 Then LogWrite("", " [Query ] KeepAlive check SKIPPED due to server start: " & $tTxt & " minute(s) remain.")
+		LogWrite("", " [Query] KeepAlive check SKIPPED due to Server Start: " & Int($aWatchdogWaitServerStart - $tDiffStart) & " minutes remain.")
 	EndIf
-	If $tSkipUpdateCheckTF = False And $tSkipStartCheckTF = False And $aServerShuttingDownTF = False Then
-		For $i = 1 To 5
-			Local $tQueryCheckResult = _GetQuery($aQueryIP, $aServerPort)
-			If UBound($tQueryCheckResult) < 10 Then
-				LogWrite("", " [Query ] KeepAlive check failed. Count:" & $i & " of 5")
-				Sleep(1000)
-			Else
-				$tFailedCountQuery = 0
-				$tReturn3 = True
-				$aServerQueryName = StringReplace($tQueryCheckResult[1], "$~!", "|")
-				If $aServerOnlinePlayerYN = "no" Then
-					Local $tPlayers = IniRead($aUtilCFGFile, "CFG", "Last Online Player Count", 0)
-					If $tQueryCheckResult[6] <> $tPlayers Then
-						If $aGameTime = "Day 1, 00:00" Then
-							If $aServerOnlinePlayerYN = "yes" Or $aTelnetCheckYN = "yes" Then GetPlayerCount(False)
+	For $i = 1 To 6
+		Local $tQueryCheckResult = _GetQuery($aQueryIP, $aServerPort)
+		If UBound($tQueryCheckResult) < 10 Then
+			If $i = 6 Then
+				If $tSkipUpdateCheckTF = False And $tSkipStartCheckTF = False Then
+					If $tRestart1 Then
+						$tFailedCountQuery += 1
+						If $tFailedCountQuery > $aWatchdogAttemptsBeforeRestart Then
+							LogWrite(" [Query] KeepAlive check FAILED " & $aWatchdogAttemptsBeforeRestart & " attempts. Restarting server.")
+							CloseServer($aTelnetIP, $aTelnetPort, $aTelnetPass)
+							ExitLoop
+						Else
+							LogWrite(" [Query] KeepAlive check FAILED. Attempt " & $tFailedCountQuery & " of " & $aWatchdogAttemptsBeforeRestart & ".")
 						EndIf
-						$aPlayersCount = $tQueryCheckResult[6]
-						$aServerQueryName = StringReplace($tQueryCheckResult[1], "$~!", "|")
-					EndIf
-				EndIf
-				ExitLoop
-			EndIf
-			If $i = 5 Then
-				If $tRestart1 Then
-					$tFailedCountQuery += 1
-					If $tFailedCountQuery > $aWatchdogAttemptsBeforeRestart Then
-						LogWrite(" [Query ] KeepAlive check (series of 5) FAILED " & $aWatchdogAttemptsBeforeRestart & " attempt(s). Restarting server.")
-						If $aServerCrashMsgSentRestartTF = False And $sUseDiscordBotServerCrashMsgRestartYN <> "no" Then _SendDiscordCrash($sDiscordServerCrashMsgRestart)
-						$aServerCrashMsgSentRestartTF = True
-						$tFailedCountQuery = 0
-;~ 						$aServerShuttingDownTF = True
-						CloseServer($aTelnetIP, $aTelnetPort, $aTelnetPass)
-						ExitLoop
 					Else
-						LogWrite(" [Query ] KeepAlive check (series of 5) FAILED attempt " & $tFailedCountQuery & " of " & $aWatchdogAttemptsBeforeRestart & ".")
-						If $aServerCrashMsgSentFailedTF = False And $sUseDiscordBotServerCrashMsgFailedYN <> "no" Then _SendDiscordCrash($sDiscordServerCrashMsgFailed)
-						$aServerCrashMsgSentFailedTF = True
+						$tReturn3 = False
 					EndIf
-				Else
-					$tReturn3 = False
+					ExitLoop
 				EndIf
-				ExitLoop
 			EndIf
-		Next
-		If $i < 5 Then LogWrite("", " [Query ] KeepAlive check OK.")
-	EndIf
+		Else
+			$tFailedCountQuery = 0
+			$tReturn3 = True
+			$aServerQueryName = StringReplace($tQueryCheckResult[1], "$~!", "|")
+			If $aServerOnlinePlayerYN = "no" Then
+				Local $tPlayers = IniRead($aUtilCFGFile, "CFG", "Last Online Player Count", 0)
+				If $tQueryCheckResult[6] <> $tPlayers Then
+					If $aGameTime = "Day 1, 00:00" Then
+						If $aServerOnlinePlayerYN = "yes" Or $aTelnetCheckYN = "yes" Then GetPlayerCount(False)
+					EndIf
+					$aPlayersCount = $tQueryCheckResult[6]
+					$aServerQueryName = StringReplace($tQueryCheckResult[1], "$~!", "|")
+				EndIf
+			EndIf
+			ExitLoop
+		EndIf
+		Sleep(500)
+	Next
 	Return $tReturn3
 EndFunc   ;==>_QueryCheck
 Func _SendInGameDaily()
@@ -1982,9 +1950,6 @@ Func _SendDiscordHordeDone()
 	Local $tMsg2 = _SendMsgSubs($sDiscordHordeDoneMsg)
 	_SendDiscordMsg($tMsg2, $aServerDiscordWHHorde)
 EndFunc   ;==>_SendDiscordHordeDone
-Func _SendDiscordCrash($tMsg)
-	_SendDiscordStatus($tMsg)
-EndFunc   ;==>_SendDiscordCrash
 Func _SendMsgSubs($tMsg3, $tDest = "D") ; $tDest D = Discord , I = InGame
 	If $tDest = "D" Then
 		Local $tMsgJoin = $sDiscordPlayerJoinMsg
@@ -2057,7 +2022,7 @@ Func _SendMsgSubs($tMsg3, $tDest = "D") ; $tDest D = Discord , I = InGame
 EndFunc   ;==>_SendMsgSubs
 Func _SendDiscordPlayer()
 	If $aGameTime = "Day 1, 00:00" Then
-		LogWrite("", " [Dscord] Online player count error or not ready. Discord message not sent.")
+		LogWrite("", " [Discord] Online player count error or not ready. Discord message not sent.")
 	Else
 		If $sUseDiscordBotPlayerChangeYN = "yes" Then _SendDiscordMsg(_SendMsgSubs($sDiscordPlayersMsg), $aServerDiscordWHSelPlayers)
 	EndIf
@@ -2189,10 +2154,9 @@ Func CloseServer($ip, $port, $pass, $tNoSplashOff = "no")
 	$aFPCount = 0
 	$tQueryLogReadDoneTF = False
 	For $i = 1 To 5
-		If $aRebootConfigUpdate = "no" Then ControlSetText($aSplash, "", "Static1", "Sending [shutdown] command to server . . ." & @CRLF & @CRLF & "Countdown: " & (6 - $i))
-;~ 		LogWrite(" [Server] Sending shutdown command to server. Countdown:" & (6 - $i))
+		If $aRebootConfigUpdate = "no" Then ControlSetText($aSplash, "", "Static1", "Sending shutdown command to server . . ." & @CRLF & @CRLF & "Countdown: " & (6 - $i))
+		LogWrite(" [Server] Sending shutdown command to server. Countdown:" & (6 - $i))
 		$aReply = _PlinkSend("shutdown")
-		LogWrite(" [Server] Sending shutdown command to server. Countdown:" & (6 - $i) & " Response [" & StringStripCR($aReply) & "]")
 		If StringInStr($aReply, "shutting server down") = 0 Then
 			Sleep(1000)
 		Else
@@ -2200,7 +2164,6 @@ Func CloseServer($ip, $port, $pass, $tNoSplashOff = "no")
 			ExitLoop
 		EndIf
 	Next
-	$aServerShuttingDownTF = True
 	For $i = 1 To 10
 		If ProcessExists($aServerPID) Then
 			If $aRebootConfigUpdate = "no" Then ControlSetText($aSplash, "", "Static1", "Waiting for server to finish shutting down." & @CRLF & @CRLF & "Countdown: " & (11 - $i))
@@ -2266,13 +2229,13 @@ Func SendDiscordMsg($sHookURL, $sBotMessage, $sBotName = "", $sBotTTS = False, $
 		Local $oStatusCode = $oHTTPOST.Status
 		Local $oReceived = $oHTTPOST.ResponseText
 		If (Int($oStatusCode) = 200) Or (Int($oStatusCode) = 204) Then
-			LogWrite(" [Dscord] Message to WH" & $tWH & " sent. Message:" & $sBotMessage, " [Dscord] (Fast Method) Message to WH" & $tWH & " sent (" & $sJsonMessage & "). Status Code (" & $oStatusCode & ") " & $oReceived)
+			LogWrite(" [Discord] Message to WH" & $tWH & " sent. Message:" & $sBotMessage, " [Discord] (Fast Method) Message to WH" & $tWH & " sent (" & $sJsonMessage & "). Status Code (" & $oStatusCode & ") " & $oReceived)
 			$tErr = False
 		ElseIf Int($oStatusCode) = 429 Then
-			LogWrite(" [Dscord] ERROR! Message to WH" & $tWH & " failed due to too many requests. Message(" & $sBotMessage & ")", " [Dscord] (Fast Method) ERROR! Message to WH" & $tWH & " failed due to too many requests (" & $sJsonMessage & ". Status Code (" & $oStatusCode & ") " & $oReceived)
+			LogWrite(" [Discord] ERROR! Message to WH" & $tWH & " failed due to too many requests. Message(" & $sBotMessage & ")", " [Discord] (Fast Method) ERROR! Message to WH" & $tWH & " failed due to too many requests (" & $sJsonMessage & ". Status Code (" & $oStatusCode & ") " & $oReceived)
 			$tErr = False
 		Else
-			LogWrite(" [Dscord] ERROR! Message to WH" & $tWH & " failed. Message:" & $sBotMessage, " [Dscord] (Fast Method) ERROR! Message to WH" & $tWH & " failed (" & $sJsonMessage & ". Status Code (" & $oStatusCode & ") " & $oReceived)
+			LogWrite(" [Discord] ERROR! Message to WH" & $tWH & " failed. Message:" & $sBotMessage, " [Discord] (Fast Method) ERROR! Message to WH" & $tWH & " failed (" & $sJsonMessage & ". Status Code (" & $oStatusCode & ") " & $oReceived)
 			$tErr = True
 		EndIf
 		If $tErr Then
@@ -2307,10 +2270,10 @@ Func SendDiscordMsg($sHookURL, $sBotMessage, $sBotName = "", $sBotTTS = False, $
 			Next
 			Local $tReply = ReplaceCRLF($tcrcatch)
 			If (StringInStr($tReply, "[200]") > 0) Or (StringInStr($tReply, "[204]") > 0) Then
-				LogWrite(" [Dscord] (Backup Method) Message to WH" & $tWH & " sent: " & $sBotMessage, " [Dscord] (Backup Method) Message sent to WH" & $tWH & ":[" & $tCmd & "] | Response:[" & $tReply & "]")
+				LogWrite(" [Discord] (Backup Method) Message to WH" & $tWH & " sent: " & $sBotMessage, " [Discord] (Backup Method) Message sent to WH" & $tWH & ":[" & $tCmd & "] | Response:[" & $tReply & "]")
 			Else
 				FileDelete($tFile)
-				LogWrite(" [Dscord] (Backup Method) ERROR!!! Send message to WH" & $tWH & " failed 1st attempt: " & $sBotMessage, " [Dscord] (Backup Method) ERROR!!! Send message to WH" & $tWH & " failed 1st attempt:[" & $tCmd & "] Response:[" & $tReply & "]")
+				LogWrite(" [Discord] (Backup Method) ERROR!!! Send message to WH" & $tWH & " failed 1st attempt: " & $sBotMessage, " [Discord] (Backup Method) ERROR!!! Send message to WH" & $tWH & " failed 1st attempt:[" & $tCmd & "] Response:[" & $tReply & "]")
 				Local $mOut = Run($tCmd, $aFolderTemp, @SW_HIDE)
 				$tErr = ProcessWaitClose($mOut, 4)
 				If $tErr = 0 Then
@@ -2325,9 +2288,9 @@ Func SendDiscordMsg($sHookURL, $sBotMessage, $sBotName = "", $sBotTTS = False, $
 				Next
 				Local $tReply = ReplaceCRLF($tcrcatch)
 				If (StringInStr($tReply, "[200]") > 0) Or (StringInStr($tReply, "[204]") > 0) Then
-					LogWrite(" [Dscord] Message to WH" & $tWH & " sent: " & $sBotMessage, " [Dscord] Message sent to WH" & $tWH & ":[" & $tCmd & "] | Response:[" & $tReply & "]")
+					LogWrite(" [Discord] Message to WH" & $tWH & " sent: " & $sBotMessage, " [Discord] Message sent to WH" & $tWH & ":[" & $tCmd & "] | Response:[" & $tReply & "]")
 				Else
-					LogWrite(" [Dscord] ERROR!!! Send message to WH" & $tWH & " failed 2nd attempt: " & $sBotMessage, " [Dscord] ERROR!!! Send message to WH" & $tWH & " failed 2nd attempt:[" & $tCmd & "] Response:[" & $tReply & "]")
+					LogWrite(" [Discord] ERROR!!! Send message to WH" & $tWH & " failed 2nd attempt: " & $sBotMessage, " [Discord] ERROR!!! Send message to WH" & $tWH & " failed 2nd attempt:[" & $tCmd & "] Response:[" & $tReply & "]")
 ;~ 					If $aDiscordUseFastMethodYN = "no" Then
 					Local $sJsonMessage = '{"content" : "' & $sBotMessage & '", "username" : "' & $sBotName & '", "tts" : "' & $sBotTTS & '", "avatar_url" : "' & $sBotAvatar & '"}'
 					Local $oHTTPOST = ObjCreate("WinHttp.WinHttpRequest.5.1")
@@ -2338,10 +2301,10 @@ Func SendDiscordMsg($sHookURL, $sBotMessage, $sBotName = "", $sBotTTS = False, $
 					Local $oStatusCode = $oHTTPOST.Status
 					Local $oReceived = $oHTTPOST.ResponseText
 					If (Int($oStatusCode) = 200) Or (Int($oStatusCode) = 204) Then
-						LogWrite(" [Dscord] (Attempt #3) Message to WH" & $tWH & " sent. Message(" & $sBotMessage & ")", " [Dscord] (Fast Method) Message to WH" & $tWH & " sent. Status Code (" & $oStatusCode & ") " & $oReceived)
+						LogWrite(" [Discord] (Attempt #3) Message to WH" & $tWH & " sent. Message(" & $sBotMessage & ")", " [Discord] (Fast Method) Message to WH" & $tWH & " sent. Status Code (" & $oStatusCode & ") " & $oReceived)
 						$tErr = False
 					Else
-						LogWrite(" [Dscord] (Attempt #3) ERROR! Message to WH" & $tWH & " failed. Message(" & $sBotMessage & ")", " [Dscord] (Fast Method) ERROR! Message to WH" & $tWH & " failed. Status Code (" & $oStatusCode & ") " & $oReceived)
+						LogWrite(" [Discord] (Attempt #3) ERROR! Message to WH" & $tWH & " failed. Message(" & $sBotMessage & ")", " [Discord] (Fast Method) ERROR! Message to WH" & $tWH & " failed. Status Code (" & $oStatusCode & ") " & $oReceived)
 						$tErr = True
 					EndIf
 ;~ 					EndIf
@@ -2350,7 +2313,7 @@ Func SendDiscordMsg($sHookURL, $sBotMessage, $sBotName = "", $sBotTTS = False, $
 		EndIf
 		$aObjErrFunc = "System"
 	Else
-		LogWrite(" [Dscord] ERROR! Message to WH" & $tWH & " failed. No webhook is assigned (" & $sBotMessage & ")")
+		LogWrite(" [Discord] ERROR! Message to WH" & $tWH & " failed. No webhook is assigned (" & $sBotMessage & ")")
 	EndIf
 EndFunc   ;==>SendDiscordMsg
 #EndRegion ;**** Function to Send Message to Discord ****
@@ -2641,11 +2604,12 @@ Func GetLatestVerSteamDB($bSteamAppID, $bServerVer)
 	$aReturn[1] = $hBuildID
 	Return $aReturn
 EndFunc   ;==>GetLatestVerSteamDB
+
 Func GetLatestVersion($sCmdDir)
 	Local $hBuildID = "0"
 	Local $aReturn[2] = [False, ""]
 	$aSteamBranch = $aServerVer
-	Local $aSteamUpdateCheck = 'https://api.steamcmd.net/v1/info/' & $aSteamAppID
+	Local $aSteamUpdateCheck = 'curl https://api.steamcmd.net/v1/info/' & $aSteamAppID
 	LogWrite("", " [Update] Getting latest buildID: " & $aSteamUpdateCheck)
 	Local $hFileRead1 = _getHTTPOutput($aSteamUpdateCheck)
 	$hFileRead1 = StringReplace($hFileRead1, @CRLF, "")
@@ -2994,7 +2958,7 @@ Func UtilUpdate($tLink, $tDL, $tUtil, $tUtilName)
 	$tVer = StringSplit($hFileRead, "^", 2)
 	If UBound($tVer) < 2 Then $tErr = True
 	If $tErr Then
-		LogWrite(" [ Util ] " & $tUtilName & " update check failed to download latest version: " & $tLink)
+		LogWrite(" [UTIL] " & $tUtilName & " update check failed to download latest version: " & $tLink)
 		If $aShowUpdate Then
 			ControlSetText($aSplash, "", "Static1", $aUtilName & " update check failed." & @CRLF & "Please try again later.")
 			Sleep(2000)
@@ -3003,7 +2967,7 @@ Func UtilUpdate($tLink, $tDL, $tUtil, $tUtilName)
 	Else
 		If UBound($tVer) < 2 Then ReDim $tVer[2]
 		If $tVer[0] = $tUtil Then
-			LogWrite(" [ Util ] " & $tUtilName & " up to date.", " [ Util ] " & $tUtilName & " up to date. Version: " & $tVer[0] & " , Notes: " & $tVer[1])
+			LogWrite(" [UTIL] " & $tUtilName & " up to date.", " [UTIL] " & $tUtilName & " up to date. Version: " & $tVer[0] & " , Notes: " & $tVer[1])
 			If $aShowUpdate Then
 				ControlSetText($aSplash, "", "Static1", $aUtilName & " up to date . . .")
 				Sleep(2000)
@@ -3011,8 +2975,8 @@ Func UtilUpdate($tLink, $tDL, $tUtil, $tUtilName)
 				SplashOff()
 			EndIf
 		Else
-			LogWrite(" [ Util ] New " & $aUtilName & " update available. Installed version: " & $tUtil & ", Latest version: " & $tVer[0] & ", Notes: " & $tVer[1])
-			FileWrite($aUtilUpdateFile, _NowCalc() & " [ Util ] New " & $aUtilName & " update available. Installed version: " & $tUtil & ", Latest version: " & $tVer[0] & ", Notes: " & $tVer[1])
+			LogWrite(" [UTIL] New " & $aUtilName & " update available. Installed version: " & $tUtil & ", Latest version: " & $tVer[0] & ", Notes: " & $tVer[1])
+			FileWrite($aUtilUpdateFile, _NowCalc() & " [UTIL] New " & $aUtilName & " update available. Installed version: " & $tUtil & ", Latest version: " & $tVer[0] & ", Notes: " & $tVer[1])
 			SplashOff()
 			$tVer[1] = ReplaceReturn($tVer[1])
 			$tMB = MsgBox($MB_YESNOCANCEL, $aUtilityVer, "New " & $aUtilName & " update available. " & @CRLF & "Installed version: " & $tUtil & @CRLF & "Latest version: " & $tVer[0] & @CRLF & @CRLF & _
@@ -3037,7 +3001,7 @@ Func UtilUpdate($tLink, $tDL, $tUtil, $tUtilName)
 				_ExtractZip($tZIP, "", "readme.txt", @ScriptDir)
 				;				FileDelete(@ScriptDir & "\" & $tUtilName & "_" & $tVer[1] & ".zip")
 				If Not FileExists(@ScriptDir & "\" & $tUtilName & "_" & $tVer[0] & ".exe") Then
-					LogWrite(" [ Util ] ERROR! " & $tUtilName & ".exe download failed. [" & $tDL & "]")
+					LogWrite(" [UTIL] ERROR! " & $tUtilName & ".exe download failed. [" & $tDL & "]")
 					SplashOff()
 					$tMB = MsgBox($MB_OKCANCEL, $aUtilityVer, "Download failed . . . " & @CRLF & "Go to """ & $tDL & """ to download latest version." & @CRLF & @CRLF & "Click (OK), (CANCEL), or wait 15 seconds, to resume current version.", 15)
 				Else
@@ -3056,10 +3020,10 @@ Func UtilUpdate($tLink, $tDL, $tUtil, $tUtilName)
 			ElseIf $tMB = 7 Then
 				$aUpdateUtil = "no"
 				IniWrite($aIniFile, " --------------- " & StringUpper($aUtilName) & " MISC OPTIONS --------------- ", "Check for " & $aUtilName & " updates? (yes/no) ###", "no")
-				LogWrite(" [ Util ] " & "Utility update check disabled. To enable update check, change [Check for Updates ###=yes] in the .ini.")
+				LogWrite(" [UTIL] " & "Utility update check disabled. To enable update check, change [Check for Updates ###=yes] in the .ini.")
 				$aSplash = _Splash("Utility update check disabled." & @CRLF & "To enable update check, change [Check for Updates ###=yes] in the .ini.", 5000, 500, 110)
 			ElseIf $tMB = 2 Then
-				LogWrite(" [ Util ] Utility update check canceled by user. Resuming utility . . .")
+				LogWrite(" [UTIL] Utility update check canceled by user. Resuming utility . . .")
 				$aSplash = _Splash("Utility update check canceled by user." & @CRLF & "Resuming utility . . .", 2000)
 			EndIf
 		EndIf
@@ -3469,8 +3433,6 @@ Func ReadUini($aIniFile, $sLogFile)
 	Global $sUseDiscordBotHordeHour = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Blood Moon time (hour) to send Discord Msg (00-23) ###", $iniCheck)
 	Global $sUseDiscordBotHordeDoneYN = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message when blood moon done? (yes/no) ###", $iniCheck)
 	Global $sUseDiscordBotFirstAnnouncement = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for first ANNOUNCEMENT only? (reduces bot spam)(yes/no) ###", $iniCheck)
-	Global $sUseDiscordBotServerCrashMsgFailedYN = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message when Watchdog first detects server crash? (yes/no) ###", $iniCheck)
-	Global $sUseDiscordBotServerCrashMsgRestartYN = IniRead($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message when Watchdog detects server crash and will restart server? (yes/no) ###", $iniCheck)
 
 	Global $sDiscordDailyMessage = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement DAILY (\m - minutes) ###", $iniCheck)
 	Global $sDiscordUpdateMessage = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement UPDATES (\m - minutes) ###", $iniCheck)
@@ -3485,8 +3447,6 @@ Func ReadUini($aIniFile, $sLogFile)
 	Global $sDiscordNewDayMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every new day (Uses online players substitutes. \p All Online Players)", $iniCheck)
 	Global $sDiscordHordeDayMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every blood moon (Uses online players substitutes. \p All Online Players)", $iniCheck)
 	Global $sDiscordHordeDoneMsg = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement when blood moon done (Uses online players substitutes. \p All Online Players)", $iniCheck)
-	Global $sDiscordServerCrashMsgFailed = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement when server crash is first detected by Watchdog ###", $iniCheck)
-	Global $sDiscordServerCrashMsgRestart = IniRead($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement when server crash is forcing a server roboot by Watchdog ###", $iniCheck)
 
 	Global $sUseTwitchBotDaily = IniRead($aIniFile, " --------------- TWITCH INTEGRATION --------------- ", "Send Twitch message for DAILY reboot? (yes/no) ###", $iniCheck)
 	Global $sUseTwitchBotUpdate = IniRead($aIniFile, " --------------- TWITCH INTEGRATION --------------- ", "Send Twitch message for UPDATE reboot? (yes/no) ###", $iniCheck)
@@ -4180,16 +4140,6 @@ Func ReadUini($aIniFile, $sLogFile)
 		$iIniFail += 1
 		$iIniError = $iIniError & "UseDiscordBotFirstAnnouncement, "
 	EndIf
-	If $iniCheck = $sUseDiscordBotServerCrashMsgFailedYN Then
-		$sUseDiscordBotServerCrashMsgFailedYN = "yes"
-		$iIniFail += 1
-		$iIniError = $iIniError & "UseDiscordBotServerCrashMsgFailedYN, "
-	EndIf
-	If $iniCheck = $sUseDiscordBotServerCrashMsgRestartYN Then
-		$sUseDiscordBotServerCrashMsgRestartYN = "yes"
-		$iIniFail += 1
-		$iIniError = $iIniError & "UseDiscordBotServerCrashMsgRestartYN, "
-	EndIf
 	If $iniCheck = $sDiscordPlayersMsg Then
 		$sDiscordPlayersMsg = 'Players Online: **\o / \m**  Game Time: **\t**  Next Horde: **\h days**\n\j\l   :hammer_pick:   \a'
 		$iIniFail += 1
@@ -4234,16 +4184,6 @@ Func ReadUini($aIniFile, $sLogFile)
 		$sDiscordHordeDoneMsg = 'Game Time: **\t**  :new_moon: **Horde Day Finished**'
 		$iIniFail += 1
 		$iIniError = $iIniError & "DiscordHordeDoneMsg, "
-	EndIf
-	If $iniCheck = $sDiscordServerCrashMsgFailed Then
-		$sDiscordServerCrashMsgFailed = ':warning: Server crash detected. Server will restart if no response in one minute.'
-		$iIniFail += 1
-		$iIniError = $iIniError & "DiscordServerCrashMsgFailed, "
-	EndIf
-	If $iniCheck = $sDiscordServerCrashMsgRestart Then
-		$sDiscordServerCrashMsgRestart = ':exclamation::exclamation: Server crash detected. RESTARTING SERVER :exclamation::exclamation:'
-		$iIniFail += 1
-		$iIniError = $iIniError & "DiscordServerCrashMsgRestart, "
 	EndIf
 	If $iniCheck = $sUseTwitchBotDaily Then
 		$sUseTwitchBotDaily = "no"
@@ -4501,8 +4441,8 @@ Func ReadUini($aIniFile, $sLogFile)
 	$aConfigFile = RemoveInvalidCharacters($aConfigFile)
 	$tReWriteTF = _UpdateAnnouncements()
 	If $tReWriteTF Then UpdateIni($aIniFile)
-	LogWrite("", " [Config] . . . Server Folder = " & $aServerDirLocal)
-	LogWrite("", " [Config] . . . SteamCMD Folder = " & $aSteamCMDDir)
+	LogWrite("", " . . . Server Folder = " & $aServerDirLocal)
+	LogWrite("", " . . . SteamCMD Folder = " & $aSteamCMDDir)
 	_SteamCMDCommandlineRead()
 	If StringLen($aSteamUpdateCommandline) < 20 Then _SteamCMDCreate()
 	If FileExists($aBackupOutputFolder) = 0 Then DirCreate($aBackupOutputFolder)
@@ -4747,8 +4687,6 @@ Func UpdateIni($aIniFile)
 	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Blood Moon time (hour) to send Discord Msg (00-23) ###", $sUseDiscordBotHordeHour)
 	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message when blood moon done? (yes/no) ###", $sUseDiscordBotHordeDoneYN)
 	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message for first ANNOUNCEMENT only? (reduces bot spam)(yes/no) ###", $sUseDiscordBotFirstAnnouncement)
-	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message when Watchdog first detects server crash? (yes/no) ###", $sUseDiscordBotServerCrashMsgFailedYN)
-	IniWrite($aIniFile, " --------------- DISCORD INTEGRATION --------------- ", "Send Discord message when Watchdog detects server crash and will restart server? (yes/no) ###", $sUseDiscordBotServerCrashMsgRestartYN)
 	FileWriteLine($aIniFile, @CRLF)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement DAILY (\m - minutes) ###", $sDiscordDailyMessage)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement UPDATES (\m - minutes) ###", $sDiscordUpdateMessage)
@@ -4764,8 +4702,6 @@ Func UpdateIni($aIniFile)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every new day (Uses online players substitutes. \p All Online Players)", $sDiscordNewDayMsg)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement every blood moon (Uses online players substitutes. \p All Online Players)", $sDiscordHordeDayMsg)
 	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement when blood moon done (Uses online players substitutes. \p All Online Players)", $sDiscordHordeDoneMsg)
-	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement when server crash is first detected by Watchdog ###", $sDiscordServerCrashMsgFailed)
-	IniWrite($aIniFile, " --------------- DISCORD MESSAGES --------------- ", "Announcement when server crash is forcing a server roboot by Watchdog ###", $sDiscordServerCrashMsgRestart)
 	FileWriteLine($aIniFile, @CRLF)
 	IniWrite($aIniFile, " --------------- TWITCH INTEGRATION --------------- ", "Send Twitch message for DAILY reboot? (yes/no) ###", $sUseTwitchBotDaily)
 	IniWrite($aIniFile, " --------------- TWITCH INTEGRATION --------------- ", "Send Twitch message for UPDATE reboot? (yes/no) ###", $sUseTwitchBotUpdate)
@@ -4882,7 +4818,7 @@ Func AppendConfigSettings()
 	FileWriteLine($aConfigFileTempFull, "</ServerSettings>")
 EndFunc   ;==>AppendConfigSettings
 #EndRegion ;**** Append Settings to Temporary Server Config ****
-Func _CheckForExistingServer($tNew = False)
+Func _CheckForExistingServer()
 	Local $tReturn2 = 0
 	Local $tProcess = ProcessList($aServerEXE)
 	Global $aServerDirLocal = IniRead($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", $aServerShort & " DIR ###", @ScriptDir)
@@ -4892,14 +4828,9 @@ Func _CheckForExistingServer($tNew = False)
 		If $tProcessFolder = $aServerDirLocal & "\" & $aServerEXE Then
 			$tReturn2 = $tProcess[$x][1]
 			IniWrite($aUtilCFGFile, "CFG", "PID", $tReturn2)
-			If $tNew Then
-				LogWrite(" [Server] New server found by process search. PID(" & $tReturn2 & ")")
-			Else
-				LogWrite(" [Server] Existing server found by process search. PID(" & $tReturn2 & ")")
-			EndIf
+			LogWrite(" [Server] Existing server found by Process search. PID(" & $tReturn2 & ")")
 		EndIf
 	Next
-	If $tReturn2 = 0 Then LogWrite(" [Server] ******** Note!!! NO RUNNING SERVER FOUND ********")
 	Return $tReturn2
 EndFunc   ;==>_CheckForExistingServer
 Func _CheckForExistingPlink()
@@ -4938,7 +4869,7 @@ Func PIDReadServer($tSplash = 0)
 	Local $tReturn1 = _CheckForExistingServer()
 	If $tReturn1 > 0 Then $tReturn = $tReturn1
 	If $tReturn = "0" Then
-		LogWrite(" [ Util ] No existing server found. Will start new server.")
+		LogWrite(" [Util] No existing server found. Will start new server.")
 		$aNoExistingPID = True
 	Else
 		$aNoExistingPID = False
@@ -4979,7 +4910,7 @@ Func TrayExitCloseN()
 		MsgBox(4096, $aUtilityVer, "Thank you for using " & $aUtilName & "." & @CRLF & @CRLF & "SERVER IS STILL RUNNING ! ! !" & @CRLF & @CRLF & _
 				"Please report any problems or comments to: " & @CRLF & "Discord: http://discord.gg/EU7pzPs or " & @CRLF & _
 				"Forum: http://phoenix125.createaforum.com/index.php. " & @CRLF & @CRLF & "Visit http://www.Phoenix125.com", 20)
-		LogWrite(" [Server] " & $aUtilityVer & " Stopped by User")
+		LogWrite(" " & $aUtilityVer & " Stopped by User")
 		IniWrite($aUtilCFGFile, "CFG", "PID", $aServerPID)
 		If $aRemoteRestartUse = "yes" Then
 			TCPShutdown()
@@ -5001,8 +4932,8 @@ Func TrayExitCloseY()
 		SplashOff()
 		MsgBox(4096, $aUtilityVer, "Thank you for using " & $aUtilName & "." & @CRLF & "Please report any problems or comments to: " & @CRLF & "Discord: http://discord.gg/EU7pzPs or " & @CRLF & _
 				"Forum: http://phoenix125.createaforum.com/index.php. " & @CRLF & @CRLF & "Visit http://www.Phoenix125.com", 20)
-		LogWrite(" [Server] " & $aUtilityVer & " Stopped by User")
-		LogWrite(" [Server] " & $aUtilityVer & " Stopped")
+		LogWrite(" " & $aUtilityVer & " Stopped by User")
+		LogWrite(" " & $aUtilityVer & " Stopped")
 		If $aRemoteRestartUse = "yes" Then
 			TCPShutdown()
 		EndIf
@@ -5453,7 +5384,7 @@ Func _GetQuery($tIP, $tPort)
 		Local $tFileExist = _DownloadAndExtractFile($tFileBase, "http://www.phoenix125.com/share/steamserverquery/" & $tFileDL, _
 				"https://github.com/phoenix125/SteamServerQuery/releases/download/Latest_Version/SteamServerQuery.zip", 0, $aFolderTemp)
 		If $tFileExist = False Then
-			LogWrite(" [Query ] ERROR!! Failed to download and extract " & $tFileBase & ". Query watchdog disabled until tool restarted.")
+			LogWrite(" [Query] ERROR!! Failed to download and extract " & $tFileBase & ". Query watchdog disabled until tool restarted.")
 			$aQueryYN = "no"
 		EndIf
 	EndIf
@@ -5501,11 +5432,11 @@ Func _DownloadAndExtractFile($tFileName, $tURL1, $tURL2 = "", $tSplash = 0, $tFo
 		InetGet($tURL1, $tFolder & "\" & $tFileName & ".zip", 1)
 		If Not FileExists($tFolder & "\" & $tFileName & ".zip") Then
 			SetError(1, 1) ; Failed to download from source 1
-			LogWrite(" [ Util ] Error downloading " & $tFileName & " from Source1: " & $tURL1)
+			LogWrite(" [Util] Error downloading " & $tFileName & " from Source1: " & $tURL1)
 			InetGet($tURL2, $tFolder & "\" & $tFileName & ".zip", 1)
 			If Not FileExists($tFolder & "\" & $tFileName & ".zip") Then
 				SetError(1, 2) ; Failed to download from source 2
-				LogWrite(" [ Util ] Error downloading " & $tFileName & " from Source2: " & $tURL2)
+				LogWrite(" [Util] Error downloading " & $tFileName & " from Source2: " & $tURL2)
 				SplashOff()
 				MsgBox($MB_OK, $aUtilName, "ERROR!!!  " & $tFileName & ".zip download failed.", 30)
 				$aSplash = _Splash("")
@@ -5519,9 +5450,9 @@ Func _DownloadAndExtractFile($tFileName, $tURL1, $tURL2 = "", $tSplash = 0, $tFo
 		If $tFile4 <> 0 Then _ExtractZip($tFolder & "\" & $tFileName & ".zip", "", $tFile4, $tFolder)
 		If $tFile5 <> 0 Then _ExtractZip($tFolder & "\" & $tFileName & ".zip", "", $tFile5, $tFolder)
 		If FileExists($tFolder & "\" & $tFileName & ".exe") Then
-			LogWrite(" [ Util ] Downloaded and installed " & $tFileName & ".")
+			LogWrite(" [Util] Downloaded and installed " & $tFileName & ".")
 		Else
-			LogWrite(" [ Util ] Error extracting " & $tFileName & ".exe from " & $tFileName & ".zip")
+			LogWrite(" [Util] Error extracting " & $tFileName & ".exe from " & $tFileName & ".zip")
 			SetError(1, 3) ; Failed to extract file
 			SplashOff()
 			MsgBox($MB_OK, $aUtilName, "ERROR!!! Extracting " & $tFileName & ".exe from " & $tFileName & ".zip failed.", 30)
@@ -5576,7 +5507,7 @@ Func PurgeLogFile()
 	FileWriteLine($aPurgeLogFileName, "for /f ""tokens=* skip=" & $aLogQuantity & """ %%F in " & Chr(40) & "'dir """ & $aFolderLog & $aUtilName & "_Log_*.txt"" /o-d /tc /b'" & Chr(41) & " do del """ & $aFolderLog & "%%F""")
 	FileWriteLine($aPurgeLogFileName, "for /f ""tokens=* skip=" & $aLogQuantity & """ %%F in " & Chr(40) & "'dir """ & $aFolderLog & $aUtilName & "_LogFull_*.txt"" /o-d /tc /b'" & Chr(41) & " do del """ & $aFolderLog & "%%F""")
 	FileWriteLine($aPurgeLogFileName, "for /f ""tokens=* skip=" & $aLogQuantity & """ %%F in " & Chr(40) & "'dir """ & $aFolderLog & $aUtilName & "_OnlineUserLog_*.txt"" /o-d /tc /b'" & Chr(41) & " do del """ & $aFolderLog & "%%F""")
-	LogWrite("", " [ Log  ] Deleting log files >" & $aLogQuantity & " in folder " & $aFolderTemp)
+	LogWrite("", " Deleting log files >" & $aLogQuantity & " in folder " & $aFolderTemp)
 	Run($aPurgeLogFileName, "", @SW_HIDE)
 EndFunc   ;==>PurgeLogFile
 Func _ProcessGetLocation($iPID)
@@ -5616,42 +5547,38 @@ Func _ArrayCompare($tArray1, $tArray2) ; Returns array: [0]=Only in 1st Array [1
 	Return $tReturn
 EndFunc   ;==>_ArrayCompare
 Func _PlinkConnect($tIP, $tPort, $tPwd, $tLog012 = 2, $tSkipVerifyTF = False) ; $tLog0123: 0 = no log, 1 = Detailed log only, 2 = Both logs
-	If $aServerShuttingDownTF = False Then
-		Local $sReturn = -1
-		Local $kReturn = ""
-		_DownloadAndExtractFile("plink", "http://www.phoenix125.com/share/plink/plink.zip", "https://github.com/phoenix125/7dtdServerUpdateUtility/releases/download/LatestVersion/plink.zip", $aSplash, $aFolderTemp)
-		Local $tPID = _CheckForExistingPlink()
-		If $tPID > 0 Then
-			Local $sReturn = $tPID
-			If $tLog012 = 2 Then
-				LogWrite(" [Telnet] Existing Plink session found. PID:(" & $tPID & ")")
-			ElseIf $tLog012 = 1 Then
-				LogWrite("", " [Telnet] Existing Plink session found. PID:(" & $tPID & ")")
-			EndIf
-		Else
-			Local $tCmd = '"' & $aFilePlink & '" -telnet ' & $tIP & ' -P ' & $tPort
-			$aPlinkPID = Run($tCmd, @ScriptDir, @SW_HIDE, $STDIN_CHILD + $STDERR_MERGED)
-			Local $sReturn = $aPlinkPID
-			If Not $aPlinkPID Then
-				LogWrite(" [Telnet] ERROR! Failed to connect to telnet. [" & $tIP & ":" & $tPort & "]", " [Telnet] ERROR! Fialed to connect to telnet. [" & $tIP & ":" & $tPort & "] " & $tCmd)
-				Return SetError(2, 0, 0)
-			EndIf
-			If $tSkipVerifyTF = False Then
-				For $i = 1 To 6
-					If $i = 6 Then
-						LogWrite(" [Telnet] ERROR! Plink failed to connect to server [" & $tIP & ":" & $tPort & "] PID:" & $aPlinkPID, " [Telnet] ERROR! Plink failed to connect to server [" & $tIP & ":" & $tPort & "]  PID[" & $aPlinkPID & "]" & $tCmd)
-						Return SetError(2, 0, 0)
-					EndIf
-					$kReturn = _PlinkSend(@CRLF & $tPwd, True, True)
-					If StringInStr($kReturn, "Logon successful.") > 0 Then ExitLoop
-					Sleep(500)
-				Next
-			EndIf
-			LogWrite(" [Telnet] Plink Started. PID(" & $aPlinkPID & ") Connected to server [" & $tIP & ":" & $tPort & "]", _
-					" [Telnet] Plink Started. PID(" & $aPlinkPID & ") Connected to server [" & $tIP & ":" & $tPort & "] [" & $tCmd & "] Response [" & ReplaceCRLF($kReturn) & "]")
+	Local $sReturn = -1
+	Local $kReturn = ""
+	_DownloadAndExtractFile("plink", "http://www.phoenix125.com/share/plink/plink.zip", "https://github.com/phoenix125/7dtdServerUpdateUtility/releases/download/LatestVersion/plink.zip", $aSplash, $aFolderTemp)
+	Local $tPID = _CheckForExistingPlink()
+	If $tPID > 0 Then
+		Local $sReturn = $tPID
+		If $tLog012 = 2 Then
+			LogWrite(" [Telnet] Existing Plink session found. PID:(" & $tPID & ")")
+		ElseIf $tLog012 = 1 Then
+			LogWrite("", " [Telnet] Existing Plink session found. PID:(" & $tPID & ")")
 		EndIf
 	Else
-		$sReturn = "Server shutting down."
+		Local $tCmd = '"' & $aFilePlink & '" -telnet ' & $tIP & ' -P ' & $tPort
+		$aPlinkPID = Run($tCmd, @ScriptDir, @SW_HIDE, $STDIN_CHILD + $STDERR_MERGED)
+		Local $sReturn = $aPlinkPID
+		If Not $aPlinkPID Then
+			LogWrite(" [Telnet] ERROR! Failed to connect to telnet. [" & $tIP & ":" & $tPort & "]", " [Telnet] ERROR! Fialed to connect to telnet. [" & $tIP & ":" & $tPort & "] " & $tCmd)
+			Return SetError(2, 0, 0)
+		EndIf
+		If $tSkipVerifyTF = False Then
+			For $i = 1 To 6
+				If $i = 6 Then
+					LogWrite(" [Telnet] ERROR! Plink failed to connect to server [" & $tIP & ":" & $tPort & "] PID:" & $aPlinkPID, " [Telnet] ERROR! Plink failed to connect to server [" & $tIP & ":" & $tPort & "]  PID[" & $aPlinkPID & "]" & $tCmd)
+					Return SetError(2, 0, 0)
+				EndIf
+				$kReturn = _PlinkSend(@CRLF & $tPwd, True, True)
+				If StringInStr($kReturn, "Logon successful.") > 0 Then ExitLoop
+				Sleep(500)
+			Next
+		EndIf
+		LogWrite(" [Telnet] Plink Started. PID(" & $aPlinkPID & ") Connected to server [" & $tIP & ":" & $tPort & "]", _
+				" [Telnet] Plink Started. PID(" & $aPlinkPID & ") Connected to server [" & $tIP & ":" & $tPort & "] " & $tCmd & " [" & ReplaceCRLF($kReturn) & "]")
 	EndIf
 	Return $sReturn
 EndFunc   ;==>_PlinkConnect
@@ -5669,21 +5596,17 @@ Func _PlinkRead($aSkipConnectTF = False) ; Author:spudw2k, Modified:Adam Lawrenc
 	Return StringRegExpReplace($sDataA, "\00", "")
 EndFunc   ;==>_PlinkRead
 Func _PlinkSend($sCmd, $tReadTF = True, $aSkipConnectTF = False)
-	If $aServerShuttingDownTF = False Then
-		If $aSkipConnectTF = False Then _PlinkConnect($aTelnetIP, $aTelnetPort, $aTelnetPass, 0, True)
+	If $aSkipConnectTF = False Then _PlinkConnect($aTelnetIP, $aTelnetPort, $aTelnetPass, 0, True)
+	$iChars = StdinWrite($aPlinkPID, $sCmd & @CRLF)
+	Local $tRead3 = _PlinkRead($aSkipConnectTF)
+	$tRead3 = StringReplace($tRead3, "*** ERROR: unknown command ''", "")
+	If StringInStr($tRead3, "Password incorrect, please enter password") Then
+		StdinWrite($aPlinkPID, $aTelnetPass & @CRLF)
+		Sleep(250)
 		$iChars = StdinWrite($aPlinkPID, $sCmd & @CRLF)
 		Local $tRead3 = _PlinkRead($aSkipConnectTF)
-		$tRead3 = StringReplace($tRead3, "*** ERROR: unknown command ''", "")
-		If StringInStr($tRead3, "Password incorrect, please enter password") Then
-			StdinWrite($aPlinkPID, $aTelnetPass & @CRLF)
-			Sleep(250)
-			$iChars = StdinWrite($aPlinkPID, $sCmd & @CRLF)
-			Local $tRead3 = _PlinkRead($aSkipConnectTF)
-		EndIf
-		Return SetError(@error, 0, $tRead3)
-	Else
-		Return SetError(@error, 0, "Server shutting down")
 	EndIf
+	Return SetError(@error, 0, $tRead3)
 EndFunc   ;==>_PlinkSend
 Func _PlinkDisconnect()
 	$iClosed = ProcessClose($aPlinkPID)
