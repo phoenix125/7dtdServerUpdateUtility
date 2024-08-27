@@ -1,12 +1,12 @@
 #Region
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.8.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.9.exe
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.6.8.0
+#AutoIt3Wrapper_Res_Fileversion=2.6.9.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.6.8
+#AutoIt3Wrapper_Res_ProductVersion=2.6.9
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -20785,10 +20785,10 @@ EndFunc
 #EndRegion Internal Functions
 Opt("GUIOnEventMode", 1)
 Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
-$aUtilVerStable = "v2.6.8"
-$aUtilVerBeta = "v2.6.8"
+$aUtilVerStable = "v2.6.9"
+$aUtilVerBeta = "v2.6.9"
 $aUtilVersion = $aUtilVerStable
-Global $aUtilVerNumber = 16
+Global $aUtilVerNumber = 18
 Global $aServerNameVer, $aGameName, $aSplash, $aRestartDaily, $aRestartDays, $aRestartHours, $aRestartMin, $aBeginDelayedShutdown, $aServerPID, $aQueryYN, $gWatchdogServerStartTimeCheck, $aExMemAmt, $aExMemRestart, $aTimeCheck1, $aServerName
 Global Const $aUtilName = "7dtdServerUpdateUtility"
 Global Const $aServerEXE = "7DaysToDieServer.exe"
@@ -20811,6 +20811,8 @@ Global $aCustomChatFile = @ScriptDir & "\" & $aUtilName & "_CustomChat.txt"
 Global $aBatchDIR = @ScriptDir & "\BatchFiles"
 Global $aSteamUpdateCMDValY = $aBatchDIR & "\Update_7DTD_Validate_YES.bat"
 Global $aSteamUpdateCMDValN = $aBatchDIR & "\Update_7DTD_Validate_NO.bat"
+Global $xPlayerName
+Global $xPlayerID
 DirCreate($aBatchDIR)
 FileInstall("K:\AutoIT\_MyProgs\7dtdServerUpdateUtility\Resources\zombieGroup.jpg", $aFolderTemp, 0)
 FileInstall("K:\AutoIT\_MyProgs\7dtdServerUpdateUtility\Resources\zombiehorde.jpg", $aFolderTemp, 0)
@@ -21636,7 +21638,7 @@ If ((_DateDiff('s', $aTimeCheck8, _NowCalc())) >= $aServerOnlinePlayerSec) Then 
 EndIf
 #EndRegion
 #Region
-If (($aRestartDaily = "yes") And ((_DateDiff('n', $aTimeCheck2, _NowCalc())) >= 1) And (DailyRestartCheck($aRestartDays, $aRestartHours, $aRestartMin)) And ($aBeginDelayedShutdown = 0)) And $aServerShuttingDownTF = False Then
+If $aRestartDaily = "yes" And (_DateDiff('n', $aTimeCheck2, _NowCalc())) >= 1 And DailyRestartCheck($aRestartDays, $aRestartHours, $aRestartMin) And $aServerShuttingDownTF = False Then
 If ProcessExists($aServerPID) Then
 Local $MEM = ProcessGetStats($aServerPID, 0)
 If @error Then
@@ -22403,6 +22405,8 @@ $tCmd &= '"' & $aServerDirLocal & '\" "' & @ScriptDir & '\"'
 $tCount = 0
 EndIf
 EndIf
+$tCmd = StringReplace($tCmd, ' "-1"', " ")
+$tCmd = StringRegExpReplace($tCmd, "  ", " ")
 $tCmd = StringRegExpReplace($tCmd, "  ", " ")
 LogWrite(" [Backup] Backup started. File:" & $tName, " [Backup] Backup initiated: " & $tCmd)
 If $tMinimizeTF Then
@@ -23149,7 +23153,7 @@ $aReturn[0] = True
 $aReturn[1] = $hBuildID
 Return $aReturn
 EndFunc
-Func GetLatestVersion($sCmdDir)
+Func GetLatestVersion()
 Local $hBuildID = "0"
 Local $aReturn[2] = [False, ""]
 $aSteamBranch = $aServerVer
@@ -23253,7 +23257,7 @@ Else
 $aSplash = _Splash($aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Acquiring latest BuildID from SteamCMD.")
 EndIf
 EndIf
-Local $aLatestVersion = GetLatestVersion($aSteamCMDDir)
+Local $aLatestVersion = GetLatestVersion()
 EndIf
 If $aFirstBoot Or $tAsk Then
 If $tSplash > 0 Then
@@ -25551,6 +25555,25 @@ EndIf
 Next
 EndIf
 Next
+Global $xPlayerName[$tArray3[0]]
+Global $xPlayerID[$tArray3[0]]
+For $tx1 = 1 To $tArray3[0]
+If StringRegExp($tArray3[$tx1], "Total of .* in the game") Then ExitLoop
+If StringLen($tArray3[$tx1]) > 200 Then
+Local $tx2 = StringSplit($tArray3[$tx1], ",")
+If $tx2[0] > 2 Then
+$xPlayerName[$tx1] = StringTrimLeft($tx2[2], 1)
+Local $tx3 = StringSplit($tx2[1], "=")
+If UBound($tx3) > 2 Then
+If UBound($xPlayerID) > ($tx1 - 1) Then
+$xPlayerID[$tx1] = $tx3[2]
+Else
+_ArrayAdd($xPlayerID, $tx3[2])
+EndIf
+EndIf
+EndIf
+EndIf
+Next
 EndIf
 Local $tRead2 = _SendTelnetSafe("gettime")
 Local $tArray3 = StringSplit($tRead2, @CRLF)
@@ -25570,6 +25593,18 @@ EndIf
 _TelnetLookForAll($tRead2)
 If $aTelnetStayConnectedYN = "no" Then _PlinkDisconnect()
 Return $sReturn
+EndFunc
+Func _FindNameFromID($tUID)
+If UBound($xPlayerName) = UBound($xPlayerID) Then
+For $ty1 = 0 To (UBound($xPlayerName) - 1)
+If $xPlayerID[$ty1] = $tUID Then
+Return $xPlayerName[$ty1]
+EndIf
+Next
+Return "Unknown"
+Else
+Return "Unknown"
+EndIf
 EndFunc
 Func _SendTelnetSafe($tMsgt, $tSkipLookForAllTF = False, $tLogSEN = "E")
 $aTelnetCheckInProgressTF = True
@@ -25965,9 +26000,15 @@ Local $tMsg4 = $sDiscordPlayerChatMsg
 Local $tArray[0]
 If $tMsg4 <> "" Then
 If StringInStr($tTxt4, " INF Chat (from") Or StringInStr($tTxt4, " INF Chat handled by mod") Then
-Local $tName = _ArrayToString(_StringBetween($tTxt4, "'): '", "': "))
-Local $tChat = StringMid($tTxt4, StringInStr($tTxt4, $tName & "': ") + StringLen($tName & "': "))
+Local $tUID = _ArrayToString(_StringBetween($tTxt4, "entity id '", "', to "))
+If $tUID = "-1" Then
+Local $tName = "Server"
+Else
+Local $tName = _FindNameFromID($tUID)
+EndIf
 Local $tType = _ArrayToString(_StringBetween($tTxt4, "', to '", "'):"))
+Local $tLen = StringInStr($tTxt4, "to '" & $tType & "'): ") + 7 + StringLen($tType)
+Local $tChat = StringTrimLeft($tTxt4, $tLen)
 Local $tAnyCustomTF = False
 If StringInStr($tChat, $aCustomCommands) Then
 Else
@@ -25976,6 +26017,7 @@ For $t5 = 0 To (UBound($xCustomCommands) - 1)
 If $tChat = $xCustomCommands[$t5] Then _ArrayAdd($tArray, _SendMsgSubs($xCustomReponses[$t5], "I"))
 Next
 EndIf
+If StringMid($tChat, 1, 1) = "[" And StringMid($tChat, 8, 1) = "]" Then $tChat = StringTrimLeft($tChat, 8)
 $tMsg4 = StringReplace($tMsg4, "\p", $tName)
 $tMsg4 = StringReplace($tMsg4, "\m", $tChat)
 $tMsg4 = StringReplace($tMsg4, "\n", "|")

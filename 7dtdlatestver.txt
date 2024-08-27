@@ -1,1 +1,1 @@
-v2.6.8^v2.6.8|- Fixed: Unknown function name error in Line 22456.||v2.6.7|- Fixed Watchdog server restarts and added Discord announcements for it|v2.6.6|- New improved code for checking for server updates.|- Improved code for detecting existing servers (to prevent duplicate servers running)
+v2.6.9^v2.6.9|v2.6.9 Fixed Discord announcements to be compatible with v1.0

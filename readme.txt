@@ -1,5 +1,5 @@
 7dtdServerUpdateUtility - A Utility to Keep Your 7 days To Die Dedicated Server updated (and schedule server restarts, download and install new server files, and more!)
-- Latest version: 7dtdServerUpdateUtility_v2.6.8 (2023-07-13) (Beta and Stable are the same version)
+- Latest version: 7dtdServerUpdateUtility_v2.6.9 (2024-08-20) (Beta and Stable are the same version)
 - By Phoenix125 | http://www.Phoenix125.com | http://discord.gg/EU7pzPs | kim@kim125.com
 - Based on Dateranoth's ConanExilesServerUtility-3.3.0 and 7dServerUtility | https://gamercide.org/
 
@@ -55,7 +55,7 @@ FRESH SERVER: Use 7dtdServerUpdateUtility to download install a fresh dedicated 
 ------------
  KNOWN BUGS
 ------------
-- None reported at this time
+- The restart announcement countdown timer skips the first value.  ex. If set to restart in 10, 5, 3, 1.. It announces the 10 minute restart, but actually restarts in 5 minutes.
 
 --------------
  INSTRUCTIONS
@@ -141,6 +141,11 @@ In a standard web browser, type in the URL http://192.168.1.30:57520?restart=pas
 -----------------
  VERSION HISTORY
 -----------------
+(2024-08-20) v2.6.9 Fixed Discord announcements in v1.0
+- Fixed: Updated Discord announcement code to be compatible with 7DTD v1.0
+- Fixed: Fixed an issue where the backups would fail due to a "-1" added to the 7zip commandline
+
+
 (2023-07-13) v2.6.8 Fixed error Line 22456
 - Fixed: Unknown function name error in Line 22456.  (Thanks to @BloodRven for reporting!)
 

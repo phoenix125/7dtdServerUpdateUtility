@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.8.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.9.exe
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.6.8.0
+#AutoIt3Wrapper_Res_Fileversion=2.6.9.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.6.8
+#AutoIt3Wrapper_Res_ProductVersion=2.6.9
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -47,10 +47,10 @@ Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
 
 ; *** End added by AutoIt3Wrapper ***
 
-$aUtilVerStable = "v2.6.8" ; (2023-07-01)
-$aUtilVerBeta = "v2.6.8" ; (2023-07-01)
+$aUtilVerStable = "v2.6.9"
+$aUtilVerBeta = "v2.6.9"
 $aUtilVersion = $aUtilVerStable
-Global $aUtilVerNumber = 16
+Global $aUtilVerNumber = 18
 ; 1 = v2.3.3
 ; 2 = v2.3.4
 ; 3 = v2.5.0
@@ -67,7 +67,8 @@ Global $aUtilVerNumber = 16
 ;14 = 2.6.5
 ;15 = 2.6.6
 ;16 = 2.6.7
-;17 = 2.6.8
+;17 = 2.6.8 2023-07-14
+;18 = 2.6.9 2024-08-27
 
 ;**** Directives created by AutoIt3Wrapper_GUI ****
 ;Originally written by Dateranoth for use and modified for 7DTD by Phoenix125.com
@@ -95,6 +96,8 @@ Global $aCustomChatFile = @ScriptDir & "\" & $aUtilName & "_CustomChat.txt"
 Global $aBatchDIR = @ScriptDir & "\BatchFiles"
 Global $aSteamUpdateCMDValY = $aBatchDIR & "\Update_7DTD_Validate_YES.bat"
 Global $aSteamUpdateCMDValN = $aBatchDIR & "\Update_7DTD_Validate_NO.bat"
+Global $xPlayerName
+Global $xPlayerID
 DirCreate($aBatchDIR)
 
 FileInstall("K:\AutoIT\_MyProgs\7dtdServerUpdateUtility\Resources\zombieGroup.jpg", $aFolderTemp, 0)
@@ -514,7 +517,6 @@ If $tUpdateINI Then
 	UpdateIni($aIniFile)
 EndIf
 ; -----------------------------------------------------------------------------------------------------------------------
-
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
 
@@ -579,7 +581,6 @@ EndIf
 Global $aServerTelnetReboot = "no"
 _ImportServerConfig()
 #EndRegion ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
-
 If $aUseSteamCMD = "yes" Then
 	Local $sFileExists = FileExists($aSteamCMDDir & "\steamcmd.exe")
 	If $sFileExists = 0 Then
@@ -625,7 +626,6 @@ If ($aCheckForUpdate = "yes") Then
 	EndIf
 EndIf
 #EndRegion ;**** Check for Update At Startup ****
-
 ExternalScriptExist()
 _StartRemoteRestart()
 #Region ;**** Create Tray ****
@@ -713,7 +713,6 @@ If WinExists($hGUI_LoginLogo) Then GUIDelete($hGUI_LoginLogo)
 ShowOnlineGUI(True)
 _UpdateTray()
 #EndRegion ;**** Create Tray ****
-
 If $aUpdateUtil = "yes" Then AdlibRegister("RunUtilUpdate", 28800000)
 Global $gTelnetTimeCheck0 = _NowCalc()
 Global $gQueryTimeCheck0 = _DateAdd('h', -2, _NowCalc())
@@ -803,17 +802,6 @@ While True ;**** Loop Until Closed ****
 					If $aServerPID > 0 Then ExitLoop
 				Next
 				$aServerCrashMsgSentFailedTF = False
-;~ 				Local $tReturn = "Not Found"
-;~ 				Local $tProcess = ProcessList($aServerEXE)
-;~ 				For $x = 1 To $tProcess[0][0]
-;~ 					Local $tTmpPID = Number($tProcess[$x][1])
-;~ 					Local $tProcessName = WinGetTitle(_WinGetByPID($tTmpPID))
-;~ 					$tPath = _WinAPI_GetProcessFileName($tTmpPID)
-;~ 					If $tPath = $aServerDirLocal & "\" & $aServerEXE Then
-;~ 						$aServerPID = ProcessExists($tTmpPID)
-;~ 						ExitLoop
-;~ 					EndIf
-;~ 				Next
 				$gWatchdogServerStartTimeCheck = _NowCalc()
 				IniWrite($aUtilCFGFile, "CFG", "Last Server Start", $gWatchdogServerStartTimeCheck)
 				ControlSetText($aSplash, "", "Static1", "Server Started." & @CRLF & @CRLF & "PID[" & $aServerPID & "]")
@@ -987,50 +975,12 @@ While True ;**** Loop Until Closed ****
 		#Region ;**** Online Player Check & Horde Day Announcements ****
 		If $aServerOnlinePlayerYN = "yes" And $aServerShuttingDownTF = False Then
 			If ((_DateDiff('s', $aTimeCheck8, _NowCalc())) >= $aServerOnlinePlayerSec) Then _OnlinePlayerCheck()
-;~ 				_PlayersOnlineCheck()
-;~ 				Local $tGameHour = Number(StringLeft(StringRight($aGameTime, 5), 2))
-;~ 				Local $tGameDay = Number(_ArrayToString(_StringBetween($aGameTime, "Day ", ",")))
-;~ 				If $sUseDiscordBotNewDayYN = "yes" Then
-;~ 					If $tGameDay > IniRead($aUtilCFGFile, "CFG", "NewDay: Last day announced", "1") Then
-;~ 						IniWrite($aUtilCFGFile, "CFG", "NewDay: Last day announced", $tGameDay)
-;~ 						_SendDiscordNewDay()
-;~ 					EndIf
-;~ 				EndIf
-;~ 				If $sUseDiscordBotHordeDayYN = "yes" Then
-;~ 					If $aNextHorde = 0 Then
-;~ 						If $tGameDay > IniRead($aUtilCFGFile, "CFG", "Horde: Last day announced", "1") Then
-;~ 							If $tGameHour >= Number($sUseDiscordBotHordeHour) Then
-;~ 								IniWrite($aUtilCFGFile, "CFG", "Horde: Last day announced", $tGameDay)
-;~ 								_SendDiscordNewHorde()
-;~ 							EndIf
-;~ 						EndIf
-;~ 					EndIf
-;~ 				EndIf
-;~ 				If $sUseDiscordBotHordeDoneYN = "yes" Then
-;~ 					If $aNextHorde = ($aHordeFreq - 1) Then
-;~ 						If $tGameDay > IniRead($aUtilCFGFile, "CFG", "Horde: Last day done announced", "1") Then
-;~ 							If $tGameHour >= 4 Then
-;~ 								IniWrite($aUtilCFGFile, "CFG", "Horde: Last day done announced", $tGameDay)
-;~ 								_SendDiscordHordeDone()
-;~ 							EndIf
-;~ 						EndIf
-;~ 					EndIf
-;~ 				EndIf
-;~ 				If $sInGameAnnounceDailyYN = "yes" Then
-;~ 					If $tGameDay > IniRead($aUtilCFGFile, "CFG", "InGameAnnounceDailyHour:Last day announced", "1") Then
-;~ 						If $tGameHour >= Number($sInGameAnnounceDailyHour) Then
-;~ 							IniWrite($aUtilCFGFile, "CFG", "InGameAnnounceDailyHour:Last day announced", $tGameDay)
-;~ 							_SendInGameDaily()
-;~ 						EndIf
-;~ 					EndIf
-;~ 				EndIf
-;~ 				$aTimeCheck8 = _NowCalc()
-;~ 			EndIf
 		EndIf
 		#EndRegion ;**** Online Player Check & Horde Day Announcements ****
 
 		#Region ;**** Restart Server Every X Days and X Hours & Min****
-		If (($aRestartDaily = "yes") And ((_DateDiff('n', $aTimeCheck2, _NowCalc())) >= 1) And (DailyRestartCheck($aRestartDays, $aRestartHours, $aRestartMin)) And ($aBeginDelayedShutdown = 0)) And $aServerShuttingDownTF = False Then
+;~ 		If (($aRestartDaily = "yes") And ((_DateDiff('n', $aTimeCheck2, _NowCalc())) >= 1) And (DailyRestartCheck($aRestartDays, $aRestartHours, $aRestartMin)) And ($aBeginDelayedShutdown = 0)) And $aServerShuttingDownTF = False Then
+		If $aRestartDaily = "yes" And (_DateDiff('n', $aTimeCheck2, _NowCalc())) >= 1 And DailyRestartCheck($aRestartDays, $aRestartHours, $aRestartMin) And $aServerShuttingDownTF = False Then
 			If ProcessExists($aServerPID) Then
 				Local $MEM = ProcessGetStats($aServerPID, 0)
 				If @error Then
@@ -1384,7 +1334,6 @@ Func Gamercide()
 	EndIf
 EndFunc   ;==>Gamercide
 #EndRegion ; **** Gamercide Shutdown Protocol ****
-
 ; -----------------------------------------------------------------------------------------------------------------------
 Func RunUtilUpdate()
 	UtilUpdate($aServerUpdateLinkVerUse, $aServerUpdateLinkDLUse, $aUtilVersion, $aUtilName)
@@ -1838,6 +1787,8 @@ Func _BackupGame($tMinimizeTF = True, $tFullTF = False, $tRunWait = False)
 			$tCount = 0
 		EndIf
 	EndIf
+	$tCmd = StringReplace($tCmd, ' "-1"', " ")
+	$tCmd = StringRegExpReplace($tCmd, "  ", " ")
 	$tCmd = StringRegExpReplace($tCmd, "  ", " ")
 	LogWrite(" [Backup] Backup started. File:" & $tName, " [Backup] Backup initiated: " & $tCmd)
 	If $tMinimizeTF Then
@@ -2177,7 +2128,6 @@ Func _GetServerNameFromLog($tSplash = 0)
 	LogWrite(" [Server] Server name from server log file:[" & $tReturn & "]", " [Server] Server name from server log file:[" & $tReturn & "] Version derived from """ & $sLogPath & """.")
 	Return $tReturn
 EndFunc   ;==>_GetServerNameFromLog
-
 #Region 	 ;**** Close Server ****
 Func CloseServer($ip, $port, $pass, $tNoSplashOff = "no")
 	$aSplash = 0
@@ -2230,9 +2180,6 @@ Func CloseServer($ip, $port, $pass, $tNoSplashOff = "no")
 	$aRebootConfigUpdate = "no"
 EndFunc   ;==>CloseServer
 #EndRegion 	 ;**** Close Server ****
-
-; -----------------------------------------------------------------------------------------------------------------------
-
 #Region ;**** Function to Send Message to Discord ****
 Func _Discord_ErrFunc($oError)
 	LogWrite(" [" & $aServerName & " (PID: " & $aServerPID & ")] Error: 0x" & Hex($oError.number) & " While Sending Discord Bot Message.")
@@ -2355,7 +2302,6 @@ Func SendDiscordMsg($sHookURL, $sBotMessage, $sBotName = "", $sBotTTS = False, $
 	EndIf
 EndFunc   ;==>SendDiscordMsg
 #EndRegion ;**** Function to Send Message to Discord ****
-
 #Region ;**** Post to Twitch Chat Function ****
 Opt("TCPTimeout", 500)
 Func SendTwitchMsg($sT_Nick, $sT_OAuth, $sT_Channels, $sT_Message)
@@ -2423,9 +2369,6 @@ Func TwitchMsgLog($sT_Msg)
 	EndIf
 EndFunc   ;==>TwitchMsgLog
 #EndRegion ;**** Post to Twitch Chat Function ****
-
-; -----------------------------------------------------------------------------------------------------------------------
-
 #Region	 ;**** Restart Server Scheduling Scripts ****
 Func DailyRestartCheck($sWDays, $sHours, $sMin)
 	Local $iDay = -1
@@ -2447,7 +2390,6 @@ Func DailyRestartCheck($sWDays, $sHours, $sMin)
 EndFunc   ;==>DailyRestartCheck
 
 #EndRegion	 ;**** Restart Server Scheduling Scripts ****
-
 Func RunExternalScriptDaily()
 	If $aExternalScriptDailyYN = "yes" Then
 		LogWrite(" Executing DAILY restart external script " & $aExternalScriptDailyFile)
@@ -2466,7 +2408,6 @@ Func RunExternalScriptDaily()
 		EndIf
 	EndIf
 EndFunc   ;==>RunExternalScriptDaily
-
 Func RunExternalScriptAnnounce()
 	If $aExternalScriptAnnounceYN = "yes" Then
 		LogWrite(" Executing FIRST ANNOUNCEMENT external script " & $aExternalScriptAnnounceFile)
@@ -2485,7 +2426,6 @@ Func RunExternalScriptAnnounce()
 		EndIf
 	EndIf
 EndFunc   ;==>RunExternalScriptAnnounce
-
 Func RunExternalRemoteRestart()
 	If $aExternalScriptRemoteYN = "yes" Then
 		LogWrite(" Executing REMOTE RESTART external script " & $aExternalScriptRemoteFile)
@@ -2504,7 +2444,6 @@ Func RunExternalRemoteRestart()
 		EndIf
 	EndIf
 EndFunc   ;==>RunExternalRemoteRestart
-
 Func RunExternalScriptUpdate()
 	If $aExternalScriptUpdateYN = "yes" Then
 		LogWrite(" Executing Script When Restarting For Server Update: " & $aExternalScriptUpdateFile)
@@ -2523,7 +2462,6 @@ Func RunExternalScriptUpdate()
 		EndIf
 	EndIf
 EndFunc   ;==>RunExternalScriptUpdate
-
 Func ExternalScriptExist()
 	If $aExecuteExternalScript = "yes" Then
 		Local $sFileExists = FileExists($aExternalScriptFile)
@@ -2604,9 +2542,6 @@ Func ExternalScriptExist()
 		EndIf
 	EndIf
 EndFunc   ;==>ExternalScriptExist
-
-; -----------------------------------------------------------------------------------------------------------------------
-
 #Region ;**** Functions to Check for Update ****
 
 ;**** Retreive latest build ID from SteamDB ****
@@ -2642,7 +2577,7 @@ Func GetLatestVerSteamDB($bSteamAppID, $bServerVer)
 	$aReturn[1] = $hBuildID
 	Return $aReturn
 EndFunc   ;==>GetLatestVerSteamDB
-Func GetLatestVersion($sCmdDir)
+Func GetLatestVersion()
 	Local $hBuildID = "0"
 	Local $aReturn[2] = [False, ""]
 	$aSteamBranch = $aServerVer
@@ -2750,7 +2685,7 @@ Func UpdateCheck($tAsk, $tSplash = 0, $tShowIfNoUpdate = False)
 				$aSplash = _Splash($aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Acquiring latest BuildID from SteamCMD.")
 			EndIf
 		EndIf
-		Local $aLatestVersion = GetLatestVersion($aSteamCMDDir)
+		Local $aLatestVersion = GetLatestVersion()
 	EndIf
 	If $aFirstBoot Or $tAsk Then
 		If $tSplash > 0 Then
@@ -2831,7 +2766,6 @@ Func UpdateCheck($tAsk, $tSplash = 0, $tShowIfNoUpdate = False)
 	Return $bUpdateRequired
 EndFunc   ;==>UpdateCheck
 #EndRegion ;**** Functions to Check for Update ****
-
 #Region ;**** Adjust restart time for announcement delay ****
 Func DailyRestartOffset($bHour0, $sMin, $sTime)
 	If $bRestartMin - $sTime < 0 Then
@@ -2853,7 +2787,6 @@ Func DailyRestartOffset($bHour0, $sMin, $sTime)
 	EndIf
 EndFunc   ;==>DailyRestartOffset
 #EndRegion ;**** Adjust restart time for announcement delay ****
-
 #Region ;**** Replace "\m" with minutes in announcement ****
 Func AnnounceReplaceTime($tTime0, $tMsg0)
 	If StringInStr($tMsg0, "\m") = "0" Then
@@ -2881,7 +2814,6 @@ Func AnnounceReplaceTime($tTime0, $tMsg0)
 	EndIf
 EndFunc   ;==>AnnounceReplaceTime
 #EndRegion ;**** Replace "\m" with minutes in announcement ****
-
 #Region ;**** Remove invalid characters ****
 Func RemoveInvalidCharacters($aString)
 	Local $bString = StringRegExpReplace($aString, "[\x3D\x22\x3B\x3C\x3E\x3F\x25\x27\x7C]", "")
@@ -2892,7 +2824,6 @@ Func RemoveInvalidCharacters($aString)
 	Return $bString
 EndFunc   ;==>RemoveInvalidCharacters
 #EndRegion ;**** Remove invalid characters ****
-
 Func SteamUpdate()
 	$aSplash = _Splash("Updating server now...")
 	$TimeStamp = StringRegExpReplace(_NowCalc(), "[\\\/\: ]", "_")
@@ -2920,9 +2851,6 @@ Func SteamUpdate()
 	EndIf
 	SplashOff()
 EndFunc   ;==>SteamUpdate
-
-; -----------------------------------------------------------------------------------------------------------------------
-
 #Region ;**** UnZip Function by trancexx ****
 ; #FUNCTION# ;===============================================================================
 ;
@@ -2982,9 +2910,6 @@ Func _ExtractZip($sZipFile, $sFolderStructure, $sFile, $sDestinationFolder)
 
 EndFunc   ;==>_ExtractZip
 #EndRegion ;**** UnZip Function by trancexx ****
-
-; -----------------------------------------------------------------------------------------------------------------------
-
 #Region ;**** Check for Server Utility Update ****
 Func UtilUpdate($tLink, $tDL, $tUtil, $tUtilName)
 	$aSplash = _Splash($aUtilName & " " & $aUtilVersion & " started." & @CRLF & @CRLF & "Checking for " & $tUtilName & " updates.")
@@ -3076,9 +3001,6 @@ Func ReplaceReturn($tMsg0)
 EndFunc   ;==>ReplaceReturn
 
 #EndRegion ;**** Check for Server Utility Update ****
-
-; -----------------------------------------------------------------------------------------------------------------------
-
 #Region ;**** PassCheck - Checks if received password matches any of the known passwords ****
 Func PassCheck($sPass, $sPassString)
 	Local $aPassReturn[3] = [False, "", ""]
@@ -3101,7 +3023,6 @@ Func PassCheck($sPass, $sPassString)
 	Return $aPassReturn
 EndFunc   ;==>PassCheck
 #EndRegion ;**** PassCheck - Checks if received password matches any of the known passwords ****
-
 Func FPRun() ;**** Future-Proof Script ****
 	Local $tConfigPath = $aServerDirLocal & "\" & $aConfigFile
 	Local $aFPConfigDefault = $aServerDirLocal & "\serverconfig.xml"
@@ -3221,7 +3142,6 @@ Func _TCP_Server_ClientIP($hSocket)
 	Return $aReturn[0]
 EndFunc   ;==>_TCP_Server_ClientIP
 #EndRegion ;**** Function to get IP from Restart Client ****
-
 #Region ;**** Function to Check Request from Browser and return restart string if request is valid****
 Func CheckHTTPReq($sRequest, $sKey = "restart")
 	If IsString($sRequest) Then
@@ -3238,7 +3158,6 @@ Func CheckHTTPReq($sRequest, $sKey = "restart")
 	EndIf
 EndFunc   ;==>CheckHTTPReq
 #EndRegion ;**** Function to Check Request from Browser and return restart string if request is valid****
-
 #Region ;**** Remove Trailing Slash ****
 Func RemoveTrailingSlash($aString)
 	Local $bString = StringRight($aString, 1)
@@ -3246,7 +3165,6 @@ Func RemoveTrailingSlash($aString)
 	Return $aString
 EndFunc   ;==>RemoveTrailingSlash
 #EndRegion ;**** Remove Trailing Slash ****
-
 #Region ;**** Function to Check for Multiple Password Failures****
 Func MultipleAttempts($sRemoteIP, $bFailure = False, $bSuccess = False)
 	Local $aPassFailure[1][3] = [[0, 0, 0]]
@@ -3275,7 +3193,6 @@ Func MultipleAttempts($sRemoteIP, $bFailure = False, $bSuccess = False)
 	Return SetError(0, 0, "IP Added to List")
 EndFunc   ;==>MultipleAttempts
 #EndRegion ;**** Function to Check for Multiple Password Failures****
-
 #Region ;**** Uses other Functions to check connection, verify request is valid, verify restart code is correct, gather IP, and send proper message back to User depending on request received****
 Func _RemoteRestart($vMSocket, $sCodes, $sKey, $sHideCodes = "no", $sServIP = "127.0.0.1", $sName = "7DTD Server")
 	Local $vConnectedSocket = TCPAccept($vMSocket)
@@ -3339,9 +3256,6 @@ Func _RemoteRestart($vMSocket, $sCodes, $sKey, $sHideCodes = "no", $sServIP = "1
 	If $vConnectedSocket <> -1 Then TCPCloseSocket($vConnectedSocket)
 EndFunc   ;==>_RemoteRestart
 #EndRegion ;**** Uses other Functions to check connection, verify request is valid, verify restart code is correct, gather IP, and send proper message back to User depending on request received****
-
-; -----------------------------------------------------------------------------------------------------------------------
-
 #Region ;**** INI Settings - User Variables ****
 
 Func ReadUini($aIniFile, $sLogFile)
@@ -4853,7 +4767,6 @@ Func UpdateIni($aIniFile)
 	FileWriteLine($aIniFile, @CRLF)
 EndFunc   ;==>UpdateIni
 #EndRegion ;**** INI Settings - User Variables ****
-
 #Region ;**** Append Settings to Temporary Server Config ****
 Func AppendConfigSettings()
 	Global $aConfigFileTemp = "ServerConfig7dtdServerUtilTemp.xml"
@@ -4933,7 +4846,6 @@ Func _PidGetPath($Pid = "", $strComputer = 'localhost')
 		Next
 	EndIf
 EndFunc   ;==>_PidGetPath
-
 Func PIDReadServer($tSplash = 0)
 	Local $tReturn = IniRead($aUtilCFGFile, "CFG", "PID", "0")
 	Local $tReturn1 = _CheckForExistingServer()
@@ -4991,7 +4903,6 @@ Func TrayExitCloseN()
 	EndIf
 	SplashOff()
 EndFunc   ;==>TrayExitCloseN
-
 Func TrayExitCloseY()
 	LogWrite(" [" & $aServerName & "] Utility exit with server shutdown initiated by user via tray icon (Exit: Shut Down Servers).")
 	$tMB = MsgBox($MB_YESNOCANCEL, $aUtilName, "Do you wish to shut down server and exit this utility?" & @CRLF & @CRLF & _
@@ -5013,11 +4924,9 @@ Func TrayExitCloseY()
 		$aSplash = _Splash("Shutdown canceled. Resuming utility . . .", 2000)
 	EndIf
 EndFunc   ;==>TrayExitCloseY
-
 Func TrayRestartNow()
 	W2_RestartServer()
 EndFunc   ;==>TrayRestartNow
-
 Func TrayRemoteRestart()
 	LogWrite(" [Remote Restart] Remote Restart requested by user via tray icon (Initiate Remote Restart).")
 	If $aRemoteRestartUse <> "yes" Then
@@ -5072,13 +4981,11 @@ Func TrayRemoteRestart()
 		EndIf
 	EndIf
 EndFunc   ;==>TrayRemoteRestart
-
 Func TrayUpdateUtilCheck()
 	LogWrite(" [Update] " & $aUtilName & " update check requested by user via tray icon (Check for Updates).")
 	$aShowUpdate = True
 	UtilUpdate($aServerUpdateLinkVerUse, $aServerUpdateLinkDLUse, $aUtilVersion, $aUtilName)
 EndFunc   ;==>TrayUpdateUtilCheck
-
 Func TraySendMessage()
 	LogWrite(" [Telnet] Global chat message requested by user via tray icon. (Send global chat message).")
 	SplashOff()
@@ -5098,7 +5005,6 @@ Func TraySendMessage()
 		MsgBox($MB_OKCANCEL, $aUtilityVer, "Global chat Message sent:" & @CRLF & $tMsg & @CRLF & @CRLF & "Response:" & @CRLF & $aReply, 10)
 	EndIf
 EndFunc   ;==>TraySendMessage
-
 Func _PlinkMsgTrim($tMsg5)
 	Local $tRead4 = ""
 	Local $xRead3 = StringSplit($tMsg5, @CRLF, BitOR($STR_NOCOUNT, $STR_ENTIRESPLIT))
@@ -5111,7 +5017,6 @@ Func _PlinkMsgTrim($tMsg5)
 	Next
 	Return StringTrimRight($tRead4, 1)
 EndFunc   ;==>_PlinkMsgTrim
-
 Func TraySendInGame()
 	LogWrite(" [Telnet] Send Telnet command requested by user via tray icon (Send telnet command).")
 	SplashOff()
@@ -5133,14 +5038,12 @@ Func TraySendInGame()
 		MsgBox($MB_OKCANCEL, $aUtilityVer, "Telnet command sent: " & @CRLF & $tMsg & @CRLF & @CRLF & "Response:" & @CRLF & $aReply, 15)
 	EndIf
 EndFunc   ;==>TraySendInGame
-
 Func TrayUpdateServCheck()
 	SplashOff()
 	$aSplash = _Splash("Checking for server update.")
 	UpdateCheck(True)
 	SplashOff()
 EndFunc   ;==>TrayUpdateServCheck
-
 Func GetPlayerCount($tSplash)
 ;~ 	Local $aCMD = "listplayers"
 	$tOnlinePlayerReady = True
@@ -5298,8 +5201,26 @@ Func TelnetOnlinePlayers($ip, $port, $pwd)
 				Next
 			EndIf
 		Next
+		Global $xPlayerName[$tArray3[0]]
+		Global $xPlayerID[$tArray3[0]]
+		For $tx1 = 1 To $tArray3[0]
+			If StringRegExp($tArray3[$tx1], "Total of .* in the game") Then ExitLoop
+			If StringLen($tArray3[$tx1]) > 200 Then
+				Local $tx2 = StringSplit($tArray3[$tx1], ",")
+				If $tx2[0] > 2 Then
+					$xPlayerName[$tx1] = StringTrimLeft($tx2[2], 1)
+					Local $tx3 = StringSplit($tx2[1], "=")
+					If UBound($tx3) > 2 Then
+						If UBound($xPlayerID) > ($tx1 - 1) Then
+							$xPlayerID[$tx1] = $tx3[2]
+						Else
+							_ArrayAdd($xPlayerID, $tx3[2])
+						EndIf
+					EndIf
+				EndIf
+			EndIf
+		Next
 	EndIf
-;~ 	_TelnetLookForAll($tRead1)
 	Local $tRead2 = _SendTelnetSafe("gettime")
 	Local $tArray3 = StringSplit($tRead2, @CRLF)
 	$sReturn[0] = "Day 1, 00:00"
@@ -5319,7 +5240,18 @@ Func TelnetOnlinePlayers($ip, $port, $pwd)
 	If $aTelnetStayConnectedYN = "no" Then _PlinkDisconnect()
 	Return $sReturn
 EndFunc   ;==>TelnetOnlinePlayers
-
+Func _FindNameFromID($tUID)
+	If UBound($xPlayerName) = UBound($xPlayerID) Then
+		For $ty1 = 0 To (UBound($xPlayerName) - 1)
+			If $xPlayerID[$ty1] = $tUID Then
+				Return $xPlayerName[$ty1]
+			EndIf
+		Next
+		Return "Unknown"
+	Else
+		Return "Unknown"
+	EndIf
+EndFunc   ;==>_FindNameFromID
 Func _SendTelnetSafe($tMsgt, $tSkipLookForAllTF = False, $tLogSEN = "E") ; S = Success, E = Error, N = None
 	$aTelnetCheckInProgressTF = True
 	For $tRetry = 1 To $aSendTelnetMaxAttempts
@@ -5339,7 +5271,6 @@ Func _SendTelnetSafe($tMsgt, $tSkipLookForAllTF = False, $tLogSEN = "E") ; S = S
 	$aTelnetCheckInProgressTF = False
 	Return $tReplyT
 EndFunc   ;==>_SendTelnetSafe
-
 Func ShowOnlineGUI($tForceOnTopTF = False)
 	If $aServerOnlinePlayerYN = "yes" Then
 		If $aPlayerCountShowTF Then
@@ -5390,7 +5321,6 @@ Func ShowPlayerCount()
 	$aServerOnlinePlayerYN = "yes"
 	ShowOnlineGUI()
 EndFunc   ;==>ShowPlayerCount
-
 Func TrayShowPlayerCount()
 	$aPlayerCountShowTF = True
 	If $aServerOnlinePlayerYN = "no" Then
@@ -5399,11 +5329,9 @@ Func TrayShowPlayerCount()
 		ShowOnlineGUI(True)
 	EndIf
 EndFunc   ;==>TrayShowPlayerCount
-
 Func WriteOnlineLog($aMsg)
 	FileWriteLine($aFolderLog & $aUtilName & "_OnlineUserLog_" & @YEAR & "-" & @MON & "-" & @MDAY & ".txt", _NowCalc() & " " & $aMsg)
 EndFunc   ;==>WriteOnlineLog
-
 Func TrayShowPlayerCheckPause()
 ;~ 	GUIDelete()
 ;~ 	$aPlayerCountWindowTF = False
@@ -5412,28 +5340,24 @@ Func TrayShowPlayerCheckPause()
 	IniWrite($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "Check for, and log, online players? (yes/no) ###", "no")
 	$aServerOnlinePlayerYN = "no"
 EndFunc   ;==>TrayShowPlayerCheckPause
-
 Func TrayShowPlayerCheckUnPause()
 	TrayItemSetState($iTrayPlayerCheckPause, $TRAY_ENABLE)
 	TrayItemSetState($iTrayPlayerCheckUnPause, $TRAY_DISABLE)
 	IniWrite($aIniFile, " --------------- GAME SERVER CONFIGURATION --------------- ", "Check for, and log, online players? (yes/no) ###", "yes")
 	$aServerOnlinePlayerYN = "yes"
 EndFunc   ;==>TrayShowPlayerCheckUnPause
-
 Func TrayUpdateServPause()
 	TrayItemSetState($iTrayUpdateServPause, $TRAY_DISABLE)
 	TrayItemSetState($iTrayUpdateServUnPause, $TRAY_ENABLE)
 	IniWrite($aIniFile, " --------------- CHECK FOR UPDATE --------------- ", "Check for server updates? (yes/no) ###", "no")
 	$aCheckForUpdate = "no"
 EndFunc   ;==>TrayUpdateServPause
-
 Func TrayUpdateServUnPause()
 	TrayItemSetState($iTrayUpdateServPause, $TRAY_ENABLE)
 	TrayItemSetState($iTrayUpdateServUnPause, $TRAY_DISABLE)
 	IniWrite($aIniFile, " --------------- CHECK FOR UPDATE --------------- ", "Check for server updates? (yes/no) ###", "yes")
 	$aCheckForUpdate = "yes"
 EndFunc   ;==>TrayUpdateServUnPause
-
 Func ReplaceSingleQuote($tMsg0)
 	If StringInStr($tMsg0, "'") = "0" Then
 		Return $tMsg0
@@ -5441,7 +5365,6 @@ Func ReplaceSingleQuote($tMsg0)
 		Return StringReplace($tMsg0, "'", "' 39 '")
 	EndIf
 EndFunc   ;==>ReplaceSingleQuote
-
 Func TrayUpdateUtilPause()
 	SplashOff()
 	MsgBox($MB_OK, $aUtilityVer, $aUtilityVer & " Paused.  Press OK to resume.")
@@ -5538,7 +5461,6 @@ Func _DownloadAndExtractFile($tFileName, $tURL1, $tURL2 = "", $tSplash = 0, $tFo
 		Return False ; File existed
 	EndIf
 EndFunc   ;==>_DownloadAndExtractFile
-
 Func LogWrite($Msg, $msgdebug = -1)
 	$Msg = StringReplace($Msg, @CRLF, "|")
 	$Msg = StringReplace($Msg, @CR, "|")
@@ -5740,13 +5662,19 @@ Func _TelnetLookForLeave($tTxt4)
 	EndIf
 EndFunc   ;==>_TelnetLookForLeave
 Func _TelnetLookForChat($tTxt4)
-	Local $tMsg4 = $sDiscordPlayerChatMsg
+	Local $tMsg4 = $sDiscordPlayerChatMsg ;kim125er!
 	Local $tArray[0]
 	If $tMsg4 <> "" Then
 		If StringInStr($tTxt4, " INF Chat (from") Or StringInStr($tTxt4, " INF Chat handled by mod") Then
-			Local $tName = _ArrayToString(_StringBetween($tTxt4, "'): '", "': "))
-			Local $tChat = StringMid($tTxt4, StringInStr($tTxt4, $tName & "': ") + StringLen($tName & "': "))
+			Local $tUID = _ArrayToString(_StringBetween($tTxt4, "entity id '", "', to "))
+			If $tUID = "-1" Then
+				Local $tName = "Server"
+			Else
+				Local $tName = _FindNameFromID($tUID)
+			EndIf
 			Local $tType = _ArrayToString(_StringBetween($tTxt4, "', to '", "'):"))
+			Local $tLen = StringInStr($tTxt4, "to '" & $tType & "'): ") + 7 + StringLen($tType)
+			Local $tChat = StringTrimLeft($tTxt4, $tLen)
 			Local $tAnyCustomTF = False
 			If StringInStr($tChat, $aCustomCommands) Then
 			Else
@@ -5755,6 +5683,7 @@ Func _TelnetLookForChat($tTxt4)
 						If $tChat = $xCustomCommands[$t5] Then _ArrayAdd($tArray, _SendMsgSubs($xCustomReponses[$t5], "I"))
 					Next
 				EndIf
+				If StringMid($tChat, 1, 1) = "[" And StringMid($tChat, 8, 1) = "]" Then $tChat = StringTrimLeft($tChat, 8)
 				$tMsg4 = StringReplace($tMsg4, "\p", $tName)
 				$tMsg4 = StringReplace($tMsg4, "\m", $tChat)
 				$tMsg4 = StringReplace($tMsg4, "\n", "|")
@@ -5767,7 +5696,6 @@ Func _TelnetLookForChat($tTxt4)
 					Next
 				EndIf
 			EndIf
-;~ 			EndIf
 		EndIf
 	EndIf
 EndFunc   ;==>_TelnetLookForChat
@@ -8767,12 +8695,6 @@ Func _AnnounceDailyCB($tCID, $tTxt)
 	If $tChecked = "" Then $tChecked = "1"
 	$sAnnounceNotifyTime1 = $tChecked
 	_UpdateAnnouncements()
-;~ 	If GUICtrlRead($tCID) = $GUI_CHECKED Then
-;~ 		$sAnnounceNotifyTime1 = IniRead($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before DAILY reboot (comma separated 0-60) ###", "1,3,5,10")
-;~ 		$sAnnounceNotifyTime1 = _SortString($sAnnounceNotifyTime1 & "," & $tTxt)
-;~ 	Else
-;~ 		$sAnnounceNotifyTime1 = _RemoveFromStringCommaSeparated($sAnnounceNotifyTime1, $tTxt, "0SND")
-;~ 	EndIf
 	GUICtrlSetData($W1_T4_I_DailyMins, $sAnnounceNotifyTime1)
 	IniWrite($aIniFile, " --------------- ANNOUNCEMENT CONFIGURATION --------------- ", "Announcement _ minutes before DAILY reboot (comma separated 0-60) ###", $sAnnounceNotifyTime1)
 EndFunc   ;==>_AnnounceDailyCB
@@ -9978,7 +9900,6 @@ Func AddZero($tString)
 	If Number($tArray[1]) > 0 Then $tString = "0," & $tString
 	Return $tString
 EndFunc   ;==>AddZero
-
 Func _ErrorCode($tError)
 	If IsDeclared("xErrorCodes") = 0 Then
 		Global $xErrorCodes[0][2]
