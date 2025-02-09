@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Resources\phoenixtray.ico
-#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.6.9.exe
+#AutoIt3Wrapper_Outfile=Builds\7dtdServerUpdateUtility_v2.7.0.exe
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=By Phoenix125 based on Dateranoth's ConanServerUtility v3.3.0-Beta.3
 #AutoIt3Wrapper_Res_Description=7 Days To Die Dedicated Server Update Utility
-#AutoIt3Wrapper_Res_Fileversion=2.6.9.0
+#AutoIt3Wrapper_Res_Fileversion=2.7.0.0
 #AutoIt3Wrapper_Res_ProductName=7dtdServerUpdateUtility
-#AutoIt3Wrapper_Res_ProductVersion=2.6.9
+#AutoIt3Wrapper_Res_ProductVersion=2.7.0
 #AutoIt3Wrapper_Res_CompanyName=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_LegalCopyright=http://www.Phoenix125.com
 #AutoIt3Wrapper_Res_Language=1033
@@ -47,10 +47,10 @@ Opt("GUIResizeMode", $GUI_DOCKLEFT + $GUI_DOCKTOP)
 
 ; *** End added by AutoIt3Wrapper ***
 
-$aUtilVerStable = "v2.6.9"
-$aUtilVerBeta = "v2.6.9"
+$aUtilVerStable = "v2.7.0"
+$aUtilVerBeta = "v2.7.0"
 $aUtilVersion = $aUtilVerStable
-Global $aUtilVerNumber = 18
+Global $aUtilVerNumber = 19
 ; 1 = v2.3.3
 ; 2 = v2.3.4
 ; 3 = v2.5.0
@@ -69,6 +69,7 @@ Global $aUtilVerNumber = 18
 ;16 = 2.6.7
 ;17 = 2.6.8 2023-07-14
 ;18 = 2.6.9 2024-08-27
+;19 = 2.7.0 2025-01-25
 
 ;**** Directives created by AutoIt3Wrapper_GUI ****
 ;Originally written by Dateranoth for use and modified for 7DTD by Phoenix125.com
@@ -144,7 +145,7 @@ Global $tUserCnt = 1
 Global $aBusy = False
 Global $aSteamUpdateNow = False
 Global $xCustomCommands[0]
-Global $xCustomReponses[0]
+Global $xCustomResponses[0]
 Global $aCustomCommands = ""
 ;~ Global $aPlayerCountWindowTF = False
 Global $tOnlinePlayerReady = False
@@ -819,7 +820,8 @@ While True ;**** Loop Until Closed ****
 				$aGameVer = _ArrayToString(_StringBetween($sLogRead, "INF Version: ", " Compatibility Version"))
 				FileClose($sLogPath)
 				If $aGameVer = "-1" Then
-					Sleep(2000)
+					ControlSetText($aSplash, "", "Static1", "Server Started." & @CRLF & @CRLF & "Retrieving server version from log." & @CRLF & "Second attempt. Waiting 5 seconds")
+					Sleep(5000)
 					Local $sLogPath = $LogTimeStamp
 					Local $sLogPathOpen = FileOpen($sLogPath, 0)
 					Local $sLogRead = StringLeft(FileRead($sLogPathOpen), 10000)
@@ -5662,7 +5664,7 @@ Func _TelnetLookForLeave($tTxt4)
 	EndIf
 EndFunc   ;==>_TelnetLookForLeave
 Func _TelnetLookForChat($tTxt4)
-	Local $tMsg4 = $sDiscordPlayerChatMsg ;kim125er!
+	Local $tMsg4 = $sDiscordPlayerChatMsg
 	Local $tArray[0]
 	If $tMsg4 <> "" Then
 		If StringInStr($tTxt4, " INF Chat (from") Or StringInStr($tTxt4, " INF Chat handled by mod") Then
@@ -5674,13 +5676,15 @@ Func _TelnetLookForChat($tTxt4)
 			EndIf
 			Local $tType = _ArrayToString(_StringBetween($tTxt4, "', to '", "'):"))
 			Local $tLen = StringInStr($tTxt4, "to '" & $tType & "'): ") + 7 + StringLen($tType)
-			Local $tChat = StringTrimLeft($tTxt4, $tLen)
+			Local $tChatPlayer = StringTrimLeft($tTxt4, $tLen)
+			Local $tLen = StringInStr($tChatPlayer, "': ") + 2
+			Local $tChat = StringTrimLeft($tChatPlayer, $tLen)
 			Local $tAnyCustomTF = False
 			If StringInStr($tChat, $aCustomCommands) Then
 			Else
 				If UBound($xCustomCommands) > 0 Then
 					For $t5 = 0 To (UBound($xCustomCommands) - 1)
-						If $tChat = $xCustomCommands[$t5] Then _ArrayAdd($tArray, _SendMsgSubs($xCustomReponses[$t5], "I"))
+						If $tChat = $xCustomCommands[$t5] Then _ArrayAdd($tArray, _SendMsgSubs($xCustomResponses[$t5], "I"))
 					Next
 				EndIf
 				If StringMid($tChat, 1, 1) = "[" And StringMid($tChat, 8, 1) = "]" Then $tChat = StringTrimLeft($tChat, 8)
@@ -10667,7 +10671,7 @@ Func _CustomCommandsRead($tFile)
 	Global $aCustomCommands = ""
 	_FileReadToArray($tFile, $xArray)
 	Global $xCustomCommands[0]
-	Global $xCustomReponses[0]
+	Global $xCustomResponses[0]
 	For $t1 = 1 To ($xArray[0] - 1)
 		If StringInStr($xArray[$t1], "[--- Begin Custom Chat ---]") Then
 			For $t2 = ($t1 + 1) To ($xArray[0])
@@ -10684,7 +10688,7 @@ Func _CustomCommandsRead($tFile)
 				Next
 				If $tCmd <> "" Then
 					_ArrayAdd($xCustomCommands, $tCmd)
-					_ArrayAdd($xCustomReponses, $tRpy, Default, Default, Default, 1)
+					_ArrayAdd($xCustomResponses, $tRpy, Default, Default, Default, 1)
 					$aCustomCommands &= $tCmd & " "
 				EndIf
 			Next
